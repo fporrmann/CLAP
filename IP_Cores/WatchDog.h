@@ -27,7 +27,7 @@ class WatchDogException : public std::exception
 };
 
 
-void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name)
+static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name)
 {
 	UNUSED(name);
 	pTimer->Start();

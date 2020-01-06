@@ -338,9 +338,9 @@ class XDMA : virtual public XDMABase
 			}
 		}
 
-		void Read(const Memory& mem, void* pData, const uint64_t& sizeInByte = Memory::USE_MEMORY_SIZE, const bool& verbose = false)
+		void Read(const Memory& mem, void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE, const bool& verbose = false)
 		{
-			uint64_t size = (sizeInByte == Memory::USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+			uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 			if(size > mem.GetSize())
 			{
 				std::stringstream ss;
@@ -508,9 +508,9 @@ class XDMA : virtual public XDMABase
 			}
 		}
 
-		void Write(const Memory& mem, const void* pData, const uint64_t& sizeInByte = Memory::USE_MEMORY_SIZE, const bool& verbose = false)
+		void Write(const Memory& mem, const void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE, const bool& verbose = false)
 		{
-			uint64_t size = (sizeInByte == Memory::USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+			uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 			if(size > mem.GetSize())
 			{
 				std::stringstream ss;

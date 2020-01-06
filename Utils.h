@@ -39,7 +39,7 @@ class ReverseRange
 };
  
 template<typename T>
-ReverseRange<T> ReverseIterate(T &x)
+static ReverseRange<T> ReverseIterate(T &x)
 {
 	return ReverseRange<T>(x);
 }
@@ -48,7 +48,7 @@ ReverseRange<T> ReverseIterate(T &x)
 /// -------------------------------------------------------------------- ///
 
 template <typename T>
-std::string to_string_with_precision(const T a_value, const uint32_t& n = 6)
+static std::string to_string_with_precision(const T a_value, const uint32_t& n = 6)
 {
 	std::ostringstream out;
 	out.precision(n);
@@ -56,7 +56,7 @@ std::string to_string_with_precision(const T a_value, const uint32_t& n = 6)
 	return out.str();
 }
 
-uint32_t CalcOrder(double val)
+static uint32_t CalcOrder(double val)
 {
 	uint32_t cnt = 0;
 
@@ -69,7 +69,7 @@ uint32_t CalcOrder(double val)
 	return cnt;
 }
 
-std::string GetPrefix(const uint32_t& order)
+static std::string GetPrefix(const uint32_t& order)
 {
 	switch (order)
 	{
@@ -97,7 +97,7 @@ std::string GetPrefix(const uint32_t& order)
 	return "UNKNOWN ORDER: " + std::to_string(order);
 }
 
-std::string SpeedWidthSuffix(double val)
+static std::string SpeedWidthSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order = CalcOrder(val);
@@ -110,7 +110,7 @@ std::string SpeedWidthSuffix(double val)
 	return str;
 }
 
-std::string SizeWithSuffix(uint64_t val)
+static std::string SizeWithSuffix(uint64_t val)
 {
 	std::string str = "";
 	uint32_t order = CalcOrder(val);

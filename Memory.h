@@ -24,13 +24,11 @@ class MemoryException : public std::exception
 		std::string m_what;
 };
 
+static const uint64_t USE_MEMORY_SIZE = 0;
 
 class Memory
 {
 	friend class MemoryManager;
-
-	public:
-		static const uint64_t USE_MEMORY_SIZE;
 
 	public:
 		const uint64_t& GetBaseAddr() const
@@ -90,8 +88,6 @@ class Memory
 		uint64_t m_size;
 		bool m_valid;
 };
-
-const uint64_t Memory::USE_MEMORY_SIZE = 0;
 
 class MemoryManager
 {
