@@ -98,6 +98,13 @@ class VDMA : public IPControlBase
 		{
 			if(channel == MM2S)
 			{
+				// Start the watchdog
+				if(!m_watchDogMM2S.Start())
+				{
+					std::cerr << CLASS_TAG("VDMA") << "Trying to start VDMA (MM2S) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+					return;
+				}
+
 				// Set the RunStop bit
 				m_mm2sCtrlReg.Start();
 				// Set the source address
@@ -115,6 +122,13 @@ class VDMA : public IPControlBase
 
 			if(channel == S2MM)
 			{
+				// Start the watchdog
+				if(!m_watchDogS2MM.Start())
+				{
+					std::cerr << CLASS_TAG("VDMA") << "Trying to start VDMA (S2MM) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+					return;
+				}
+
 				// Set the RunStop bit
 				m_s2mmCtrlReg.Start();
 				// Set the destination address
@@ -151,9 +165,21 @@ class VDMA : public IPControlBase
 		bool WaitForFinish(const DMAChannel& channel, const int32_t& timeoutMS = WAIT_INFINITE)
 		{
 			if(channel == MM2S)
-				return m_watchDogMM2S.WaitForFinish(timeoutMS);
+			{
+				bool state = m_watchDogMM2S.WaitForFinish(timeoutMS);
+				// The VDMA automatically restarts as long as it's not stopped so also restart the watchdog
+				if(state)
+					m_watchDogMM2S.Start();
+				return state;
+			}
 			else
-				return m_watchDogS2MM.WaitForFinish(timeoutMS);
+			{
+				bool state = m_watchDogS2MM.WaitForFinish(timeoutMS);
+				// The VDMA automatically restarts as long as it's not stopped so also restart the watchdog
+				if(state)
+					m_watchDogS2MM.Start();
+				return state;
+			}
 		}
 
 		////////////////////////////////////////

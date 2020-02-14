@@ -2,7 +2,9 @@
 
 
 #include <mutex>
+#include <atomic>
 #include <thread>
+#include <chrono>
 #include <condition_variable>
 
 #include "UserInterrupt.h"
@@ -27,9 +29,10 @@ class WatchDogException : public std::exception
 };
 
 
-static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name)
+static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name, std::atomic<bool>* pThreadDone)
 {
 	UNUSED(name);
+	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
 
 	try
@@ -58,11 +61,13 @@ static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Ti
 
 	pTimer->Stop();
 
+	pCv->notify_one();
+	pThreadDone->store(true, std::memory_order_release);
+
 #ifdef XDMA_VERBOSE
 	std::cout << "[" << name << "] Finished" << std::endl;
 #endif
 
-	pCv->notify_one();
 }
 
 
@@ -80,6 +85,7 @@ class WatchDog
 			m_waitThread(),
 			m_cv(),
 			m_threadRunning(false),
+			m_threadDone(false),
 			m_pStatus(nullptr),
 			m_timer()
 		{
@@ -117,7 +123,8 @@ class WatchDog
 			}
 
 			g_pExcept = nullptr;
-			m_waitThread = std::thread(waitForFinishThread, &m_interrupt, m_pStatus, &m_timer, &m_cv, m_name);
+			m_threadDone.store(false, std::memory_order_release);
+			m_waitThread = std::thread(waitForFinishThread, &m_interrupt, m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone);
 			m_threadRunning = true;
 
 			return true;
@@ -125,7 +132,9 @@ class WatchDog
 
 		bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
 		{
-			if(m_waitThread.joinable())
+			using namespace std::chrono_literals;
+
+			if(m_threadDone.load(std::memory_order_acquire))
 			{
 				m_waitThread.join();
 				m_threadRunning = false;
@@ -137,7 +146,7 @@ class WatchDog
 			std::unique_lock<std::mutex> lck(mtx);
 
 			if(timeoutMS == WAIT_INFINITE)
-				m_cv.wait(lck);
+				m_cv.wait_for(lck, 1ms, [this]{return m_threadDone.load(std::memory_order_acquire);});
 			else if(m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
 				return false;
 
@@ -174,6 +183,7 @@ class WatchDog
 		std::thread m_waitThread;
 		std::condition_variable m_cv;
 		bool m_threadRunning;
+		std::atomic<bool> m_threadDone;
 		HasStatus* m_pStatus;
 		Timer m_timer;
 };
