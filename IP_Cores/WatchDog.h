@@ -2,13 +2,16 @@
 
 
 #include <mutex>
-#include <atomic>
 #include <thread>
-#include <chrono>
 #include <condition_variable>
 
 #include "UserInterrupt.h"
+
+#ifndef EMBEDDED_XILINX
 #include "../Timer.h"
+#include <atomic>
+#include <chrono>
+#endif
 
 static std::exception_ptr g_pExcept = nullptr;
 
@@ -29,6 +32,7 @@ class WatchDogException : public std::exception
 };
 
 
+#ifndef EMBEDDED_XILINX
 static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name, std::atomic<bool>* pThreadDone)
 {
 	UNUSED(name);
@@ -67,9 +71,8 @@ static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Ti
 #ifdef XDMA_VERBOSE
 	std::cout << "[" << name << "] Finished" << std::endl;
 #endif
-
 }
-
+#endif
 
 
 
@@ -82,12 +85,14 @@ class WatchDog
 		WatchDog(const std::string& name) :
 			m_name(name),
 			m_interrupt(),
+#ifndef EMBEDDED_XILINX
 			m_waitThread(),
 			m_cv(),
 			m_threadRunning(false),
 			m_threadDone(false),
-			m_pStatus(nullptr),
-			m_timer()
+			m_timer(),
+#endif
+			m_pStatus(nullptr)
 		{
 		}
 
@@ -113,6 +118,7 @@ class WatchDog
 
 		bool Start()
 		{
+#ifndef EMBEDDED_XILINX
 			if(m_threadRunning) return false;
 
 			if(!m_interrupt.IsSet() && m_pStatus == nullptr)
@@ -126,13 +132,17 @@ class WatchDog
 			m_threadDone.store(false, std::memory_order_release);
 			m_waitThread = std::thread(waitForFinishThread, &m_interrupt, m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone);
 			m_threadRunning = true;
+#endif
 
 			return true;
 		}
 
 		bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
 		{
+#ifndef EMBEDDED_XILINX
 			using namespace std::chrono_literals;
+
+			if(!m_threadRunning) return false;
 
 			if(m_threadDone.load(std::memory_order_acquire))
 			{
@@ -153,13 +163,21 @@ class WatchDog
 			m_waitThread.join();
 			m_threadRunning = false;
 			checkException();
+#else
+			while(!m_pStatus->PollDone())
+				usleep(1);
+#endif
 
 			return true;
 		}
 
 		double GetRuntime() const
 		{
+#ifndef EMBEDDED_XILINX
 			return m_timer.GetElapsedTimeInMilliSec();
+#else
+			return 0.0; // TODO: Add embedded runtime measurement
+#endif
 		}
 
 	private:
@@ -180,10 +198,12 @@ class WatchDog
 	private:
 		std::string m_name;
 		UserInterrupt m_interrupt;
+#ifndef EMBEDDED_XILINX
 		std::thread m_waitThread;
 		std::condition_variable m_cv;
 		bool m_threadRunning;
 		std::atomic<bool> m_threadDone;
-		HasStatus* m_pStatus;
 		Timer m_timer;
+#endif
+		HasStatus* m_pStatus;
 };

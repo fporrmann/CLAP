@@ -8,10 +8,12 @@
 #include <unistd.h>
 /////////////////////////
 
+#ifndef EMBEDDED_XILINX
 /////////////////////////
 // Include for poll()
 #include <poll.h>
 /////////////////////////
+#endif
 
 #include <iostream>
 
@@ -44,7 +46,9 @@ class UserInterrupt
 			m_devName(""),
 			m_pReg(nullptr),
 			m_fd(-1),
+#ifndef EMBEDDED_XILINX
 			m_pollFd(),
+#endif
 			m_interruptNum(0)
 		{}
 
@@ -71,8 +75,10 @@ class UserInterrupt
 				throw UserIntrruptException(ss.str());
 			}
 
+#ifndef EMBEDDED_XILINX
 			m_pollFd.fd = m_fd;
 			m_pollFd.events = POLLIN;
+#endif
 			m_interruptNum = interruptNum;
 		}
 
@@ -82,7 +88,9 @@ class UserInterrupt
 
 			close(m_fd);
 			m_fd = -1;
+#ifndef EMBEDDED_XILINX
 			m_pollFd.fd = -1;
+#endif
 			m_pReg = nullptr;
 		}
 
@@ -100,6 +108,7 @@ class UserInterrupt
 				throw UserIntrruptException(ss.str());
 			}
 
+#ifndef EMBEDDED_XILINX
 			// Poll checks whether an interrupt was generated. 
 			uint32_t rd = poll(&m_pollFd, 1, timeout);
 			if((rd > 0) && (m_pollFd.revents & POLLIN))
@@ -128,7 +137,7 @@ class UserInterrupt
 			else
 				std::cout << "No Interrupt present on " << m_devName << std::endl;
 #endif
-
+#endif
 			return false;
 		}
 
@@ -137,6 +146,8 @@ class UserInterrupt
 		std::string m_devName;
 		HasInterrupt* m_pReg;
 		int m_fd;
+#ifndef EMBEDDED_XILINX
 		struct pollfd m_pollFd;
+#endif
 		uint32_t m_interruptNum;
 };

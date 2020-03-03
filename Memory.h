@@ -101,7 +101,9 @@ class MemoryManager
 			m_baseAddr(baseAddr),
 			m_size(size),
 			m_spaceLeft(size),
+#ifndef EMBEDDED_XILINX
 			m_mutex(),
+#endif
 			m_freeMemory(),
 			m_usedMemory()
 		{
@@ -132,7 +134,9 @@ class MemoryManager
 			const uint64_t pad = (modSize == 0) ? 0 : (ALIGNMENT - modSize);
 			const uint64_t alignedSize = size + pad;
 
+#ifndef EMBEDDED_XILINX
 			std::lock_guard<std::mutex> lock(m_mutex);
+#endif
 
 			uint64_t addr = INV_NULL;
 
@@ -170,7 +174,9 @@ class MemoryManager
 
 		void FreeMemory(Memory& buffer)
 		{
+#ifndef EMBEDDED_XILINX
 			std::lock_guard<std::mutex> lock(m_mutex);
+#endif
 
 			// Search for the given address in the list of used memory regions
 			MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [buffer] (const MemList::value_type& p) { return p.first == buffer.m_baseAddr; });
@@ -194,7 +200,9 @@ class MemoryManager
 
 		void Reset()
 		{
+#ifndef EMBEDDED_XILINX
 			std::lock_guard<std::mutex> lock(m_mutex);
+#endif
 
 			m_freeMemory.clear();
 			m_usedMemory.clear();
@@ -236,7 +244,9 @@ class MemoryManager
 		uint64_t m_baseAddr;
 		uint64_t m_size;
 		uint64_t m_spaceLeft;
-        std::mutex m_mutex;
-        MemList m_freeMemory;
-        MemList m_usedMemory;
+#ifndef EMBEDDED_XILINX
+		std::mutex m_mutex;
+#endif
+		MemList m_freeMemory;
+		MemList m_usedMemory;
 };
