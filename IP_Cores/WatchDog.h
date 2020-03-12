@@ -142,6 +142,10 @@ class WatchDog
 #ifndef EMBEDDED_XILINX
 			using namespace std::chrono_literals;
 
+#ifdef XDMA_VERBOSE
+			std::cout << "WaitForFinish " << m_name << " timeoutMS=" << timeoutMS << " Inf: " << (timeoutMS == WAIT_INFINITE) << std::endl;
+#endif
+
 			if(!m_threadRunning) return false;
 
 			if(m_threadDone.load(std::memory_order_acquire))

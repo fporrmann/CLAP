@@ -1,5 +1,39 @@
 #pragma once
+
+#ifdef __arm__
+/// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
+#include <stdlib.h>
+
+/* We can't depend on <stdlib.h> since the prototype of posix_memalign
+   may not be visible.  */
+#ifndef __cplusplus
+extern int posix_memalign (void **, size_t, size_t);
+#else
+extern "C" int posix_memalign (void **, size_t, size_t) throw ();
+#endif
+
+static __inline void *
+_mm_malloc (size_t size, size_t alignment)
+{
+  void *ptr;
+  if (alignment == 1)
+    return malloc (size);
+  if (alignment == 2 || (sizeof (void *) == 8 && alignment == 4))
+    alignment = sizeof (void *);
+  if (posix_memalign (&ptr, alignment, size) == 0)
+    return ptr;
+  else
+    return NULL;
+}
+
+static __inline void
+_mm_free (void * ptr)
+{
+  free (ptr);
+}
+#else
 #include <mm_malloc.h>
+#endif
 
 // Alignment allocator for std::vector
 // based on boost::alignment::aligned_allocator
