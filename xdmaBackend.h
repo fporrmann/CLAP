@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utils.h"
+
 /*
  * man 2 write:
  * On Linux, write() (and similar system calls) will transfer at most
@@ -35,6 +37,13 @@ class XDMABackend
 		};
 
 	public:
+		XDMABackend() :
+			m_valid(false),
+			m_nameRead(""),
+			m_nameWrite("")
+		{}
+		virtual ~XDMABackend() {}
+
 		virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false) = 0;
 		virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false) = 0;
 
@@ -75,12 +84,15 @@ class XDMABackend
 #ifndef EMBEDDED_XILINX
 class PCIeBackend : virtual public XDMABackend
 {
+	DISABLE_COPY_ASSIGN_MOVE(PCIeBackend)
+
 	public:
 		PCIeBackend(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0) :
 			m_h2cDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_h2c_" + std::to_string(channelNum)),
 			m_c2hDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_c2h_" + std::to_string(channelNum)),
 			m_h2cFd(-1),
 			m_c2hFd(-1),
+			m_mapBase(nullptr),
 			m_devNum(deviceNum),
 			m_readMutex(),
 			m_writeMutex()
@@ -92,7 +104,7 @@ class PCIeBackend : virtual public XDMABackend
 			m_valid = (m_h2cFd >= 0 && m_c2hFd >= 0);
 		}
 
-		~PCIeBackend()
+		virtual ~PCIeBackend()
 		{
 			// Try to lock the read and write mutex in order to prevent read/write access
 			// while the XDMA object is being destroyed and also to prevent the destruction
@@ -260,10 +272,13 @@ class PCIeBackend : virtual public XDMABackend
 
 class PetaLinuxBackend : virtual public XDMABackend
 {
+	DISABLE_COPY_ASSIGN_MOVE(PetaLinuxBackend)
+
 	public:
 		PetaLinuxBackend() :
 			m_memDev("/dev/mem"),
 			m_fd(-1),
+			m_mapBase(nullptr),
 			m_readMutex(),
 			m_writeMutex()
 		{
@@ -297,7 +312,6 @@ class PetaLinuxBackend : virtual public XDMABackend
 			off_t offset = addr;
 			uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
-			ssize_t rc;
 			Timer timer;
 
 			if(verbose) timer.Start();
@@ -358,7 +372,6 @@ class PetaLinuxBackend : virtual public XDMABackend
 			const uint8_t *pByteData = reinterpret_cast<const uint8_t*>(pData);
 			off_t offset = addr;
 
-			ssize_t rc;
 			Timer timer;
 
 			if(verbose) timer.Start();
@@ -418,6 +431,7 @@ class BareMetalBackend : virtual public XDMABackend
 
 		void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
 		{
+			UNUSED(verbose);
 #ifdef XDMA_VERBOSE
 			std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
 #endif
@@ -456,6 +470,7 @@ class BareMetalBackend : virtual public XDMABackend
 
 		void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
 		{
+			UNUSED(verbose);
 #ifdef XDMA_VERBOSE
 			std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
 #endif
