@@ -103,7 +103,7 @@ static std::string GetPrefix(const uint32_t& order)
 		case 0:
 			return " B";
 
-		// Kilo
+		// Kilo Byte
 		case 1:
 			return " KB";
 

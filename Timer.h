@@ -26,10 +26,11 @@
 
 #pragma once
 #include <chrono>
-#include <iomanip>
-#include <string>
 #include <cmath>
+#include <iomanip>
 #include <ostream>
+#include <string>
+#include <time.h>
 
 #ifdef PRINT_MU_SEC
 #define TIME_FUNC  GetElapsedTimeInMicroSec
@@ -41,89 +42,118 @@
 #define FILL_CNT   3
 #endif
 
+#ifdef _MSC_VER
+using Clock = std::chrono::system_clock;
+#else
+using Clock = std::chrono::high_resolution_clock;
+#endif
+
 class Timer
 {
-	public:
-		Timer() :
-			m_stopped(false),
-			m_StartTime(std::chrono::high_resolution_clock::now()),
-			m_EndTime(std::chrono::high_resolution_clock::now())
-		{
-		}
+public:
+	Timer() :
+		m_stopped(false),
+		m_StartTime(Clock::now()),
+		m_EndTime(Clock::now())
+	{
+	}
 
-		~Timer() = default;
+	~Timer() = default;
 
-		void Start()
-		{
-			m_stopped = false;
-			m_StartTime = std::chrono::high_resolution_clock::now();
-		}
-		
-		void Stop()
-		{
-			m_stopped = true;
-			m_EndTime = std::chrono::high_resolution_clock::now();
-		}
+	void Start()
+	{
+		m_stopped   = false;
+		m_StartTime = Clock::now();
+	}
 
-		uint64_t GetElapsedTimeInMicroSec() const
-		{
-			return getElapsedTime<std::chrono::microseconds>().count();
-		}
+	void Stop()
+	{
+		m_stopped = true;
+		m_EndTime = Clock::now();
+	}
 
-		double GetElapsedTime() const
-		{
-			return GetElapsedTimeInSec();
-		}
+	uint64_t GetElapsedTimeInMicroSec() const
+	{
+		return getElapsedTime<std::chrono::microseconds>().count();
+	}
 
-		double GetElapsedTimeInSec() const
-		{
-			return GetElapsedTimeInMicroSec() * 1.0e-6;
-		}
+	double GetElapsedTime() const
+	{
+		return GetElapsedTimeInSec();
+	}
 
-		double GetElapsedTimeInMilliSec() const
-		{
-			return GetElapsedTimeInMicroSec() * 1.0e-3;
-		}
+	double GetElapsedTimeInSec() const
+	{
+		return GetElapsedTimeInMicroSec() * 1.0e-6;
+	}
 
-		friend std::ostream& operator<<(std::ostream& stream, const Timer &t)
-		{
-			std::chrono::high_resolution_clock::time_point diff = t.getTimeDiffTimePoint();
-	
-			std::time_t tTime = std::chrono::high_resolution_clock::to_time_t(diff);
-			std::tm *bt = std::gmtime(&tTime);
+	double GetElapsedTimeInMilliSec() const
+	{
+		return GetElapsedTimeInMicroSec() * 1.0e-3;
+	}
 
-			stream << std::put_time(bt, "%T");
-			stream << "." << std::setfill('0') << std::setw(FILL_CNT) << static_cast<uint64_t>(std::round(t.TIME_FUNC())) % MOD_FACTOR;
+	friend Timer operator+(const Timer& t1, const Timer& t2)
+	{
+		Timer res;
+		res.m_stopped   = true;
+		res.m_StartTime = t1.m_StartTime;
+		res.m_EndTime   = t1.m_EndTime + t2.getTimeDiff();
+		return res;
+	}
 
-			return stream;
-		}
+	Timer& operator+=(const Timer& t1)
+	{
+		this->m_stopped = true;
+		this->m_EndTime += t1.getTimeDiff();
+		return *this;
+	}
 
-	private:
-		Timer(const Timer &) = delete; // disable copy constructor
-		Timer &operator=(const Timer &) = delete; //  disable assignment constructor
+	friend std::ostream& operator<<(std::ostream& stream, const Timer& t)
+	{
+		Clock::time_point diff = t.getTimeDiffTimePoint();
 
-		std::chrono::high_resolution_clock::duration getTimeDiff() const
-		{
-			if(!m_stopped)
-				return (std::chrono::high_resolution_clock::now() - m_StartTime);
-			else
-				return (m_EndTime - m_StartTime);
-		}
+		std::time_t tTime = Clock::to_time_t(diff);
+		std::tm bt;
+#ifdef _MSC_VER
+		errno_t err = gmtime_s(&bt, &tTime);
+		if (err) throw std::runtime_error("Invalid Argument to gmtime_s");
+		stream << std::put_time(&bt, "%T");
+#else
+		gmtime_r(&tTime, &bt);
+		//		stream << std::put_time(&bt, "%T"); // Does not work with MinGW
+		stream << std::put_time(&bt, "%H:%M:%S");
+#endif
 
-		std::chrono::high_resolution_clock::time_point getTimeDiffTimePoint() const
-		{
-			return std::chrono::high_resolution_clock::time_point(getTimeDiff());
-		}
+		stream << "." << std::setfill('0') << std::setw(FILL_CNT) << static_cast<uint64_t>(std::round(t.TIME_FUNC())) % MOD_FACTOR;
 
-		template<typename T>
-		T getElapsedTime() const
-		{
-			return std::chrono::duration_cast<T>(getTimeDiff());
-		}
-		
-	private:
-		bool m_stopped;
+		return stream;
+	}
 
-		std::chrono::high_resolution_clock::time_point m_StartTime;
-		std::chrono::high_resolution_clock::time_point m_EndTime;
+private:
+	Timer& operator=(const Timer&) = delete; //  disable assignment constructor
+
+	Clock::duration getTimeDiff() const
+	{
+		if (!m_stopped)
+			return (Clock::now() - m_StartTime);
+		else
+			return (m_EndTime - m_StartTime);
+	}
+
+	Clock::time_point getTimeDiffTimePoint() const
+	{
+		return Clock::time_point(getTimeDiff());
+	}
+
+	template<typename T>
+	T getElapsedTime() const
+	{
+		return std::chrono::duration_cast<T>(getTimeDiff());
+	}
+
+private:
+	bool m_stopped;
+
+	Clock::time_point m_StartTime;
+	Clock::time_point m_EndTime;
 };
