@@ -382,7 +382,13 @@ class XDMA : virtual public XDMABase
 		template<typename T>
 		void Write(const uint64_t& addr, const T& data, const bool& verbose = false)
 		{
-			Write(addr, reinterpret_cast<const void*>(&data), sizeof(T), verbose);
+			//  === Ugly Workaround ===
+			// If a global const variable was passed as data argument
+			// the write call fails, to circumvent this a local copy
+			// is created and passed to the underlying function
+			const T tmp = data;
+			//  === Ugly Workaround ===
+			Write(addr, reinterpret_cast<const void*>(&tmp), sizeof(T), verbose);
 		}
 
 		template<class T, class A = std::allocator<T>>
