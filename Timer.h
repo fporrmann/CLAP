@@ -28,10 +28,13 @@
 #include <chrono>
 #include <cmath>
 #include <iomanip>
+#include <iostream>
 #include <ostream>
 #include <string>
 #include <time.h>
 
+namespace xdma
+{
 #ifdef PRINT_MU_SEC
 #define TIME_FUNC  GetElapsedTimeInMicroSec
 #define MOD_FACTOR 1000000
@@ -40,6 +43,10 @@
 #define TIME_FUNC  GetElapsedTimeInMilliSec
 #define MOD_FACTOR 1000
 #define FILL_CNT   3
+#endif
+
+#if !defined(__PRETTY_FUNCTION__) && !defined(__GNUC__)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
 #ifdef _MSC_VER
@@ -70,6 +77,12 @@ public:
 	{
 		m_stopped = true;
 		m_EndTime = Clock::now();
+	}
+
+	void Restart()
+	{
+		Stop();
+		Start();
 	}
 
 	uint64_t GetElapsedTimeInMicroSec() const
@@ -114,7 +127,7 @@ public:
 
 		std::time_t tTime = Clock::to_time_t(diff);
 		std::tm bt;
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || (__MINGW32__)
 		errno_t err = gmtime_s(&bt, &tTime);
 		if (err) throw std::runtime_error("Invalid Argument to gmtime_s");
 		stream << std::put_time(&bt, "%T");
@@ -157,3 +170,29 @@ private:
 	Clock::time_point m_StartTime;
 	Clock::time_point m_EndTime;
 };
+
+#define FuncTime() funcTime __ft(__PRETTY_FUNCTION__)
+
+class funcTime
+{
+public:
+	funcTime(const std::string& funcName = "") :
+		m_timer(),
+		m_funcName(funcName)
+	{
+		m_timer.Start();
+	}
+
+	~funcTime()
+	{
+		m_timer.Stop();
+		if (!m_funcName.empty())
+			std::cout << m_funcName << " - " << std::flush;
+		std::cout << "Execution Time: " << m_timer << std::endl;
+	}
+
+private:
+	Timer m_timer;
+	std::string m_funcName;
+};
+} // namespace xdma

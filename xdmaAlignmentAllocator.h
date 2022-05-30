@@ -1,5 +1,5 @@
 /* 
- *  File: AlignmentAllocator.h
+ *  File: xdmaAlignmentAllocator.h
  *  Copyright (c) 2021 Florian Porrmann
  *  
  *  MIT License
@@ -26,6 +26,8 @@
 
 #pragma once
 
+namespace xdma
+{
 #ifdef __arm__
 /// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
 #include <stdlib.h>
@@ -33,29 +35,29 @@
 /* We can't depend on <stdlib.h> since the prototype of posix_memalign
    may not be visible.  */
 #ifndef __cplusplus
-extern int posix_memalign (void **, size_t, size_t);
+extern int posix_memalign(void**, size_t, size_t);
 #else
-extern "C" int posix_memalign (void **, size_t, size_t) throw ();
+extern "C" int posix_memalign(void**, size_t, size_t) throw();
 #endif
 
-static __inline void *
-_mm_malloc (size_t size, size_t alignment)
+static __inline void*
+_mm_malloc(size_t size, size_t alignment)
 {
-  void *ptr;
-  if (alignment == 1)
-    return malloc (size);
-  if (alignment == 2 || (sizeof (void *) == 8 && alignment == 4))
-    alignment = sizeof (void *);
-  if (posix_memalign (&ptr, alignment, size) == 0)
-    return ptr;
-  else
-    return NULL;
+	void* ptr;
+	if (alignment == 1)
+		return malloc(size);
+	if (alignment == 2 || (sizeof(void*) == 8 && alignment == 4))
+		alignment = sizeof(void*);
+	if (posix_memalign(&ptr, alignment, size) == 0)
+		return ptr;
+	else
+		return NULL;
 }
 
 static __inline void
-_mm_free (void * ptr)
+_mm_free(void* ptr)
 {
-  free (ptr);
+	free(ptr);
 }
 #else
 #include <mm_malloc.h>
@@ -74,25 +76,24 @@ static inline void alignedFree(void* ptr) noexcept
 	_mm_free(ptr);
 }
 
-template <typename T, std::size_t Alignment = sizeof(void*)>
+template<typename T, std::size_t Alignment = sizeof(void*)>
 class AlignmentAllocator
 {
 public:
-	using value_type = T;
-	using size_type = std::size_t;
+	using value_type      = T;
+	using size_type       = std::size_t;
 	using difference_type = std::ptrdiff_t;
 
-	using void_pointer = void*;
+	using void_pointer       = void*;
 	using const_void_pointer = const void*;
 
-	using pointer = T * ;
+	using pointer       = T*;
 	using const_pointer = const T*;
 
-	using reference = T & ;
+	using reference       = T&;
 	using const_reference = const T&;
 
-
-	template <typename U>
+	template<typename U>
 	struct rebind
 	{
 		using other = AlignmentAllocator<U, Alignment>;
@@ -100,8 +101,8 @@ public:
 
 	AlignmentAllocator() = default;
 
-	template <typename U>
-	explicit AlignmentAllocator(const AlignmentAllocator<U, Alignment> &) noexcept
+	template<typename U>
+	explicit AlignmentAllocator(const AlignmentAllocator<U, Alignment>&) noexcept
 	{
 	}
 
@@ -117,12 +118,12 @@ public:
 
 	pointer allocate(size_type size, const_void_pointer = 0)
 	{
-		if(size == 0)
+		if (size == 0)
 			return nullptr;
 
 		void* p = alignedMalloc(Alignment, size * sizeof(T));
 
-		if(!p)
+		if (!p)
 			throw std::bad_alloc();
 
 		return static_cast<T*>(p);
@@ -133,22 +134,21 @@ public:
 		alignedFree(ptr);
 	}
 
-	size_type  max_size() const noexcept
+	size_type max_size() const noexcept
 	{
 		return (~static_cast<std::size_t>(0) / sizeof(T));
 	}
 
-
-	template <class U, class ...Args>
+	template<class U, class... Args>
 	void construct(U* ptr, Args&&... args)
 	{
-		::new(static_cast<void*>(ptr)) U(std::forward<Args>(args)...);
+		::new (static_cast<void*>(ptr)) U(std::forward<Args>(args)...);
 	}
 
 	template<class U>
 	void construct(U* ptr)
 	{
-		::new(static_cast<void*>(ptr)) U();
+		::new (static_cast<void*>(ptr)) U();
 	}
 
 	template<class U>
@@ -158,15 +158,15 @@ public:
 	}
 };
 
-template <std::size_t Alignment>
+template<std::size_t Alignment>
 class AlignmentAllocator<void, Alignment>
 {
 public:
-	using pointer = void*;
+	using pointer       = void*;
 	using const_pointer = const void*;
-	using value_type = void;
+	using value_type    = void;
 
-	template <class U>
+	template<class U>
 	struct rebind
 	{
 		using other = AlignmentAllocator<U, Alignment>;
@@ -184,3 +184,5 @@ inline bool operator!=(const AlignmentAllocator<T, Alignment>&, const AlignmentA
 {
 	return false;
 }
+
+} // namespace xdma
