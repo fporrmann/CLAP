@@ -34,21 +34,7 @@
 
 #include "Utils.h"
 
-class MemoryException : public std::exception
-{
-	public:
-		explicit MemoryException(const std::string& what) : m_what(what) {}
-
-		virtual ~MemoryException() throw() {}
-
-		virtual const char* what() const throw()
-		{
-			return m_what.c_str();
-		}
-
-	private:
-		std::string m_what;
-};
+DEFINE_EXCEPTION(MemoryException)
 
 static const uint64_t USE_MEMORY_SIZE = 0;
 

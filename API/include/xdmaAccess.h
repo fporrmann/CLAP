@@ -268,7 +268,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
 			throw XDMAException(ss.str());
 		}
 
@@ -379,7 +379,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
 			throw XDMAException(ss.str());
 		}
 

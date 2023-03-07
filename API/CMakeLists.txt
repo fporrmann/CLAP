@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.10)
+
+find_package(Threads REQUIRED)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+
+set_target_properties(Threads::Threads PROPERTIES IMPORTED_GLOBAL TRUE)
+
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(XDMA_API_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
+set(XDMA_API_LIBS Threads::Threads PARENT_SCOPE)

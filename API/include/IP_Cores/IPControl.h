@@ -31,21 +31,7 @@
 #include "../xdmaAccess.h"
 #include "RegisterInterface.h"
 
-class IPCoreException : public std::exception
-{
-	public:
-		explicit IPCoreException(const std::string& what) : m_what(what) {}
-
-		virtual ~IPCoreException() throw() {}
-
-		virtual const char* what() const throw()
-		{
-			return m_what.c_str();
-		}
-
-	private:
-		std::string m_what;
-};
+DEFINE_EXCEPTION(IPCoreException)
 
 enum DMAChannel
 {

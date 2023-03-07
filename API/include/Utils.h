@@ -29,7 +29,9 @@
 #include <cmath>
 #include <sstream>
 
+#ifndef CLASS_TAG
 #define CLASS_TAG(_C_) "[" << _C_ << "::" << __func__ << "] "
+#endif
 
 #ifndef DISABLE_COPY_ASSIGN_MOVE
 #define DISABLE_COPY_ASSIGN_MOVE(_C_)                                          \
@@ -40,6 +42,25 @@
 
 #ifndef UNUSED
 #define UNUSED(x) (void)(x)
+#endif
+
+#ifndef DEFINE_EXCEPTION
+#define DEFINE_EXCEPTION(__NAME__)                                   \
+	class __NAME__ : public std::exception                           \
+	{                                                                \
+	public:                                                          \
+		explicit __NAME__(const std::string &what) : m_what(what) {} \
+                                                                     \
+		virtual ~__NAME__() throw() {}                               \
+                                                                     \
+		virtual const char *what() const throw()                     \
+		{                                                            \
+			return m_what.c_str();                                   \
+		}                                                            \
+                                                                     \
+	private:                                                         \
+		std::string m_what;                                          \
+	};
 #endif
 
 static const int32_t WAIT_INFINITE = -1;
@@ -78,12 +99,13 @@ static ReverseRange<T> ReverseIterate(T &x)
 /// -------------------------------------------------------------------- ///
 /// -------------------------------------------------------------------- ///
 
+
 template<typename T>
-static std::string to_string_with_precision(const T a_value, const uint32_t &n = 6)
+static inline std::string ToStringWithPrecision(const T val, const uint32_t &n = 6)
 {
 	std::ostringstream out;
 	out.precision(n);
-	out << std::fixed << a_value;
+	out << std::fixed << val;
 	return out.str();
 }
 
@@ -133,7 +155,7 @@ static std::string SpeedWidthSuffix(double val)
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
 
-	str = to_string_with_precision(val / (std::pow(1000.0, order)), 2);
+	str = ToStringWithPrecision(val / (std::pow(1000.0, order)), 2);
 
 	str.append(GetPrefix(order));
 	str.append("/s");
@@ -146,7 +168,7 @@ static std::string SizeWithSuffix(uint64_t val)
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
 
-	str = to_string_with_precision(val / (std::pow(1000.0, order)), 2);
+	str = ToStringWithPrecision(val / (std::pow(1000.0, order)), 2);
 
 	str.append(GetPrefix(order));
 

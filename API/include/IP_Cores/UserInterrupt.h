@@ -46,22 +46,7 @@
 #include "RegisterInterface.h"
 #include "../Utils.h"
 
-class UserIntrruptException : public std::exception
-{
-	public:
-		explicit UserIntrruptException(const std::string& what) : m_what(what) {}
-
-		virtual ~UserIntrruptException() throw() {}
-
-		virtual const char* what() const throw()
-		{
-			return m_what.c_str();
-		}
-
-	private:
-		std::string m_what;
-};
-
+DEFINE_EXCEPTION(UserIntrruptException)
 
 class UserInterrupt
 {

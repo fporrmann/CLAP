@@ -41,25 +41,10 @@
 
 static std::exception_ptr g_pExcept = nullptr;
 
-class WatchDogException : public std::exception
-{
-	public:
-		explicit WatchDogException(const std::string& what) : m_what(what) {}
-
-		virtual ~WatchDogException() throw() {}
-
-		virtual const char* what() const throw()
-		{
-			return m_what.c_str();
-		}
-
-	private:
-		std::string m_what;
-};
-
+DEFINE_EXCEPTION(WatchDogException)
 
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, const std::string& name, std::atomic<bool>* pThreadDone)
+static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xdma::Timer* pTimer, std::condition_variable* pCv, const std::string& name, std::atomic<bool>* pThreadDone)
 {
 	UNUSED(name);
 	pThreadDone->store(false, std::memory_order_release);
@@ -233,7 +218,7 @@ class WatchDog
 		std::condition_variable m_cv;
 		bool m_threadRunning;
 		std::atomic<bool> m_threadDone;
-		Timer m_timer;
+		xdma::Timer m_timer;
 #endif
 		HasStatus* m_pStatus;
 };

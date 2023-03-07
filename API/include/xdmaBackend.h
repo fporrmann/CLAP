@@ -37,26 +37,12 @@
  */
 static const uint32_t RW_MAX_SIZE = 0x7ffff000;
 
-class XDMAException : public std::exception
-{
-	public:
-		explicit XDMAException(const std::string& what) : m_what(what) {}
-
-		virtual ~XDMAException() throw() {}
-
-		virtual const char* what() const throw()
-		{
-			return m_what.c_str();
-		}
-
-	private:
-		std::string m_what;
-};
+DEFINE_EXCEPTION(XDMAException)
 
 class XDMABackend
 {
 	public:
-		enum TYPE
+		enum class TYPE
 		{
 			READ,
 			WRITE
@@ -80,7 +66,7 @@ class XDMABackend
 
 		const std::string& GetName(const TYPE& type) const
 		{
-			if(type == READ)
+			if(type == TYPE::READ)
 				return m_nameRead;
 			else
 				return m_nameWrite;
@@ -168,7 +154,7 @@ class PCIeBackend : virtual public XDMABackend
 			uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
 			ssize_t rc;
-			Timer timer;
+			xdma::Timer timer;
 
 			if(verbose) timer.Start();
 
@@ -237,7 +223,7 @@ class PCIeBackend : virtual public XDMABackend
 			off_t offset = addr;
 
 			ssize_t rc;
-			Timer timer;
+			xdma::Timer timer;
 
 			if(verbose) timer.Start();
 
@@ -338,7 +324,7 @@ class PetaLinuxBackend : virtual public XDMABackend
 			off_t offset = addr;
 			uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
-			Timer timer;
+			xdma::Timer timer;
 
 			if(verbose) timer.Start();
 
@@ -398,7 +384,7 @@ class PetaLinuxBackend : virtual public XDMABackend
 			const uint8_t *pByteData = reinterpret_cast<const uint8_t*>(pData);
 			off_t offset = addr;
 
-			Timer timer;
+			xdma::Timer timer;
 
 			if(verbose) timer.Start();
 
