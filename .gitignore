@@ -7,7 +7,6 @@ CMakeCache.txt
 CMakeFiles
 CMakeScripts
 Testing
-Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
@@ -33,5 +32,14 @@ _deps
 .ionide
 
 build/
+
+### XDMA Module ###
+*.o
+*.cmd
+Module.symvers
+modules.order
+xdma.ko
+xdma.mod
+xdma.mod.c
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake,visualstudiocode
