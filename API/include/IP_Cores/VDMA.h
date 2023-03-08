@@ -70,15 +70,6 @@ class VDMA : public IPControlBase
 public:
 	VDMA(class XDMA* pXdma, const uint64_t& ctrlOffset) :
 		IPControlBase(pXdma, ctrlOffset),
-		m_mm2sCtrlReg(),
-		m_mm2sStatReg(),
-		m_parkPntrReg(),
-		m_versionReg(),
-		m_s2mmCtrlReg(),
-		m_s2mmStatReg(),
-		m_s2mmIrqMask(),
-		m_mm2sFDelyStrideReg(),
-		m_s2mmFDelyStrideReg(),
 		m_watchDogMM2S("VDMA_MM2S"),
 		m_watchDogS2MM("VDMA_S2MM")
 	{
@@ -373,19 +364,7 @@ public:
 	struct ControlRegister : public Register<uint32_t>
 	{
 		ControlRegister(const std::string& name) :
-			Register(name),
-			RS(0),
-			CircularPark(0),
-			Reset(0),
-			GenlockEn(0),
-			FrameCntEn(0),
-			GenlockSrc(0),
-			FrmCntIrqEn(0),
-			DlyCntIrqEn(0),
-			ErrIrqEn(0),
-			RepeatEn(0),
-			IRQFrameCount(0),
-			IRQDelayCount(0)
+			Register(name)
 		{
 			RegisterElement<bool>(&RS, "RS", 0);
 			RegisterElement<bool>(&CircularPark, "CircularPark", 1);
@@ -456,34 +435,24 @@ public:
 		}
 
 	public:
-		bool RS;
-		bool CircularPark;
-		bool Reset;
-		bool GenlockEn;
-		bool FrameCntEn;
-		bool GenlockSrc;
-		bool FrmCntIrqEn;
-		bool DlyCntIrqEn;
-		bool ErrIrqEn;
-		bool RepeatEn;
-		uint8_t IRQFrameCount;
-		uint8_t IRQDelayCount;
+		bool RS               = false;
+		bool CircularPark     = false;
+		bool Reset            = false;
+		bool GenlockEn        = false;
+		bool FrameCntEn       = false;
+		bool GenlockSrc       = false;
+		bool FrmCntIrqEn      = false;
+		bool DlyCntIrqEn      = false;
+		bool ErrIrqEn         = false;
+		bool RepeatEn         = false;
+		uint8_t IRQFrameCount = 0;
+		uint8_t IRQDelayCount = 0;
 	};
 
 	struct StatusRegister : public Register<uint32_t>, public HasInterrupt
 	{
 		StatusRegister(const std::string& name) :
-			Register(name),
-			Halted(0),
-			VDMAIntErr(0),
-			VDMASlvErr(0),
-			VDMADecErr(0),
-			SOFEarlyErr(0),
-			FrmCntIrq(0),
-			DlyCntIrq(0),
-			ErrIrq(0),
-			IRQFrameCntSts(0),
-			IRQDelayCntSts(0)
+			Register(name)
 		{
 			RegisterElement<bool>(&Halted, "Halted", 0);
 			RegisterElement<bool>(&VDMAIntErr, "VDMAIntErr", 4);
@@ -526,76 +495,67 @@ public:
 			Update(Direction::WRITE);
 		}
 
-		bool Halted;
-		bool VDMAIntErr;
-		bool VDMASlvErr;
-		bool VDMADecErr;
-		bool SOFEarlyErr;
-		bool FrmCntIrq;
-		bool DlyCntIrq;
-		bool ErrIrq;
-		uint8_t IRQFrameCntSts;
-		uint8_t IRQDelayCntSts;
+		bool Halted            = false;
+		bool VDMAIntErr        = false;
+		bool VDMASlvErr        = false;
+		bool VDMADecErr        = false;
+		bool SOFEarlyErr       = false;
+		bool FrmCntIrq         = false;
+		bool DlyCntIrq         = false;
+		bool ErrIrq            = false;
+		uint8_t IRQFrameCntSts = 0;
+		uint8_t IRQDelayCntSts = 0;
 	};
 
 	struct MM2SControlRegister : public ControlRegister
 	{
 		MM2SControlRegister() :
-			ControlRegister("MM2S Control Register"),
-			RdPntrNum(0)
+			ControlRegister("MM2S Control Register")
 		{
 			// Reference to base class is require due to template inheritance
 			Register<uint32_t>::RegisterElement<uint8_t>(&RdPntrNum, "RdPntrNum", 8, 11);
 		}
 
-		uint8_t RdPntrNum;
+		uint8_t RdPntrNum = 0;
 	};
 
 	struct MM2SStatusRegister : public StatusRegister
 	{
 		MM2SStatusRegister() :
 			StatusRegister("MM2S Status Register")
-			{}
+		{}
 	};
 
 	struct S2MMControlRegister : public ControlRegister
 	{
 		S2MMControlRegister() :
-			ControlRegister("S2MM Control Register"),
-			WrPntrNum(0)
+			ControlRegister("S2MM Control Register")
 		{
 			Register<uint32_t>::RegisterElement<uint8_t>(&WrPntrNum, "WrPntrNum", 8, 11);
 		}
 
-		uint8_t WrPntrNum;
+		uint8_t WrPntrNum = 0;
 	};
 
 	struct S2MMStatusRegister : public StatusRegister
 	{
 		S2MMStatusRegister() :
-			StatusRegister("S2MM Status Register"),
-			EOLEarlyErr(0),
-			SOFLateErr(0),
-			EOLLateErr(0)
+			StatusRegister("S2MM Status Register")
 		{
 			Register<uint32_t>::RegisterElement<bool>(&EOLEarlyErr, "EOLEarlyErr", 8);
 			Register<uint32_t>::RegisterElement<bool>(&SOFLateErr, "SOFLateErr", 11);
 			Register<uint32_t>::RegisterElement<bool>(&EOLLateErr, "EOLLateErr", 15);
 		}
 
-		bool EOLEarlyErr;
-		bool SOFLateErr;
-		bool EOLLateErr;
+		bool EOLEarlyErr = false;
+		bool SOFLateErr  = false;
+		bool EOLLateErr  = false;
 	};
 
 	struct S2MMIrqMask : public Register<uint32_t>
 	{
 		S2MMIrqMask() :
-			Register("S2MM IRQ Mask"),
-			IRQMaskSOFEarlyErr(0),
-			IRQMaskEOLEarlyErr(0),
-			IRQMaskSOFLateErr(0),
-			IRQMaskEOLLateErr(0)
+			Register("S2MM IRQ Mask")
 		{
 			RegisterElement<bool>(&IRQMaskSOFEarlyErr, "IRQMaskSOFEarlyErr", 0);
 			RegisterElement<bool>(&IRQMaskEOLEarlyErr, "IRQMaskEOLEarlyErr", 1);
@@ -603,46 +563,42 @@ public:
 			RegisterElement<bool>(&IRQMaskEOLLateErr, "IRQMaskEOLLateErr", 3);
 		}
 
-		bool IRQMaskSOFEarlyErr;
-		bool IRQMaskEOLEarlyErr;
-		bool IRQMaskSOFLateErr;
-		bool IRQMaskEOLLateErr;
+		bool IRQMaskSOFEarlyErr = false;
+		bool IRQMaskEOLEarlyErr = false;
+		bool IRQMaskSOFLateErr  = false;
+		bool IRQMaskEOLLateErr  = false;
 	};
 
 	struct MM2SFrameDelayStrideRegister : public Register<uint32_t>
 	{
 		MM2SFrameDelayStrideRegister() :
-			Register("MM2S FrameDelay & Stride Register"),
-			Stride(0), FrameDelay(0)
+			Register("MM2S FrameDelay & Stride Register")
 		{
 			RegisterElement<uint16_t>(&Stride, "Stride", 0, 15);
 			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride;
-		uint8_t FrameDelay;
+		uint16_t Stride = 0;
+		uint8_t FrameDelay = 0;
 	};
 
 	struct SS2MFrameDelayStrideRegister : public Register<uint32_t>
 	{
 		SS2MFrameDelayStrideRegister() :
-			Register("SS2M FrameDelay & Stride Register"),
-			Stride(0), FrameDelay(0)
+			Register("SS2M FrameDelay & Stride Register")
 		{
 			RegisterElement<uint16_t>(&Stride, "Stride", 0, 15);
 			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride;
-		uint8_t FrameDelay;
+		uint16_t Stride = 0;
+		uint8_t FrameDelay = 0;
 	};
 
 	struct ParkPointerRegister : public Register<uint32_t>
 	{
 		ParkPointerRegister() :
-			Register("Park Pointer Register"),
-			RdFrmPtrRef(0), WrFrmPtrRef(0),
-			RdFramStore(0), WrFramStore(0)
+			Register("Park Pointer Register")
 		{
 			RegisterElement<uint8_t>(&RdFrmPtrRef, "RdFrmPtrRef", 0, 4);
 			RegisterElement<uint8_t>(&WrFrmPtrRef, "WrFrmPtrRef", 8, 12);
@@ -650,38 +606,37 @@ public:
 			RegisterElement<uint8_t>(&WrFramStore, "WrFramStore", 24, 28);
 		}
 
-		uint8_t RdFrmPtrRef;
-		uint8_t WrFrmPtrRef;
-		uint8_t RdFramStore;
-		uint8_t WrFramStore;
+		uint8_t RdFrmPtrRef = 0;
+		uint8_t WrFrmPtrRef = 0;
+		uint8_t RdFramStore = 0;
+		uint8_t WrFramStore = 0;
 	};
 
 	struct VDMAVersionRegister : public Register<uint32_t>
 	{
 		VDMAVersionRegister() :
-			Register("VDMA Version Register"),
-			XilinxInternal(0), MinorVersion(0), MajorVersion(0)
+			Register("VDMA Version Register")
 		{
 			RegisterElement<uint16_t>(&XilinxInternal, "XilinxInternal", 0, 15);
 			RegisterElement<uint8_t>(&MinorVersion, "MinorVersion", 20, 27);
 			RegisterElement<uint8_t>(&MajorVersion, "MajorVersion", 28, 31);
 		}
 
-		uint16_t XilinxInternal;
-		uint8_t MinorVersion;
-		uint8_t MajorVersion;
+		uint16_t XilinxInternal = 0;
+		uint8_t MinorVersion = 0;
+		uint8_t MajorVersion = 0;
 	};
 
 public:
-	MM2SControlRegister m_mm2sCtrlReg;
-	MM2SStatusRegister m_mm2sStatReg;
-	ParkPointerRegister m_parkPntrReg;
-	VDMAVersionRegister m_versionReg;
-	S2MMControlRegister m_s2mmCtrlReg;
-	S2MMStatusRegister m_s2mmStatReg;
-	S2MMIrqMask m_s2mmIrqMask;
-	MM2SFrameDelayStrideRegister m_mm2sFDelyStrideReg;
-	SS2MFrameDelayStrideRegister m_s2mmFDelyStrideReg;
+	MM2SControlRegister m_mm2sCtrlReg = MM2SControlRegister();
+	MM2SStatusRegister m_mm2sStatReg = MM2SStatusRegister();
+	ParkPointerRegister m_parkPntrReg = ParkPointerRegister();
+	VDMAVersionRegister m_versionReg = VDMAVersionRegister();
+	S2MMControlRegister m_s2mmCtrlReg = S2MMControlRegister();
+	S2MMStatusRegister m_s2mmStatReg = S2MMStatusRegister();
+	S2MMIrqMask m_s2mmIrqMask = S2MMIrqMask();
+	MM2SFrameDelayStrideRegister m_mm2sFDelyStrideReg = MM2SFrameDelayStrideRegister();
+	SS2MFrameDelayStrideRegister m_s2mmFDelyStrideReg = SS2MFrameDelayStrideRegister();
 
 private:
 	WatchDog m_watchDogMM2S;

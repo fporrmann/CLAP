@@ -26,7 +26,25 @@
 
 #pragma once
 
+#include <fcntl.h>
+#include <iostream>
+#include <mutex>
+#include <sstream>
+#include <string.h>
+#include <unistd.h>
+
+#ifndef EMBEDDED_XILINX
+/////////////////////////
+// Include for mmap(), munmap()
+#include <sys/mman.h>
+/////////////////////////
+#endif
+
 #include "Utils.h"
+
+#ifndef EMBEDDED_XILINX
+#include "Timer.h"
+#endif
 
 /*
  * man 2 write:
@@ -49,11 +67,7 @@ public:
 	};
 
 public:
-	XDMABackend() :
-		m_valid(false),
-		m_nameRead(""),
-		m_nameWrite("")
-	{}
+	XDMABackend() {}
 
 	virtual ~XDMABackend() {}
 
@@ -73,10 +87,10 @@ public:
 			return m_nameWrite;
 	}
 
-	int OpenDevice(const std::string& name, int flags = O_RDWR | O_NONBLOCK) const
+	int32_t OpenDevice(const std::string& name, int32_t flags = O_RDWR | O_NONBLOCK) const
 	{
-		int fd  = open(name.c_str(), flags);
-		int err = errno;
+		int32_t fd  = open(name.c_str(), flags);
+		int32_t err = errno;
 
 		if (fd < 0)
 		{
@@ -89,9 +103,9 @@ public:
 	}
 
 protected:
-	bool m_valid;
-	std::string m_nameRead;
-	std::string m_nameWrite;
+	bool m_valid            = false;
+	std::string m_nameRead  = "";
+	std::string m_nameWrite = "";
 };
 
 #ifndef EMBEDDED_XILINX
@@ -103,9 +117,6 @@ public:
 	PCIeBackend(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0) :
 		m_h2cDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_h2c_" + std::to_string(channelNum)),
 		m_c2hDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_c2h_" + std::to_string(channelNum)),
-		m_h2cFd(-1),
-		m_c2hFd(-1),
-		m_mapBase(nullptr),
 		m_devNum(deviceNum),
 		m_readMutex(),
 		m_writeMutex()
@@ -173,8 +184,9 @@ public:
 				throw XDMAException(ss.str());
 			}
 
-			rc        = ::read(m_c2hFd, pByteData + count, bytes);
-			int errsv = errno;
+			rc            = ::read(m_c2hFd, pByteData + count, bytes);
+			int32_t errsv = errno;
+
 			if (static_cast<uint64_t>(rc) != bytes)
 			{
 				std::stringstream ss;
@@ -242,8 +254,9 @@ public:
 				throw XDMAException(ss.str());
 			}
 
-			rc        = ::write(m_h2cFd, pByteData + count, bytes);
-			int errsv = errno;
+			rc            = ::write(m_h2cFd, pByteData + count, bytes);
+			int32_t errsv = errno;
+
 			if (static_cast<uint64_t>(rc) != bytes)
 			{
 				std::stringstream ss;
@@ -274,9 +287,8 @@ public:
 private:
 	std::string m_h2cDeviceName;
 	std::string m_c2hDeviceName;
-	int m_h2cFd;
-	int m_c2hFd;
-	void* m_mapBase;
+	int32_t m_h2cFd = -1;
+	int32_t m_c2hFd = -1;
 	uint32_t m_devNum;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
@@ -289,8 +301,6 @@ class PetaLinuxBackend : virtual public XDMABackend
 public:
 	PetaLinuxBackend() :
 		m_memDev("/dev/mem"),
-		m_fd(-1),
-		m_mapBase(nullptr),
 		m_readMutex(),
 		m_writeMutex()
 	{
@@ -423,8 +433,7 @@ public:
 
 private:
 	std::string m_memDev;
-	int m_fd;
-	void* m_mapBase;
+	int32_t m_fd = -1;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
 };

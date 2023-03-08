@@ -30,6 +30,7 @@
 // - Proper logging
 // - Function to create a new XDMA instance (so user does not have to create the shared pointer)
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
+// - Replace UNUSED with [[maybe_unused]] in C++17
 
 /////////////////////////
 // Includes for open()
@@ -52,7 +53,6 @@
 
 #include <algorithm>
 #include <cstring> // required for std::memcpy
-#include <exception>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -509,10 +509,7 @@ public:
 		XDMABase(deviceNum),
 		m_pioDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_user"),
 		m_pioSize(pioSize),
-		m_pioOffset(pioOffset),
-		m_fd(-1),
-		m_mapBase(nullptr),
-		m_valid(false)
+		m_pioOffset(pioOffset)
 #ifndef EMBEDDED_XILINX
 		,
 		m_mutex()
@@ -520,7 +517,7 @@ public:
 	{
 		// m_fd = OpenDevice(m_pioDeviceName);
 		m_fd    = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
-		int err = errno;
+		int32_t err = errno;
 
 		if (m_fd < 0)
 		{
@@ -530,10 +527,10 @@ public:
 		}
 
 #ifndef EMBEDDED_XILINX
-		m_mapBase = mmap(0, m_pioSize, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, m_pioOffset);
+		m_pMapBase = mmap(0, m_pioSize, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, m_pioOffset);
 		err       = errno;
 
-		if (m_mapBase == MAP_FAILED)
+		if (m_pMapBase == MAP_FAILED)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Failed to map memory into userspace, errno: " << err;
@@ -551,7 +548,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
 
-		munmap(m_mapBase, m_pioSize);
+		munmap(m_pMapBase, m_pioSize);
 #endif
 		close(m_fd);
 	}
@@ -626,7 +623,7 @@ private:
 			throw XDMAException(ss.str());
 		}
 
-		uint8_t* vAddr = reinterpret_cast<uint8_t*>(m_mapBase) + addr;
+		uint8_t* vAddr = reinterpret_cast<uint8_t*>(m_pMapBase) + addr;
 		T result       = *(reinterpret_cast<T*>(vAddr));
 		return result;
 	}
@@ -660,7 +657,7 @@ private:
 			throw XDMAException(ss.str());
 		}
 
-		uint8_t* vAddr                 = reinterpret_cast<uint8_t*>(m_mapBase) + addr;
+		uint8_t* vAddr                 = reinterpret_cast<uint8_t*>(m_pMapBase) + addr;
 		*(reinterpret_cast<T*>(vAddr)) = data;
 	}
 
@@ -668,9 +665,9 @@ private:
 	std::string m_pioDeviceName;
 	std::size_t m_pioSize;
 	std::size_t m_pioOffset;
-	int m_fd;
-	void* m_mapBase;
-	bool m_valid;
+	int32_t m_fd = -1;
+	void* m_pMapBase = nullptr;
+	bool m_valid = false;
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
 #endif

@@ -91,15 +91,14 @@ class WatchDog
 public:
 	WatchDog(const std::string& name) :
 		m_name(name),
-		m_interrupt(),
+		m_interrupt()
 #ifndef EMBEDDED_XILINX
+		,
 		m_waitThread(),
 		m_cv(),
-		m_threadRunning(false),
 		m_threadDone(false),
-		m_timer(),
+		m_timer()
 #endif
-		m_pStatus(nullptr)
 	{
 	}
 
@@ -212,9 +211,9 @@ private:
 #ifndef EMBEDDED_XILINX
 	std::thread m_waitThread;
 	std::condition_variable m_cv;
-	bool m_threadRunning;
+	bool m_threadRunning = false;
 	std::atomic<bool> m_threadDone;
 	xdma::Timer m_timer;
 #endif
-	HasStatus* m_pStatus;
+	HasStatus* m_pStatus = nullptr;
 };

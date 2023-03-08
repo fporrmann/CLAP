@@ -26,7 +26,6 @@
 
 #pragma once
 
-#include <exception>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -84,8 +83,7 @@ public:
 private:
 	Memory(const uint64_t& baseAddr, const uint64_t& size) :
 		m_baseAddr(baseAddr),
-		m_size(size),
-		m_valid(true)
+		m_size(size)
 	{}
 
 	void invalidate()
@@ -98,7 +96,7 @@ private:
 private:
 	uint64_t m_baseAddr;
 	uint64_t m_size;
-	bool m_valid;
+	bool m_valid = true;
 };
 
 class MemoryManager

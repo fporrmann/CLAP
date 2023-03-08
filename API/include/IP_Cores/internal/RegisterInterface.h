@@ -50,8 +50,7 @@ public:
 	RegIntf(const std::string& name, const uint8_t& startBit, const uint8_t& endBit = SAME_AS_START_BIT) :
 		m_name(name),
 		m_startBit(startBit),
-		m_endBit(endBit),
-		m_shiftVal(1)
+		m_endBit(endBit)
 	{
 		if (m_endBit == SAME_AS_START_BIT)
 			m_endBit = startBit;
@@ -114,7 +113,7 @@ protected:
 	std::string m_name;
 	uint8_t m_startBit;
 	uint8_t m_endBit;
-	uint32_t m_shiftVal;
+	uint32_t m_shiftVal = 1;
 };
 
 // Class holding information regarding one register element (n-Bit)
@@ -226,13 +225,8 @@ public:
 	Register(const std::string& name) :
 		m_regElems(),
 		m_registerBitSize(sizeof(T) * 8),
-		m_regUsage(0),
-		m_name(name),
-		m_pUpdateCB(nullptr),
-		m_offset(0),
-		m_pCallBackObject(nullptr)
-	{
-	}
+		m_name(name)
+	{}
 
 	// Register a new element, identified by name for the register,
 	// the element starts at bit position startBit and ends at endBit
@@ -386,13 +380,13 @@ public:
 private:
 	std::vector<RegIntfShr> m_regElems;
 	uint32_t m_registerBitSize;
-	T m_regUsage;
+	T m_regUsage = 0;
 	std::string m_name;
 
 	// Member used for callback based updating
-	UpdateCB* m_pUpdateCB;
-	uint64_t m_offset;
-	void* m_pCallBackObject;
+	UpdateCB* m_pUpdateCB   = nullptr;
+	uint64_t m_offset       = 0;
+	void* m_pCallBackObject = nullptr;
 };
 
 template<typename T>
@@ -414,8 +408,7 @@ public:
 class HasInterrupt
 {
 public:
-	HasInterrupt() :
-		m_lastInterrupt(0) {}
+	HasInterrupt() {}
 
 	virtual ~HasInterrupt() {}
 
@@ -431,5 +424,5 @@ public:
 	}
 
 protected:
-	uint32_t m_lastInterrupt;
+	uint32_t m_lastInterrupt = 0;
 };

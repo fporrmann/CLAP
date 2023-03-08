@@ -54,14 +54,10 @@ class UserInterrupt
 
 public:
 	UserInterrupt() :
-		m_devName(""),
-		m_pReg(nullptr),
-		m_fd(-1),
 #ifndef EMBEDDED_XILINX
-		m_pollFd(),
+		m_pollFd()
 #endif
-		m_interruptNum(0)
-		{}
+	{}
 
 	~UserInterrupt()
 	{
@@ -76,8 +72,8 @@ public:
 		m_devName = "/dev/xdma" + std::to_string(devNum) + "_events_" + std::to_string(interruptNum);
 		m_pReg    = pReg;
 
-		m_fd      = open(m_devName.c_str(), O_RDONLY);
-		int errsv = errno;
+		m_fd          = open(m_devName.c_str(), O_RDONLY);
+		int32_t errsv = errno;
 
 		if (m_fd < 0)
 		{
@@ -130,8 +126,9 @@ public:
 				m_pReg->ClearInterrupts();
 
 			// Check how many interrupts were generated, and clear the interrupt so we can detect future interrupts.
-			int rc    = pread(m_fd, &events, sizeof(events), 0);
-			int errsv = errno;
+			int32_t rc    = pread(m_fd, &events, sizeof(events), 0);
+			int32_t errsv = errno;
+
 			if (rc < 0)
 			{
 				std::stringstream ss;
@@ -153,11 +150,11 @@ public:
 	}
 
 private:
-	std::string m_devName;
-	HasInterrupt* m_pReg;
-	int m_fd;
+	std::string m_devName = "";
+	HasInterrupt* m_pReg  = nullptr;
+	int32_t m_fd          = -1;
 #ifndef EMBEDDED_XILINX
 	struct pollfd m_pollFd;
 #endif
-	uint32_t m_interruptNum;
+	uint32_t m_interruptNum = 0;
 };

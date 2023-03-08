@@ -68,10 +68,6 @@ class AxiDMA : public IPControlBase
 public:
 	AxiDMA(class XDMA* pXdma, const uint64_t& ctrlOffset) :
 		IPControlBase(pXdma, ctrlOffset),
-		m_mm2sCtrlReg(),
-		m_mm2sStatReg(),
-		m_s2mmCtrlReg(),
-		m_s2mmStatReg(),
 		m_watchDogMM2S("AxiDMA_MM2S"),
 		m_watchDogS2MM("AxiDMA_S2MM")
 	{
@@ -279,16 +275,7 @@ public:
 	struct ControlRegister : public Register<uint32_t>
 	{
 		ControlRegister(const std::string& name) :
-			Register(name),
-			RS(0),
-			Reset(0),
-			Keyhole(0),
-			CyclicBDEnable(0),
-			IOCIrqEn(0),
-			DlyIrqEn(0),
-			ErrIrqEn(0),
-			IRQThreshold(0),
-			IRQDelay(0)
+			Register(name)
 		{
 			RegisterElement<bool>(&RS, "RS", 0);
 			RegisterElement<bool>(&Reset, "Reset", 2);
@@ -356,35 +343,21 @@ public:
 		}
 
 	public:
-		bool RS;
-		bool Reset;
-		bool Keyhole;
-		bool CyclicBDEnable;
-		bool IOCIrqEn;
-		bool DlyIrqEn;
-		bool ErrIrqEn;
-		uint8_t IRQThreshold;
-		uint8_t IRQDelay;
+		bool RS              = false;
+		bool Reset           = false;
+		bool Keyhole         = false;
+		bool CyclicBDEnable  = false;
+		bool IOCIrqEn        = false;
+		bool DlyIrqEn        = false;
+		bool ErrIrqEn        = false;
+		uint8_t IRQThreshold = 0;
+		uint8_t IRQDelay     = 0;
 	};
 
 	struct StatusRegister : public Register<uint32_t>, public HasInterrupt
 	{
 		StatusRegister(const std::string& name) :
-			Register(name),
-			Halted(0),
-			Idle(0),
-			SGIncld(0),
-			DMAIntErr(0),
-			DMASlvErr(0),
-			DMADecErr(0),
-			SGIntErr(0),
-			SGSlvErr(0),
-			SGDecErr(0),
-			IOCIrq(0),
-			DlyIrq(0),
-			ErrIrq(0),
-			IRQThresholdSts(0),
-			IRQDelaySts(0)
+			Register(name)
 		{
 			RegisterElement<bool>(&Halted, "Halted", 0);
 			RegisterElement<bool>(&Idle, "Idle", 1);
@@ -431,20 +404,20 @@ public:
 			Update(Direction::WRITE);
 		}
 
-		bool Halted;
-		bool Idle;
-		bool SGIncld;
-		bool DMAIntErr;
-		bool DMASlvErr;
-		bool DMADecErr;
-		bool SGIntErr;
-		bool SGSlvErr;
-		bool SGDecErr;
-		bool IOCIrq;
-		bool DlyIrq;
-		bool ErrIrq;
-		uint8_t IRQThresholdSts;
-		uint8_t IRQDelaySts;
+		bool Halted             = false;
+		bool Idle               = false;
+		bool SGIncld            = false;
+		bool DMAIntErr          = false;
+		bool DMASlvErr          = false;
+		bool DMADecErr          = false;
+		bool SGIntErr           = false;
+		bool SGSlvErr           = false;
+		bool SGDecErr           = false;
+		bool IOCIrq             = false;
+		bool DlyIrq             = false;
+		bool ErrIrq             = false;
+		uint8_t IRQThresholdSts = 0;
+		uint8_t IRQDelaySts     = 0;
 	};
 
 	struct MM2SControlRegister : public ControlRegister
@@ -480,10 +453,10 @@ public:
 	};
 
 public:
-	MM2SControlRegister m_mm2sCtrlReg;
-	MM2SStatusRegister m_mm2sStatReg;
-	S2MMControlRegister m_s2mmCtrlReg;
-	S2MMStatusRegister m_s2mmStatReg;
+	MM2SControlRegister m_mm2sCtrlReg = MM2SControlRegister();
+	MM2SStatusRegister m_mm2sStatReg = MM2SStatusRegister();
+	S2MMControlRegister m_s2mmCtrlReg = S2MMControlRegister();
+	S2MMStatusRegister m_s2mmStatReg = S2MMStatusRegister();
 
 private:
 	WatchDog m_watchDogMM2S;

@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cmath>
+#include <exception>
 #include <sstream>
 
 #ifndef CLASS_TAG

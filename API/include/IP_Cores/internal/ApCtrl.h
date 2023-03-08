@@ -34,13 +34,7 @@ class ApCtrl : public Register<uint8_t>, public HasStatus
 
 public:
 	ApCtrl() :
-		Register("ap_ctrl"),
-		m_done(false),
-		ap_start(false),
-		ap_done(false),
-		ap_idle(false),
-		ap_ready(false),
-		auto_restart(false)
+		Register("ap_ctrl")
 	{
 		RegisterElement<bool>(&ap_start, "ap_start", 0);
 		RegisterElement<bool>(&ap_done, "ap_done", 1);
@@ -113,11 +107,11 @@ private:
 	}
 
 private:
-	bool m_done;
+	bool m_done = false;
 
-	bool ap_start;
-	bool ap_done;
-	bool ap_idle;
-	bool ap_ready;
-	bool auto_restart;
+	bool ap_start     = false;
+	bool ap_done      = false;
+	bool ap_idle      = false;
+	bool ap_ready     = false;
+	bool auto_restart = false;
 };
