@@ -318,9 +318,7 @@ public:
 
 		// Search for the max name length
 		uint32_t maxLength = (*std::max_element(m_regElems.begin(), m_regElems.end(), [](const RegIntfShr lhs, const RegIntfShr rhs)
-												{ return lhs->GetName().length() < rhs->GetName().length(); }))
-								 ->GetName()
-								 .length();
+												{ return lhs->GetName().length() < rhs->GetName().length(); }))->GetName().length();
 
 		if (maxLength < RESERVED_STRING_LENGTH)
 			maxLength = RESERVED_STRING_LENGTH;

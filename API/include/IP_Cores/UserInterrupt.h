@@ -140,13 +140,13 @@ class UserInterrupt
 				}
 
 #ifdef XDMA_VERBOSE
-				std::cout << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+				std::cout << CLASS_TAG("UserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 #endif
 				return true;
 			}
 #ifdef XDMA_VERBOSE
 			else
-				std::cout << "No Interrupt present on " << m_devName << std::endl;
+				std::cout << CLASS_TAG("UserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 #endif
 #endif
 			return false;

@@ -154,7 +154,7 @@ class WatchDog
 			using namespace std::chrono_literals;
 
 #ifdef XDMA_VERBOSE
-			std::cout << "WaitForFinish " << m_name << " timeoutMS=" << timeoutMS << " Inf: " << (timeoutMS == WAIT_INFINITE) << std::endl;
+			std::cout << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
 #endif
 
 			if(!m_threadRunning) return false;
