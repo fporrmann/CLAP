@@ -14,7 +14,7 @@ int main()
 	// Create an XDMA object
 	XDMA xdma(std::make_shared<PCIeBackend>());
 	// Add a DDR memory region to the XDMA
-	xdma.AddMemoryRegion(XDMA::DDR, DDR_BASE_ADDR, DDR_SIZE);
+	xdma.AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 	// Create host side buffer for the test data to be written to the input memory
 	std::vector<uint8_t> testData(TEST_DATA_SIZE, 0);

@@ -171,7 +171,7 @@ class HLSCore : public IPControlBase
 
 		uint64_t GetDataAddr(const uint64_t& offset)
 		{
-			if(m_addrType == BIT_32)
+			if (m_addrType == BIT_32)
 				return getDataAddr<uint32_t>(offset);
 			else
 				return getDataAddr<uint64_t>(offset);
@@ -208,7 +208,7 @@ class HLSCore : public IPControlBase
 		template<typename T>
 		void setDataAddr(const uint64_t& offset, const T& addr)
 		{
-			if(m_addrType == BIT_32 && sizeof(T) > BIT_32)
+			if (m_addrType == BIT_32 && sizeof(T) > BIT_32)
 			{
 				uint32_t cutAddr = static_cast<uint32_t>(addr);
 
@@ -232,7 +232,7 @@ class HLSCore : public IPControlBase
 		template<typename T>
 		T getDataAddr(const uint64_t& offset)
 		{
-			if(m_addrType == BIT_32 && sizeof(T) > BIT_32)
+			if (m_addrType == BIT_32 && sizeof(T) > BIT_32)
 			{
 				std::cerr << CLASS_TAG("HLSCore") << "Warning: The size of the address to read (" << sizeof(T)
 				          << " Byte) exceeds the 32-Bit address range of the HLS-Core, size will be cut to: "
@@ -276,12 +276,12 @@ class HLSCore : public IPControlBase
 		private:
 			void setInterrupts(bool enable, const APInterrupts& intr)
 			{
-				if(intr & AP_INTR_DONE)
+				if (intr & AP_INTR_DONE)
 					ap_done = enable;
-				if(intr & AP_INTR_READY)
+				if (intr & AP_INTR_READY)
 					ap_ready = enable;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 		public:
@@ -310,7 +310,7 @@ class HLSCore : public IPControlBase
 			{
 				Update();
 				uint32_t intr = 0;
-				intr |= ap_done  << (AP_INTR_DONE  >> 1);
+				intr |= ap_done << (AP_INTR_DONE >> 1);
 				intr |= ap_ready << (AP_INTR_READY >> 1);
 
 				return intr;
@@ -318,12 +318,12 @@ class HLSCore : public IPControlBase
 
 			void ResetInterrupts(const APInterrupts& intr)
 			{
-				if(intr & AP_INTR_DONE)
+				if (intr & AP_INTR_DONE)
 					ap_done = 1;
-				if(intr & AP_INTR_READY)
+				if (intr & AP_INTR_READY)
 					ap_ready = 1;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 			bool ap_done;

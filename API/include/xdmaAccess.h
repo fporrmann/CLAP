@@ -171,7 +171,7 @@ protected:
 class XDMA : virtual public XDMABase
 {
 public:
-	enum MemoryType
+	enum class MemoryType
 	{
 		DDR,
 		BRAM
@@ -190,8 +190,8 @@ public:
 		m_mutex()
 #endif
 	{
-		m_memories.insert(MemoryPair(DDR, MemoryManagerVec()));
-		m_memories.insert(MemoryPair(BRAM, MemoryManagerVec()));
+		m_memories.insert(MemoryPair(MemoryType::DDR, MemoryManagerVec()));
+		m_memories.insert(MemoryPair(MemoryType::BRAM, MemoryManagerVec()));
 	}
 
 	~XDMA()
@@ -241,22 +241,22 @@ public:
 
 	Memory AllocMemoryDDR(const uint64_t& elements, const uint64_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
-		return AllocMemory(DDR, elements, sizeOfElement, memIdx);
+		return AllocMemory(MemoryType::DDR, elements, sizeOfElement, memIdx);
 	}
 
 	Memory AllocMemoryBRAM(const uint64_t& elements, const uint64_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
-		return AllocMemory(BRAM, elements, sizeOfElement, memIdx);
+		return AllocMemory(MemoryType::BRAM, elements, sizeOfElement, memIdx);
 	}
 
 	Memory AllocMemoryDDR(const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-		return AllocMemory(DDR, byteSize, memIdx);
+		return AllocMemory(MemoryType::DDR, byteSize, memIdx);
 	}
 
 	Memory AllocMemoryBRAM(const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-		return AllocMemory(BRAM, byteSize, memIdx);
+		return AllocMemory(MemoryType::BRAM, byteSize, memIdx);
 	}
 
 	////////////////////////////////////////////////////////////////////////////

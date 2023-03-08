@@ -188,7 +188,7 @@ private:
 	using RegIntf<BT>::m_shiftVal;
 };
 
-enum Direction
+enum class Direction
 {
 	READ,
 	WRITE
@@ -206,7 +206,7 @@ public:
 
 	virtual ~RegisterIntf() {}
 
-	virtual void Update(const Direction& dir = READ) = 0;
+	virtual void Update(const Direction& dir = Direction::READ) = 0;
 };
 
 template<typename T>
@@ -286,7 +286,7 @@ public:
 	}
 
 	// Triggers the callback based update process for the given direction
-	void Update(const Direction& dir = READ)
+	void Update(const Direction& dir = Direction::READ)
 	{
 		if (m_pCallBackObject == nullptr) return;
 		m_pUpdateCB(this, m_offset, dir, m_pCallBackObject);

@@ -1,7 +1,5 @@
 #include <iostream>
 
-#define XDMA_VERBOSE
-
 #include <IP_Cores/HLSCore.h>
 #include <xdmaAccess.h>
 
@@ -34,7 +32,7 @@ int main()
 		// Create an XDMA object
 		XDMA xdma(std::make_shared<PCIeBackend>());
 		// Add a DDR memory region to the XDMA
-		xdma.AddMemoryRegion(XDMA::DDR, DDR_BASE_ADDR, DDR_SIZE);
+		xdma.AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		HLSCore hlsTest(&xdma, HLS_TEST_CORE_BASE_ADDR, "HLS_Test");
 

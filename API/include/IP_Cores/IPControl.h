@@ -33,7 +33,7 @@
 
 DEFINE_EXCEPTION(IPCoreException)
 
-enum DMAChannel
+enum class DMAChannel
 {
 	MM2S,
 	S2MM
@@ -56,7 +56,7 @@ class IPControlBase : public XDMAManaged
 		template<typename T>
 		void UpdateRegister(Register<T>* pReg, const uint64_t& offset, const Direction& dir)
 		{
-			if(dir == READ)
+			if (dir == Direction::READ)
 				pReg->Update(readRegister<T>(offset));
 			else
 				writeRegister<T>(offset, pReg->GetValue());
@@ -66,7 +66,7 @@ class IPControlBase : public XDMAManaged
 		void UpdateAllRegisters()
 		{
 			for(RegisterIntf* pReg : m_registers)
-				pReg->Update(READ);
+				pReg->Update(Direction::READ);
 		}
 
 		// Callback function, called by the register when the Update() method is called

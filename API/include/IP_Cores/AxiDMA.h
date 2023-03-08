@@ -89,8 +89,8 @@ class AxiDMA : public IPControlBase
 		// Starts both channels
 		void Start(const T& srcAddr, const uint32_t& srcLength, const T& dstAddr, const uint32_t& dstLength)
 		{
-			Start(MM2S, srcAddr, srcLength);
-			Start(S2MM, dstAddr, dstLength);
+			Start(DMAChannel::MM2S, srcAddr, srcLength);
+			Start(DMAChannel::S2MM, dstAddr, dstLength);
 		}
 
 		void Start(const Memory& srcMem, const Memory& dstMem)
@@ -108,7 +108,7 @@ class AxiDMA : public IPControlBase
 		// Starts the specified channel
 		void Start(const DMAChannel& channel, const T& addr, const uint32_t& length)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				// Set the RunStop bit
 				m_mm2sCtrlReg.Start();
@@ -118,7 +118,7 @@ class AxiDMA : public IPControlBase
 				setMM2SByteLength(length);
 			}
 
-			if(channel == S2MM)
+			if (channel == DMAChannel::S2MM)
 			{
 				// Set the RunStop bit
 				m_s2mmCtrlReg.Start();
@@ -132,15 +132,15 @@ class AxiDMA : public IPControlBase
 		// Stops both channel
 		void Stop()
 		{
-			Stop(MM2S);
-			Stop(S2MM);
+			Stop(DMAChannel::MM2S);
+			Stop(DMAChannel::S2MM);
 		}
 
 		// Stops the specified channel
 		void Stop(const DMAChannel& channel)
 		{
 			// Unset the RunStop bit
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 				m_mm2sCtrlReg.Stop();
 			else
 				m_s2mmCtrlReg.Stop();
@@ -148,7 +148,7 @@ class AxiDMA : public IPControlBase
 
 		bool WaitForFinish(const DMAChannel& channel, const int32_t& timeoutMS = WAIT_INFINITE)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 				return m_watchDogMM2S.WaitForFinish(timeoutMS);
 			else
 				return m_watchDogS2MM.WaitForFinish(timeoutMS);
@@ -160,13 +160,13 @@ class AxiDMA : public IPControlBase
 
 		void Reset()
 		{
-			Reset(MM2S);
-			Reset(S2MM);
+			Reset(DMAChannel::MM2S);
+			Reset(DMAChannel::S2MM);
 		}
 
 		void Reset(const DMAChannel& channel)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 				m_mm2sCtrlReg.DoReset();
 			else
 				m_s2mmCtrlReg.DoReset();
@@ -178,13 +178,13 @@ class AxiDMA : public IPControlBase
 
 		void EnableInterrupts(const uint32_t& eventNoMM2S, const uint32_t& eventNoS2MM, const DMAInterrupts& intr = INTR_ALL)
 		{
-			EnableInterrupts(MM2S, eventNoMM2S, intr);
-			EnableInterrupts(S2MM, eventNoS2MM, intr);
+			EnableInterrupts(DMAChannel::MM2S, eventNoMM2S, intr);
+			EnableInterrupts(DMAChannel::S2MM, eventNoS2MM, intr);
 		}
 
 		void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo, const DMAInterrupts& intr = INTR_ALL)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				m_mm2sCtrlReg.Update();
 				m_watchDogMM2S.InitInterrupt(getDevNum(), eventNo, &m_mm2sStatReg);
@@ -200,13 +200,13 @@ class AxiDMA : public IPControlBase
 
 		void DisableInterrupts(const DMAInterrupts& intr = INTR_ALL)
 		{
-			DisableInterrupts(MM2S, intr);
-			DisableInterrupts(S2MM, intr);
+			DisableInterrupts(DMAChannel::MM2S, intr);
+			DisableInterrupts(DMAChannel::S2MM, intr);
 		}
 
 		void DisableInterrupts(const DMAChannel& channel, const DMAInterrupts& intr = INTR_ALL)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				m_watchDogMM2S.UnsetInterrupt();
 				m_mm2sCtrlReg.DisableInterrupts(intr);
@@ -328,7 +328,7 @@ class AxiDMA : public IPControlBase
 			{
 				Update();
 				Reset = 1;
-				Update(WRITE);
+				Update(Direction::WRITE);
 
 				// The Reset bit will be set to 0 once the reset has been completed
 				while(Reset)
@@ -343,7 +343,7 @@ class AxiDMA : public IPControlBase
 				// Set/Unset the Run-Stop bit
 				RS = run;
 				// Write changes to the register
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 			void setInterrupts(bool enable, const DMAInterrupts& intr)
@@ -355,7 +355,7 @@ class AxiDMA : public IPControlBase
 				if(intr & INTR_ON_ERROR)
 					ErrIrqEn = enable;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 		public:
@@ -431,7 +431,7 @@ class AxiDMA : public IPControlBase
 				if(intr & INTR_ON_ERROR)
 					ErrIrq = 1;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 			bool    Halted;

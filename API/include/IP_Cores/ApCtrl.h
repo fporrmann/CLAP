@@ -75,7 +75,7 @@ class ApCtrl : public Register<uint8_t>, public HasStatus
 
 			m_done = false;
 			ap_start = true;
-			Update(WRITE);
+			Update(Direction::WRITE);
 			return true;
 
 		}
@@ -83,7 +83,7 @@ class ApCtrl : public Register<uint8_t>, public HasStatus
 		void SetAutoRestart(const bool& enable = true)
 		{
 			auto_restart = enable;
-			Update(WRITE);
+			Update(Direction::WRITE);
 		}
 
 		bool IsDone()

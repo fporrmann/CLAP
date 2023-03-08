@@ -30,7 +30,6 @@
 #include "RegisterInterface.h"
 #include "WatchDog.h"
 
-
 enum VDMAInterrupts
 {
 	VDMA_INTR_ON_FRAME_COUNT = 1 << 0,
@@ -103,8 +102,8 @@ class VDMA : public IPControlBase
 		void Start(const T& srcAddr, const uint32_t& srcHSize, const uint32_t& srcVSize,
 		           const T& dstAddr, const uint32_t& dstHSize = 0, const uint32_t& dstVSize = 0)
 		{
-			Start(MM2S, srcAddr, srcHSize, srcVSize);
-			Start(S2MM, dstAddr, (dstHSize == 0 ? srcHSize : dstHSize), (dstVSize == 0 ? srcVSize : dstVSize));
+			Start(DMAChannel::MM2S, srcAddr, srcHSize, srcVSize);
+			Start(DMAChannel::S2MM, dstAddr, (dstHSize == 0 ? srcHSize : dstHSize), (dstVSize == 0 ? srcVSize : dstVSize));
 		}
 
 		void Start(const Memory& srcMem, const uint32_t& srcHSize, const uint32_t& srcVSize,
@@ -122,7 +121,7 @@ class VDMA : public IPControlBase
 		// Starts the specified channel
 		void Start(const DMAChannel& channel, const T& addr, const uint32_t& hSize, const uint32_t& vSize)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				// Start the watchdog
 				if(!m_watchDogMM2S.Start())
@@ -138,7 +137,7 @@ class VDMA : public IPControlBase
 
 				// Set the Stride to hSize
 				m_mm2sFDelyStrideReg.Stride = hSize;
-				m_mm2sFDelyStrideReg.Update(WRITE);
+				m_mm2sFDelyStrideReg.Update(Direction::WRITE);
 
 				// Set the amount of bytes in horizontal direction
 				setMM2SHSize(hSize);
@@ -146,7 +145,7 @@ class VDMA : public IPControlBase
 				setMM2SVSize(vSize);
 			}
 
-			if(channel == S2MM)
+			if (channel == DMAChannel::S2MM)
 			{
 				// Start the watchdog
 				if(!m_watchDogS2MM.Start())
@@ -162,7 +161,7 @@ class VDMA : public IPControlBase
 
 				// Set the Stride to hSize
 				m_s2mmFDelyStrideReg.Stride = hSize;
-				m_s2mmFDelyStrideReg.Update(WRITE);
+				m_s2mmFDelyStrideReg.Update(Direction::WRITE);
 
 				// Set the amount of bytes in horizontal direction
 				setS2MMHSize(hSize);
@@ -174,15 +173,15 @@ class VDMA : public IPControlBase
 		// Stops both channel
 		void Stop()
 		{
-			Stop(MM2S);
-			Stop(S2MM);
+			Stop(DMAChannel::MM2S);
+			Stop(DMAChannel::S2MM);
 		}
 
 		// Stops the specified channel
 		void Stop(const DMAChannel& channel)
 		{
 			// Unset the RunStop bit
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 				m_mm2sCtrlReg.Stop();
 			else
 				m_s2mmCtrlReg.Stop();
@@ -190,7 +189,7 @@ class VDMA : public IPControlBase
 
 		bool WaitForFinish(const DMAChannel& channel, const int32_t& timeoutMS = WAIT_INFINITE)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				bool state = m_watchDogMM2S.WaitForFinish(timeoutMS);
 				// The VDMA automatically restarts as long as it's not stopped so also restart the watchdog
@@ -214,13 +213,13 @@ class VDMA : public IPControlBase
 
 		void Reset()
 		{
-			Reset(MM2S);
-			Reset(S2MM);
+			Reset(DMAChannel::MM2S);
+			Reset(DMAChannel::S2MM);
 		}
 
 		void Reset(const DMAChannel& channel)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 				m_mm2sCtrlReg.DoReset();
 			else
 				m_s2mmCtrlReg.DoReset();
@@ -232,13 +231,13 @@ class VDMA : public IPControlBase
 
 		void EnableInterrupts(const uint32_t& eventNoMM2S, const uint32_t& eventNoS2MM, const VDMAInterrupts& intr = VDMA_INTR_ALL)
 		{
-			EnableInterrupts(MM2S, eventNoMM2S, intr);
-			EnableInterrupts(S2MM, eventNoS2MM, intr);
+			EnableInterrupts(DMAChannel::MM2S, eventNoMM2S, intr);
+			EnableInterrupts(DMAChannel::S2MM, eventNoS2MM, intr);
 		}
 
 		void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo, const VDMAInterrupts& intr = VDMA_INTR_ALL)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				m_mm2sCtrlReg.Update();
 				m_watchDogMM2S.InitInterrupt(getDevNum(), eventNo, &m_mm2sStatReg);
@@ -254,13 +253,13 @@ class VDMA : public IPControlBase
 
 		void DisableInterrupts(const VDMAInterrupts& intr = VDMA_INTR_ALL)
 		{
-			DisableInterrupts(MM2S, intr);
-			DisableInterrupts(S2MM, intr);
+			DisableInterrupts(DMAChannel::MM2S, intr);
+			DisableInterrupts(DMAChannel::S2MM, intr);
 		}
 
 		void DisableInterrupts(const DMAChannel& channel, const VDMAInterrupts& intr = VDMA_INTR_ALL)
 		{
-			if(channel == MM2S)
+			if (channel == DMAChannel::MM2S)
 			{
 				m_watchDogMM2S.UnsetInterrupt();
 				m_mm2sCtrlReg.DisableInterrupts(intr);
@@ -428,7 +427,7 @@ class VDMA : public IPControlBase
 			{
 				Update();
 				Reset = 1;
-				Update(WRITE);
+				Update(Direction::WRITE);
 
 				// The Reset bit will be set to 0 once the reset has been completed
 				while(Reset)
@@ -443,7 +442,7 @@ class VDMA : public IPControlBase
 				// Set/Unset the Run-Stop bit
 				RS = run;
 				// Write changes to the register
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 			void setInterrupts(bool enable, const VDMAInterrupts& intr)
@@ -455,7 +454,7 @@ class VDMA : public IPControlBase
 				if(intr & VDMA_INTR_ON_ERROR)
 					ErrIrqEn = enable;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 		public:
@@ -526,7 +525,7 @@ class VDMA : public IPControlBase
 				if(intr & VDMA_INTR_ON_ERROR)
 					ErrIrq = 1;
 
-				Update(WRITE);
+				Update(Direction::WRITE);
 			}
 
 			bool    Halted;
