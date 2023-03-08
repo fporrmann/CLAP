@@ -28,7 +28,6 @@
 
 ////// TODO:
 // - Proper logging
-// - Function to create a new XDMA instance (so user does not have to create the shared pointer)
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
 
 /////////////////////////
@@ -78,6 +77,7 @@ using DMABuffer = std::vector<uint8_t, xdma::AlignmentAllocator<uint8_t, XDMA_AL
 #endif
 using XDMAManagedShr   = std::shared_ptr<class XDMAManaged>;
 using XDMABackendShr   = std::shared_ptr<class XDMABackend>;
+using XDMAShr          = std::shared_ptr<class XDMA>;
 using MemoryManagerShr = std::shared_ptr<MemoryManager>;
 using MemoryManagerVec = std::vector<MemoryManagerShr>;
 
@@ -87,11 +87,11 @@ class XDMAManaged
 	DISABLE_COPY_ASSIGN_MOVE(XDMAManaged)
 
 protected:
-	XDMAManaged(class XDMABase* pXdma);
+	XDMAManaged(std::shared_ptr<class XDMABase> pXdma);
 
 	~XDMAManaged();
 
-	class XDMABase* XDMA()
+	std::shared_ptr<class XDMABase> XDMA()
 	{
 		checkXDMAValid();
 		return m_pXdma;
@@ -108,13 +108,13 @@ private:
 		if (m_pXdma == nullptr)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("ApCtrl") << "XDMA/XDMAPio instance is not valid or has been destroyed";
+			ss << CLASS_TAG("XDMAManaged") << "XDMA/XDMAPio instance is not valid or has been destroyed";
 			throw XDMAException(ss.str());
 		}
 	}
 
 private:
-	class XDMABase* m_pXdma;
+	std::shared_ptr<class XDMABase> m_pXdma;
 };
 
 class XDMABase
@@ -178,7 +178,6 @@ public:
 private:
 	using MemoryPair = std::pair<MemoryType, MemoryManagerVec>;
 
-public:
 	XDMA(XDMABackendShr pBackend) :
 		XDMABase(pBackend->GetDevNum()),
 		m_pBackend(pBackend),
@@ -190,6 +189,15 @@ public:
 	{
 		m_memories.insert(MemoryPair(MemoryType::DDR, MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, MemoryManagerVec()));
+	}
+
+public:
+	template<typename T>
+	static XDMAShr Create()
+	{
+		// We have to use the result of new here, because the constructor is private
+		// and can therefore, not be called from make_shared
+		return XDMAShr(new XDMA(std::make_shared<T>()));
 	}
 
 	~XDMA()
@@ -515,7 +523,7 @@ public:
 #endif
 	{
 		// m_fd = OpenDevice(m_pioDeviceName);
-		m_fd    = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
+		m_fd        = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
 		int32_t err = errno;
 
 		if (m_fd < 0)
@@ -527,7 +535,7 @@ public:
 
 #ifndef EMBEDDED_XILINX
 		m_pMapBase = mmap(0, m_pioSize, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, m_pioOffset);
-		err       = errno;
+		err        = errno;
 
 		if (m_pMapBase == MAP_FAILED)
 		{
@@ -664,9 +672,9 @@ private:
 	std::string m_pioDeviceName;
 	std::size_t m_pioSize;
 	std::size_t m_pioOffset;
-	int32_t m_fd = -1;
+	int32_t m_fd     = -1;
 	void* m_pMapBase = nullptr;
-	bool m_valid = false;
+	bool m_valid     = false;
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
 #endif
@@ -674,7 +682,7 @@ private:
 	static const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
 };
 
-inline XDMAManaged::XDMAManaged(XDMABase* pXdma) :
+inline XDMAManaged::XDMAManaged(std::shared_ptr<XDMABase> pXdma) :
 	m_pXdma(pXdma)
 {
 	if (m_pXdma)

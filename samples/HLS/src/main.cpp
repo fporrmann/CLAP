@@ -1,5 +1,6 @@
 #include <iostream>
 
+
 #include <IP_Cores/HLSCore.h>
 #include <xdmaAccess.h>
 
@@ -30,11 +31,11 @@ int main()
 	try
 	{
 		// Create an XDMA object
-		XDMA xdma(std::make_shared<PCIeBackend>());
+		XDMAShr pXdma = XDMA::Create<PCIeBackend>();
 		// Add a DDR memory region to the XDMA
-		xdma.AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
+		pXdma->AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
-		HLSCore hlsTest(&xdma, HLS_TEST_CORE_BASE_ADDR, "HLS_Test");
+		HLSCore hlsTest(pXdma, HLS_TEST_CORE_BASE_ADDR, "HLS_Test");
 
 		testData[0] = 0xDEAD;
 		testData[1] = 0xBEEF;
@@ -46,18 +47,18 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		Memory inBuf  = xdma.AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint16_t));
-		Memory outBuf = xdma.AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
+		Memory inBuf  = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint16_t));
+		Memory outBuf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
 
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDRIN_DATA, inBuf);
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDROUT_DATA, outBuf);
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_ELEMENTS_DATA, TEST_DATA_SIZE);
 
 		// Write 0xFFFFFFFF to the memory
-		xdma.Write(outBuf, ff.data());
+		pXdma->Write(outBuf, ff.data());
 
 		// Readback the output data buffer and print it to show that it is indeed all 0xFFFFFFFF
-		xdma.Read(outBuf, testDataRB.data());
+		pXdma->Read(outBuf, testDataRB.data());
 
 		std::cout << "Printing Output Memory Before HLS Execution:" << std::endl;
 		for (const uint32_t& d : testDataRB)
@@ -67,7 +68,7 @@ int main()
 				  << std::endl;
 
 		// Write the input data to the device
-		xdma.Write(inBuf, testData.data());
+		pXdma->Write(inBuf, testData.data());
 
 		// hlsTest.EnableInterrupts(0);
 
@@ -78,7 +79,7 @@ int main()
 		hlsTest.WaitForFinish();
 
 		// Readback the result data and print it, this time it should not be all 0xFF
-		xdma.Read(outBuf, testDataRB.data());
+		pXdma->Read(outBuf, testDataRB.data());
 	}
 	catch (std::exception& e)
 	{

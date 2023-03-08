@@ -78,7 +78,7 @@ class HLSCore : public IPControlBase
 	};
 
 public:
-	HLSCore(class XDMA* pXdma, const uint64_t& ctrlOffset, const std::string& name, const AddressType& addrType = BIT_64) :
+	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name, const AddressType& addrType = BIT_64) :
 		IPControlBase(pXdma, ctrlOffset),
 		m_apCtrl(),
 		m_addrType(addrType),

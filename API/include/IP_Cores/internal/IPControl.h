@@ -44,7 +44,7 @@ class IPControlBase : public XDMAManaged
 	DISABLE_COPY_ASSIGN_MOVE(IPControlBase)
 
 public:
-	IPControlBase(class XDMABase* pXdma, const uint64_t& ctrlOffset) :
+	IPControlBase(std::shared_ptr<class XDMABase> pXdma, const uint64_t& ctrlOffset) :
 		XDMAManaged(pXdma),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()

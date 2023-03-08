@@ -12,9 +12,9 @@ const uint64_t TEST_DATA_SIZE = 8;
 int main()
 {
 	// Create an XDMA object
-	XDMA xdma(std::make_shared<PCIeBackend>());
+	XDMAShr pXdma = XDMA::Create<PCIeBackend>();
 	// Add a DDR memory region to the XDMA
-	xdma.AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
+	pXdma->AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 	// Create host side buffer for the test data to be written to the input memory
 	std::vector<uint8_t> testData(TEST_DATA_SIZE, 0);
@@ -34,30 +34,30 @@ int main()
 	testData[7] = 0x37;
 
 	// Allocate memory for the data on the devices DDR
-	Memory buf = xdma.AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint8_t));
+	Memory buf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint8_t));
 
 	// Write 0xFF to the memory
-	xdma.Write(buf, ff.data());
+	pXdma->Write(buf, ff.data());
 
 	// Readback the output data and print it to show that it is indeed all 0xFF
-	xdma.Read(buf, testDataRB.data(), TEST_DATA_SIZE);
+	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
 
 	std::cout << "Printing Memory Before Transfer:" << std::endl;
-	for (uint32_t i = 0; i < TEST_DATA_SIZE; i++)
-		std::cout << std::hex << (int)testDataRB.at(i) << " " << std::flush;
+	for (const uint32_t& d : testDataRB)
+		std::cout << std::hex << static_cast<int32_t>(d) << " " << std::flush;
 
 	std::cout << std::endl
 			  << std::endl;
 
 	// Write the input data to the device
-	xdma.Write(buf, testData.data());
+	pXdma->Write(buf, testData.data());
 
 	// Readback the result data and print it, this time it should not be all 0xFF
-	xdma.Read(buf, testDataRB.data(), TEST_DATA_SIZE);
+	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
 
 	std::cout << "Printing Memory After Transfer:" << std::endl;
-	for (uint32_t i = 0; i < TEST_DATA_SIZE; i++)
-		std::cout << std::hex << (int)testDataRB.at(i) << " " << std::flush;
+	for (const uint32_t& d : testDataRB)
+		std::cout << std::hex << static_cast<int32_t>(d) << " " << std::flush;
 
 	std::cout << std::endl;
 
