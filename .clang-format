@@ -1,48 +1,27 @@
 ﻿---
 BasedOnStyle: Microsoft
-AccessModifierOffset: '-4'
-AlignAfterOpenBracket: Align
-AlignConsecutiveMacros: 'true'
-AlignConsecutiveAssignments: 'true'
-AlignConsecutiveDeclarations: 'false'
+AccessModifierOffset: -4
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveMacros: Consecutive
 AlignEscapedNewlines: Left
-AlignOperands: 'true'
-AllowAllConstructorInitializersOnNextLine: 'true'
-AllowShortBlocksOnASingleLine: 'true'
-AllowShortCaseLabelsOnASingleLine: 'false'
+AllowAllConstructorInitializersOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Always
-AllowShortLambdasOnASingleLine: All
-AllowShortLoopsOnASingleLine: 'true'
-AlwaysBreakBeforeMultilineStrings: 'false'
-BreakBeforeBraces: Allman
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterUnion: true
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
 BreakConstructorInitializers: AfterColon
-ColumnLimit: '0'
-Cpp11BracedListStyle: 'false'
-DerivePointerAlignment: 'true'
-IndentCaseLabels: 'true'
-IndentPPDirectives: None
-IndentWidth: '4'
-KeepEmptyLinesAtTheStartOfBlocks: 'false'
-Language: Cpp
-NamespaceIndentation: None
+BreakInheritanceList: AfterColon
+ColumnLimit: 0
+Cpp11BracedListStyle: false
+DerivePointerAlignment: true
+IndentCaseLabels: true
+KeepEmptyLinesAtTheStartOfBlocks: false
 PointerAlignment: Left
-SpaceAfterCStyleCast: 'false'
-SpaceAfterLogicalNot: 'false'
-SpaceAfterTemplateKeyword: 'false'
-SpaceBeforeAssignmentOperators: 'true'
-SpaceBeforeCpp11BracedList: 'false'
-SpaceBeforeCtorInitializerColon: 'true'
-SpaceBeforeInheritanceColon: 'true'
-SpaceBeforeRangeBasedForLoopColon: 'true'
-SpaceInEmptyParentheses: 'false'
-SpacesInAngles: 'false'
-SpacesInCStyleCastParentheses: 'false'
-SpacesInContainerLiterals: 'false'
-SpacesInParentheses: 'false'
-SpacesInSquareBrackets: 'false'
-Standard: Cpp11
-TabWidth: '4'
+SpaceAfterTemplateKeyword: false
+SpacesInContainerLiterals: false
 UseTab: ForContinuationAndIndentation
-
-...

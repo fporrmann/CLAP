@@ -60,7 +60,7 @@ int main()
 		xdma.Read(outBuf, testDataRB.data());
 
 		std::cout << "Printing Output Memory Before HLS Execution:" << std::endl;
-		for(const uint32_t &d : testDataRB)
+		for (const uint32_t& d : testDataRB)
 			std::cout << std::hex << d << std::dec << " " << std::flush;
 
 		std::cout << std::endl

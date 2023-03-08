@@ -99,7 +99,6 @@ static ReverseRange<T> ReverseIterate(T &x)
 /// -------------------------------------------------------------------- ///
 /// -------------------------------------------------------------------- ///
 
-
 template<typename T>
 static inline std::string ToStringWithPrecision(const T val, const uint32_t &n = 6)
 {
