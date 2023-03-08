@@ -7,7 +7,7 @@ NOTE: Currently only linux is supported.
 ## Requirements
 
 	CMake >= 3.10.0
-	g++ >= 9
+	g++ >= 9 or comparable compiler supporting C++17
 
 ### XDMA Driver
 

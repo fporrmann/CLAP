@@ -43,9 +43,8 @@ static std::exception_ptr g_pExcept = nullptr;
 DEFINE_EXCEPTION(WatchDogException)
 
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xdma::Timer* pTimer, std::condition_variable* pCv, const std::string& name, std::atomic<bool>* pThreadDone)
+static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xdma::Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
 {
-	UNUSED(name);
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
 

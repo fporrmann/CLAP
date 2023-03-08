@@ -41,10 +41,6 @@
 	_C_(_C_ &&)                 = delete;
 #endif
 
-#ifndef UNUSED
-#define UNUSED(x) (void)(x)
-#endif
-
 #ifndef DEFINE_EXCEPTION
 #define DEFINE_EXCEPTION(__NAME__)                                   \
 	class __NAME__ : public std::exception                           \

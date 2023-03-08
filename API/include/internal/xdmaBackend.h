@@ -449,9 +449,8 @@ public:
 		m_valid     = true;
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
 	{
-		UNUSED(verbose);
 #ifdef XDMA_VERBOSE
 		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
 #endif
@@ -488,9 +487,8 @@ public:
 		}
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
 	{
-		UNUSED(verbose);
 #ifdef XDMA_VERBOSE
 		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
 #endif

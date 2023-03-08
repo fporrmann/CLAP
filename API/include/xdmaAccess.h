@@ -30,7 +30,6 @@
 // - Proper logging
 // - Function to create a new XDMA instance (so user does not have to create the shared pointer)
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
-// - Replace UNUSED with [[maybe_unused]] in C++17
 
 /////////////////////////
 // Includes for open()
