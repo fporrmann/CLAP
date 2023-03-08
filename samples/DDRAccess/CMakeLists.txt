@@ -24,7 +24,7 @@ set(cpp_flags "${cpp_flags} -Wunused-result") # Warn when the result of a functi
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${cpp_flags}") # Add all previous warning and standard defines to the CMake C++ flags
 
 
-add_subdirectory(../../ build)
+add_subdirectory(../../API build)
 
 # Search for all .cpp files in the src folder
 file(GLOB src "src/*.cpp")

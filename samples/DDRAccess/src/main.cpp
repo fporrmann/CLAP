@@ -4,7 +4,7 @@
 
 // DDR is located at 0x000000000
 static const uint64_t DDR_BASE_ADDR = 0x000000000;
-// DDR is 1GB in size
+// DDR is 4GB in size
 static const uint64_t DDR_SIZE = 0x100000000;
 
 const uint64_t TEST_DATA_SIZE = 8;
