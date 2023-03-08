@@ -33,7 +33,7 @@
 #include "UserInterrupt.h"
 
 #ifndef EMBEDDED_XILINX
-#include "../Timer.h"
+#include "../../internal/Timer.h"
 #include <atomic>
 #include <chrono>
 #endif

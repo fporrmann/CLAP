@@ -36,7 +36,7 @@
 #include <string>
 #include <vector>
 
-#include "../Utils.h"
+#include "../../internal/Utils.h"
 
 static const uint8_t SAME_AS_START_BIT = 0xFF;
 

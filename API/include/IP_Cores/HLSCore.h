@@ -26,9 +26,9 @@
 
 #pragma once
 
-#include "ApCtrl.h"
-#include "IPControl.h"
-#include "WatchDog.h"
+#include "internal/ApCtrl.h"
+#include "internal/IPControl.h"
+#include "internal/WatchDog.h"
 
 enum APInterrupts
 {

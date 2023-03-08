@@ -26,9 +26,9 @@
 
 #pragma once
 
-#include "IPControl.h"
-#include "RegisterInterface.h"
-#include "WatchDog.h"
+#include "internal/IPControl.h"
+#include "internal/RegisterInterface.h"
+#include "internal/WatchDog.h"
 
 enum DMAInterrupts
 {

@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include "../Utils.h"
-#include "../xdmaAccess.h"
+#include "../../internal/Utils.h"
+#include "../../xdmaAccess.h"
 #include "RegisterInterface.h"
 #include <vector>
 

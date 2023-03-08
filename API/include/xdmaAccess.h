@@ -60,15 +60,15 @@
 #include <sstream>
 #include <vector>
 
-#include "Memory.h"
-#include "Utils.h"
+#include "internal/Memory.h"
+#include "internal/Utils.h"
 
 #ifndef EMBEDDED_XILINX
-#include "Timer.h"
-#include "xdmaAlignmentAllocator.h"
+#include "internal/Timer.h"
+#include "internal/xdmaAlignmentAllocator.h"
 #endif
 
-#include "xdmaBackend.h"
+#include "internal/xdmaBackend.h"
 
 static const std::size_t XDMA_ALIGNMENT = 4096;
 
