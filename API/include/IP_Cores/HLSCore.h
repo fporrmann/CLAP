@@ -67,7 +67,7 @@ class HLSCore : public IPControlBase
 		  bit 1  - Channel 1 (ap_ready)
 		  others - reserved
 	(SC = Self Clear, COR = Clear on Read, TOW = Toggle on Write, COH = Clear on Handshake)
-**/
+	**/
 
 	enum REGISTER_MAP
 	{

@@ -31,7 +31,6 @@ file(GLOB src "src/*.cpp")
 
 include_directories(${XDMA_API_INCLUDE_DIRS})
 
-# Specify the name of the executable created by this
-# CMake project
+# Specify the name of the executable created by this CMake project
 add_executable(${PROJECT_NAME} ${src})
 target_link_libraries (${PROJECT_NAME} PRIVATE ${XDMA_API_LIBS})
