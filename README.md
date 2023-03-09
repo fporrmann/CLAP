@@ -71,8 +71,8 @@ Clone the git into your project or add it as a submodule
 
 When using CMake simply add the XDMA API as follows:
 
-	# Initialize the XDMA CMake variables
-	add_subdirectory(XDMA_API/API)
+	# Find the XDMA_API and initialize its variables
+	find_package(XDMA_API PATHS XDMA_API/API/cmake/modules REQUIRED)
 
 	# Add the XDMA API to the include directories
 	include_directories(${XDMA_API_INCLUDE_DIRS})
