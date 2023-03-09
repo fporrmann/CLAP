@@ -2,9 +2,9 @@
 
 #include <xdmaAccess.h>
 
-// DDR is located at 0x000000000
+// The DDR is located at 0x000000000
 static const uint64_t DDR_BASE_ADDR = 0x000000000;
-// DDR is 4GB in size
+// The size of the DDR is 4GB
 static const uint64_t DDR_SIZE = 0x100000000;
 
 const uint64_t TEST_DATA_SIZE = 8;
@@ -36,10 +36,12 @@ int main()
 	// Allocate memory for the data on the devices DDR
 	Memory buf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint8_t));
 
-	// Write 0xFF to the memory
+	// Write 0xFF to the memory, in this case, this operation writes data directly into the DDR
+	// attached to the FPGA. The data is written to the address specified by the buf object.
 	pXdma->Write(buf, ff.data());
 
-	// Readback the output data and print it to show that it is indeed all 0xFF
+	// Readback the output data buffer and print it to show that it is indeed all 0xFF.
+	// This is done to show that the data is actually being written to the DDR memory.
 	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
 
 	std::cout << "Printing Memory Before Transfer:" << std::endl;
@@ -49,12 +51,13 @@ int main()
 	std::cout << std::endl
 			  << std::endl;
 
-	// Write the input data to the device
+	// Write the actual input data to the DDR memory.
 	pXdma->Write(buf, testData.data());
 
-	// Readback the result data and print it, this time it should not be all 0xFF
+	// Readback the result data from the DDR memory.
 	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
 
+	// Print the result data
 	std::cout << "Printing Memory After Transfer:" << std::endl;
 	for (const uint32_t& d : testDataRB)
 		std::cout << std::hex << static_cast<int32_t>(d) << " " << std::flush;
