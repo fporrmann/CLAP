@@ -11,7 +11,7 @@ A collection of samples showcasing how to use the XDMA API.<br>
 
 **Compile**
 
-```console
+```bash
 # Useing DDRAccess as an example
 cd DDRAccess
 cmake . -B build
@@ -20,6 +20,6 @@ cmake --build build --config Release
 
 **Execute**
 
-```console
+```bash
 build/DDRAccess
 ```
