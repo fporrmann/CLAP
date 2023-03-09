@@ -92,6 +92,10 @@ int main()
 		// Wait for the HLS core to finish
 		hlsTest.WaitForFinish();
 
+		// Print the runtime of the HLS core in milliseconds
+		std::cout << "HLS core finished after: " << hlsTest.GetRuntime() << "ms" << std::endl
+				  << std::endl;
+
 		// Readback the result data from the DDR memory.
 		pXdma->Read(outBuf, testDataRB.data());
 	}
