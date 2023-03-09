@@ -11,7 +11,7 @@ endif()
 
 message(STATUS "Build Mode: ${CMAKE_BUILD_TYPE}")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(cpp_flags "-pedantic") # Enable pedantic warnings
@@ -24,7 +24,7 @@ set(cpp_flags "${cpp_flags} -Wunused-result") # Warn when the result of a functi
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${cpp_flags}") # Add all previous warning and standard defines to the CMake C++ flags
 
 
-add_subdirectory(../../API build)
+find_package(XDMA_API PATHS ../../API/cmake/modules REQUIRED)
 
 # Search for all .cpp files in the src folder
 file(GLOB src "src/*.cpp")
