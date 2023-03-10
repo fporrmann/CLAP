@@ -78,10 +78,9 @@ class HLSCore : public IPControlBase
 	};
 
 public:
-	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name, const AddressType& addrType = BIT_64) :
+	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name) :
 		IPControlBase(pXdma, ctrlOffset),
 		m_apCtrl(),
-		m_addrType(addrType),
 		m_intrCtrl(),
 		m_intrStat(),
 		m_watchDog(name),
@@ -157,9 +156,12 @@ public:
 		setDataAddr<T>(offset, addr);
 	}
 
-	void SetDataAddr(const uint64_t& offset, const Memory& mem)
+	void SetDataAddr(const uint64_t& offset, const Memory& mem, const AddressType& addrType = BIT_64)
 	{
-		setDataAddr<uint64_t>(offset, mem.GetBaseAddr());
+		if (addrType == BIT_32)
+			setDataAddr<uint32_t>(offset, mem.GetBaseAddr());
+		else
+			setDataAddr<uint64_t>(offset, mem.GetBaseAddr());
 	}
 
 	template<typename T>
@@ -168,9 +170,9 @@ public:
 		return getDataAddr<T>(offset);
 	}
 
-	uint64_t GetDataAddr(const uint64_t& offset)
+	uint64_t GetDataAddr(const uint64_t& offset, const AddressType& addrType = BIT_64)
 	{
-		if (m_addrType == BIT_32)
+		if (addrType == BIT_32)
 			return getDataAddr<uint32_t>(offset);
 		else
 			return getDataAddr<uint64_t>(offset);
@@ -207,39 +209,12 @@ private:
 	template<typename T>
 	void setDataAddr(const uint64_t& offset, const T& addr)
 	{
-		if (m_addrType == BIT_32 && sizeof(T) > BIT_32)
-		{
-			uint32_t cutAddr = static_cast<uint32_t>(addr);
-
-			// The static cast to 64-bit is required because the compiler
-			// tries to check the code for all possible template types
-			// and this fails when the size of addr is <= 32-bit
-			if ((static_cast<uint64_t>(addr) >> 32) != 0)
-			{
-				std::cerr << CLASS_TAG("HLSCore") << "Warning: given address (0x" << std::hex << addr
-						  << ") exceeds the 32-Bit address range of the HLS-Core, address will be cut to: 0x"
-						  << cutAddr << std::dec << std::endl;
-			}
-
-			writeRegister<uint32_t>(offset, cutAddr);
-			return;
-		}
-
 		writeRegister<T>(offset, addr);
 	}
 
 	template<typename T>
 	T getDataAddr(const uint64_t& offset)
 	{
-		if (m_addrType == BIT_32 && sizeof(T) > BIT_32)
-		{
-			std::cerr << CLASS_TAG("HLSCore") << "Warning: The size of the address to read (" << sizeof(T)
-					  << " Byte) exceeds the 32-Bit address range of the HLS-Core, size will be cut to: "
-					  << BIT_32 << " Byte" << std::endl;
-
-			return readRegister<uint32_t>(offset);
-		}
-
 		return readRegister<T>(offset);
 	}
 
@@ -329,7 +304,6 @@ private:
 
 private:
 	ApCtrl m_apCtrl;
-	AddressType m_addrType;
 	InterruptEnableRegister m_intrCtrl;
 	InterruptStatusRegister m_intrStat;
 	WatchDog m_watchDog;

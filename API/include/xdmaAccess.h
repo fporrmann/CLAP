@@ -29,6 +29,11 @@
 ////// TODO:
 // - Proper logging
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
+// - Rename this file to something more appropriate
+// - Maybe add interrupt callback function / RegisterInterruptCallback
+// - Look into 32-bit AXI interfaces, although this is disabled by default it might still be used
+//   - Would require some edits to the memory manager
+//   - Would require that the DDR address is below 4GB
 
 /////////////////////////
 // Includes for open()
