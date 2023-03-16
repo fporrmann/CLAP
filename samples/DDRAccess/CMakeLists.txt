@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # Set the name of the CMake project
 set(PROJECT_NAME DDRAccess)
-project(${PROJECT_NAME} VERSION 0.2.0 LANGUAGES CXX)
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	set(CMAKE_BUILD_TYPE "Release")

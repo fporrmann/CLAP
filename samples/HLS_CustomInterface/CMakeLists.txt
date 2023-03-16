@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Set the name of the CMake project
-set(PROJECT_NAME HLS)
+set(PROJECT_NAME HLS_CustomInterface)
 project(${PROJECT_NAME} LANGUAGES CXX)
 
 if("${CMAKE_BUILD_TYPE}" STREQUAL "")
