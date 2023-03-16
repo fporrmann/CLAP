@@ -37,7 +37,7 @@ enum APInterrupts
 	AP_INTR_ALL   = (1 << 2) - 1 // All bits set
 };
 
-enum AddressType
+enum class AddressType
 {
 	BIT_32 = sizeof(uint32_t),
 	BIT_64 = sizeof(uint64_t)
@@ -156,9 +156,9 @@ public:
 		setDataAddr<T>(offset, addr);
 	}
 
-	void SetDataAddr(const uint64_t& offset, const Memory& mem, const AddressType& addrType = BIT_64)
+	void SetDataAddr(const uint64_t& offset, const Memory& mem, const AddressType& addrType = AddressType::BIT_64)
 	{
-		if (addrType == BIT_32)
+		if (addrType == AddressType::BIT_32)
 			setDataAddr<uint32_t>(offset, mem.GetBaseAddr());
 		else
 			setDataAddr<uint64_t>(offset, mem.GetBaseAddr());
@@ -170,9 +170,9 @@ public:
 		return getDataAddr<T>(offset);
 	}
 
-	uint64_t GetDataAddr(const uint64_t& offset, const AddressType& addrType = BIT_64)
+	uint64_t GetDataAddr(const uint64_t& offset, const AddressType& addrType = AddressType::BIT_64)
 	{
-		if (addrType == BIT_32)
+		if (addrType == AddressType::BIT_32)
 			return getDataAddr<uint32_t>(offset);
 		else
 			return getDataAddr<uint64_t>(offset);
