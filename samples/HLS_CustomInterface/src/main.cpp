@@ -48,13 +48,17 @@ int main()
 		Memory inBuf  = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint16_t));
 		Memory outBuf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
 
+#if 0
 		// Set the addresses of the input and output memory used in the HLS core.
-		hlsTest.SetPDDRInAddr(inBuf.GetBaseAddr());
-		hlsTest.SetPDDROutAddr(outBuf.GetBaseAddr());
+		hlsTest.SetPDDRInAddr(inBuf);
+		hlsTest.SetPDDROutAddr(outBuf);
 		// Set the number of elements to process, as this is a plain value, instead of a memory
 		// address the actual value is passed. Due to the way this method works directly passing
 		// a magic number (e.g., 8) is not possible, the value must be stored in a variable.
 		hlsTest.SetElementsAddr(TEST_DATA_SIZE);
+#else
+		hlsTest.Init(inBuf, outBuf, TEST_DATA_SIZE);
+#endif
 
 		// Write 0xFFFFFFFF to the memory, in this case, this operation writes data directly into the DDR
 		// attached to the FPGA. The data is written to the address specified by the outBuf object.
