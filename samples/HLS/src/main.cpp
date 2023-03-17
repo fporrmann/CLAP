@@ -56,8 +56,7 @@ int main()
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDRIN_DATA, inBuf);
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDROUT_DATA, outBuf);
 		// Set the number of elements to process, as this is a plain value, instead of a memory
-		// address the actual value is passed. Due to the way this method works directly passing
-		// a magic number (e.g., 8) is not possible, the value must be stored in a variable.
+		// address the actual value is passed.
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_ELEMENTS_DATA, TEST_DATA_SIZE);
 
 		// Write 0xFFFFFFFF to the memory, in this case, this operation writes data directly into the DDR

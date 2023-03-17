@@ -207,7 +207,7 @@ public:
 
 private:
 	template<typename T>
-	void setDataAddr(const uint64_t& offset, const T& addr)
+	void setDataAddr(const uint64_t& offset, const T addr)
 	{
 		writeRegister<T>(offset, addr);
 	}
