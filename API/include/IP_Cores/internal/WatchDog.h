@@ -36,6 +36,7 @@
 #include "../../internal/Timer.h"
 #include <atomic>
 #include <chrono>
+#include <functional>
 #endif
 
 static std::exception_ptr g_pExcept = nullptr;
@@ -187,6 +188,11 @@ public:
 #else
 		return 0.0; // TODO: Add embedded runtime measurement
 #endif
+	}
+
+	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
+	{
+		m_interrupt.RegisterCallback(callback);
 	}
 
 private:

@@ -30,6 +30,8 @@
 #include "internal/IPControl.h"
 #include "internal/WatchDog.h"
 
+#include <functional>
+
 enum APInterrupts
 {
 	AP_INTR_DONE  = 1 << 0,
@@ -201,6 +203,15 @@ public:
 	{
 		std::cout << "---- " << m_name << " ----" << std::endl;
 		m_apCtrl.PrintStatus();
+	}
+
+	////////////////////////////////////////
+
+	////////////////////////////////////////
+
+	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
+	{
+		m_watchDog.RegisterInterruptCallback(callback);
 	}
 
 	////////////////////////////////////////

@@ -39,6 +39,7 @@
 // Include for poll()
 #include <poll.h>
 /////////////////////////
+#include <functional>
 #endif
 
 #include <iostream>
@@ -136,6 +137,9 @@ public:
 				throw UserIntrruptException(ss.str());
 			}
 
+			for (auto& callback : m_callbacks)
+				callback(m_pReg->GetLastInterrupt());
+
 #ifdef XDMA_VERBOSE
 			std::cout << CLASS_TAG("UserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 #endif
@@ -149,12 +153,18 @@ public:
 		return false;
 	}
 
+	void RegisterCallback(const std::function<void(uint32_t)>& callback)
+	{
+		m_callbacks.push_back(callback);
+	}
+
 private:
 	std::string m_devName = "";
 	HasInterrupt* m_pReg  = nullptr;
 	int32_t m_fd          = -1;
 #ifndef EMBEDDED_XILINX
 	struct pollfd m_pollFd;
+	std::vector<std::function<void(uint32_t)>> m_callbacks = {};
 #endif
 	uint32_t m_interruptNum = 0;
 };

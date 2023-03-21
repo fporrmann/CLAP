@@ -14,6 +14,11 @@ static const uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
 
 static const uint32_t TEST_DATA_SIZE = 8;
 
+void InterruptCallBack(const uint32_t& mask)
+{
+	std::cout << "Interrupt Triggered - Mask: " << mask << std::endl;
+}
+
 int main()
 {
 	// Create host side buffer for the test data to be written to the input memory
@@ -84,6 +89,10 @@ int main()
 		// the mapping of the cores to the interrupt events.
 		// If the interrupt is not configure, polling is used to determine when the core is finished.
 		hlsTest.EnableInterrupts(0);
+
+		// Register a callback function to be called when the interrupt is triggered.
+		// The callback function is called with the interrupt mask as an argument.
+		hlsTest.RegisterInterruptCallback(InterruptCallBack);
 
 		// Start the HLS core
 		hlsTest.Start();
