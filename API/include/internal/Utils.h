@@ -105,7 +105,7 @@ static inline std::string ToStringWithPrecision(const T val, const uint32_t &n =
 	return out.str();
 }
 
-static uint32_t CalcOrder(double val)
+static inline uint32_t CalcOrder(double val)
 {
 	uint32_t cnt = 0;
 
@@ -118,7 +118,7 @@ static uint32_t CalcOrder(double val)
 	return cnt;
 }
 
-static std::string GetPrefix(const uint32_t &order)
+static inline std::string GetPrefix(const uint32_t &order)
 {
 	switch (order)
 	{
@@ -146,7 +146,7 @@ static std::string GetPrefix(const uint32_t &order)
 	return "UNKNOWN ORDER: " + std::to_string(order);
 }
 
-static std::string SpeedWidthSuffix(double val)
+static inline std::string SpeedWidthSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
@@ -159,7 +159,7 @@ static std::string SpeedWidthSuffix(double val)
 	return str;
 }
 
-static std::string SizeWithSuffix(uint64_t val)
+static inline std::string SizeWithSuffix(uint64_t val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
