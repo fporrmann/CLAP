@@ -54,8 +54,9 @@ class UserInterrupt
 	DISABLE_COPY_ASSIGN_MOVE(UserInterrupt)
 
 public:
-	UserInterrupt() :
+	UserInterrupt()
 #ifndef EMBEDDED_XILINX
+		:
 		m_pollFd()
 #endif
 	{}
@@ -153,9 +154,11 @@ public:
 		return false;
 	}
 
-	void RegisterCallback(const std::function<void(uint32_t)>& callback)
+	void RegisterCallback([[maybe_unused]] const std::function<void(uint32_t)>& callback)
 	{
+#ifndef EMBEDDED_XILINX
 		m_callbacks.push_back(callback);
+#endif
 	}
 
 private:
