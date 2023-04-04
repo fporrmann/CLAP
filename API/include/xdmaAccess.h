@@ -513,15 +513,17 @@ public:
 		startWriteStream(buffer.data(), size, verbose);
 	}
 
+	/// @brief Waits for the read stream operation to finish
 	void WaitForReadStream()
 	{
 		if (m_readFuture.valid())
 		{
 			m_readFuture.wait();
-			m_readFuture.get();	
+			m_readFuture.get();
 		}
 	}
 
+	/// @brief Waits for the write stream operation to finish
 	void WaitForWriteStream()
 	{
 		if (m_writeFuture.valid())
@@ -531,10 +533,33 @@ public:
 		}
 	}
 
+	/// @brief Waits for the read and write stream operations to finish
 	void WaitForStreams()
 	{
 		WaitForReadStream();
 		WaitForWriteStream();
+	}
+
+	/// @brief Returns the runtime of the last read stream operation in milliseconds
+	/// @return 
+	double GetReadStreamRuntime() const
+	{
+#ifndef EMBEDDED_XILINX
+		return m_readStreamTimer.GetElapsedTimeInMilliSec();
+#else
+		return 0.0; // TODO: Add embedded runtime measurement
+#endif
+	}
+
+	/// @brief Returns the runtime of the last write stream operation in milliseconds
+	/// @return
+	double GetWriteStreamRuntime() const
+	{
+#ifndef EMBEDDED_XILINX
+		return m_writeStreamTimer.GetElapsedTimeInMilliSec();
+#else
+		return 0.0; // TODO: Add embedded runtime measurement
+#endif
 	}
 
 private:
@@ -590,8 +615,6 @@ private:
 
 	void writeStream(const void* pData, const uint64_t& size, const bool& verbose)
 	{
-		uint64_t curSize = 0;
-
 		// Due to the AXI data width of the XDMA write size has to be a multiple of 512-Bit (64-Byte)
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
 		{
@@ -600,18 +623,21 @@ private:
 			throw XDMAException(ss.str());
 		}
 
+		uint64_t curSize = 0;
+		m_writeStreamTimer.Start();
+
 		while (curSize < size)
 		{
 			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
 			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize, verbose);
 			curSize += writeSize;
 		}
+
+		m_writeStreamTimer.Stop();
 	}
 
 	void readStream(void* pData, const uint64_t& size, const bool& verbose)
 	{
-		uint64_t curSize = 0;
-
 		// Due to the AXI data width of the XDMA read size has to be a multiple of 512-Bit (64-Byte)
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
 		{
@@ -621,15 +647,17 @@ private:
 			throw XDMAException(ss.str());
 		}
 
-		uint8_t* p = reinterpret_cast<uint8_t*>(pData);
+		uint64_t curSize = 0;
+		m_readStreamTimer.Start();
 
 		while (curSize < size)
 		{
 			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
-			Read(XDMA_STREAM_OFFSET, p, readSize, verbose);
+			Read(XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize, verbose);
 			curSize += readSize;
-			p += readSize;
 		}
+
+		m_readStreamTimer.Stop();
 	}
 
 private:
@@ -637,6 +665,8 @@ private:
 	std::map<MemoryType, MemoryManagerVec> m_memories;
 	std::future<void> m_readFuture  = {};
 	std::future<void> m_writeFuture = {};
+	xdma::Timer m_readStreamTimer = {};
+	xdma::Timer m_writeStreamTimer = {};
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
 #endif
