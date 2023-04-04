@@ -16,7 +16,12 @@ if [ "$1" == "help" ]; then
         display_help
 fi;
 
-interrupt_selection=$1
+if [ "$#" -lt 1 ]; then
+        interrupt_selection=4
+else
+        interrupt_selection=$1
+fi
+
 echo "interrupt_selection $interrupt_selection."
 device_id=903f
 
