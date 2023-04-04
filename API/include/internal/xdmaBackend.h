@@ -40,11 +40,14 @@
 /////////////////////////
 #endif
 
+#include "Constants.h"
 #include "Utils.h"
 
 #ifndef EMBEDDED_XILINX
 #include "Timer.h"
 #endif
+
+#define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)
 
 /*
  * man 2 write:
@@ -148,7 +151,7 @@ public:
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
 	{
 #ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << " verbose=" << verbose << std::endl;
 #endif
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
@@ -157,6 +160,13 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
+			throw XDMAException(ss.str());
+		}
+
+		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
 			throw XDMAException(ss.str());
 		}
 
@@ -180,7 +190,7 @@ public:
 			if (rc != offset)
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")";
+				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec;
 				throw XDMAException(ss.str());
 			}
 
@@ -195,7 +205,7 @@ public:
 			}
 
 			count += bytes;
-			offset += bytes;
+			offset += bytes; // TODO: this might cause problems in streaming mode
 		}
 
 		if (verbose) timer.Stop();
@@ -203,7 +213,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)";
+			ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 
@@ -218,7 +228,7 @@ public:
 	{
 #ifdef XDMA_VERBOSE
 
-		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << " verbose=" << verbose << std::endl;
 #endif
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
@@ -227,6 +237,13 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
+			throw XDMAException(ss.str());
+		}
+
+		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
 			throw XDMAException(ss.str());
 		}
 
@@ -250,7 +267,7 @@ public:
 			if (rc != offset)
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")";
+				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec << std::dec;
 				throw XDMAException(ss.str());
 			}
 
@@ -260,12 +277,12 @@ public:
 			if (static_cast<uint64_t>(rc) != bytes)
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << bytes << " byte to offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << errsv << " (" << strerror(errsv) << ")";
+				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << bytes << " byte to offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << errsv << " (" << strerror(errsv) << ")" << std::dec;
 				throw XDMAException(ss.str());
 			}
 
 			count += bytes;
-			offset += bytes;
+			offset += bytes; // TODO: This might casue problems in streaming mode
 		}
 
 		if (verbose) timer.Stop();
@@ -273,7 +290,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)";
+			ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 
@@ -313,7 +330,7 @@ public:
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
 	{
 #ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 #endif
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
@@ -360,7 +377,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)";
+			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 
@@ -375,7 +392,7 @@ public:
 	{
 #ifdef XDMA_VERBOSE
 
-		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 #endif
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
@@ -420,7 +437,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)";
+			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 
@@ -452,7 +469,7 @@ public:
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
 	{
 #ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 #endif
 
 		if (!m_valid)
@@ -482,7 +499,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)";
+			ss << CLASS_TAG("BareMetalBackend") << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 	}
@@ -490,7 +507,7 @@ public:
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
 	{
 #ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::endl;
+		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 #endif
 
 		if (!m_valid)
@@ -520,7 +537,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)";
+			ss << CLASS_TAG("BareMetalBackend") << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw XDMAException(ss.str());
 		}
 	}

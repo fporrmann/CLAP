@@ -30,10 +30,18 @@
 // - Proper logging
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
 // - Rename this file to something more appropriate
-// - Maybe add interrupt callback function / RegisterInterruptCallback
 // - Look into 32-bit AXI interfaces, although this is disabled by default it might still be used
 //   - Would require some edits to the memory manager
 //   - Would require that the DDR address is below 4GB
+// - Determine if the core is setup as memory mapped or streaming
+//   - from xdma0_control read 0x0H00 and check if it starts with 1fc08 - the 8 here means it's in streaming mode
+//   - cf. https://github.com/Xilinx/dma_ip_drivers/blob/master/XDMA/linux-kernel/tests/run_test.sh)
+// - Add proper streaming support, i.e., option to start a background thread that is constantly reading/writing data from/to the core
+//   - Make sure that exceptions thrown in the background thread are properly handled, as exceptions thrown in a thread are not propagated to the main thread
+//   - Reading/Writing a block of data might cause problems if the core is in streaming mode
+// - Try to force the use of aligned memory, e.g., by using the DMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
+//   - Maybe prevent passing for custom memory addresses alltogether
+// - Replace boolean flags with enums for better readability
 
 /////////////////////////
 // Includes for open()
@@ -56,6 +64,7 @@
 
 #include <algorithm>
 #include <cstring> // required for std::memcpy
+#include <future>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -63,6 +72,7 @@
 #include <sstream>
 #include <vector>
 
+#include "internal/Constants.h"
 #include "internal/Memory.h"
 #include "internal/Utils.h"
 
@@ -72,8 +82,6 @@
 #endif
 
 #include "internal/xdmaBackend.h"
-
-static const std::size_t XDMA_ALIGNMENT = 4096;
 
 #ifdef EMBEDDED_XILINX
 using DMABuffer = std::vector<uint8_t>;
@@ -271,7 +279,7 @@ public:
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-	///                      Read Functions                                  ///
+	///                      Read Methods                                    ///
 	////////////////////////////////////////////////////////////////////////////
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
@@ -382,7 +390,7 @@ public:
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-	///                      Write Functions                                 ///
+	///                      Write Methods                                   ///
 	////////////////////////////////////////////////////////////////////////////
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
@@ -426,7 +434,7 @@ public:
 		//  === Ugly Workaround ===
 		// If a global const variable was passed as data argument
 		// the write call fails, to circumvent this a local copy
-		// is created and passed to the underlying function
+		// is created and passed to the underlying method
 		const T tmp = data;
 		//  === Ugly Workaround ===
 		Write(addr, reinterpret_cast<const void*>(&tmp), sizeof(T), verbose);
@@ -478,6 +486,60 @@ public:
 		write<uint64_t>(mem, data);
 	}
 
+	////////////////////////////////////////////////////////////////////////////
+	///                      Streaming Methods                               ///
+	////////////////////////////////////////////////////////////////////////////
+
+	void StartReadStream(DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	{
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
+		startReadStream(buffer.data(), size, verbose);
+	}
+
+	template<typename T>
+	void StartReadStream(std::vector<T, xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	{
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
+		startReadStream(buffer.data(), size, verbose);
+	}
+
+	void StartWriteStream(const DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	{
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
+		startWriteStream(buffer.data(), size, verbose);
+	}
+
+	template<typename T>
+	void StartWriteStream(const std::vector<T, xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	{
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
+		startWriteStream(buffer.data(), size, verbose);
+	}
+
+	void WaitForReadStream()
+	{
+		if (m_readFuture.valid())
+		{
+			m_readFuture.wait();
+			m_readFuture.get();	
+		}
+	}
+
+	void WaitForWriteStream()
+	{
+		if (m_writeFuture.valid())
+		{
+			m_writeFuture.wait();
+			m_writeFuture.get();
+		}
+	}
+
+	void WaitForStreams()
+	{
+		WaitForReadStream();
+		WaitForWriteStream();
+	}
+
 private:
 	template<typename T>
 	T read(const Memory& mem)
@@ -505,9 +567,83 @@ private:
 		return Write<T>(mem.GetBaseAddr(), data);
 	}
 
+	void startReadStream(void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	{
+		if (m_readFuture.valid())
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Read stream is already running";
+			throw XDMAException(ss.str());
+		}
+
+		m_readFuture = std::async(&XDMA::readStream, this, pData, sizeInByte, verbose);
+	}
+
+	void startWriteStream(const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	{
+		if (m_writeFuture.valid())
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Write stream is already running";
+			throw XDMAException(ss.str());
+		}
+
+		m_writeFuture = std::async(&XDMA::writeStream, this, pData, sizeInByte, verbose);
+	}
+
+	void writeStream(const void* pData, const uint64_t& size, const bool& verbose)
+	{
+		uint64_t curSize = 0;
+
+		// Due to the AXI data width of the XDMA write size has to be a multiple of 512-Bit (64-Byte)
+		if (size % XDMA_AXI_DATA_WIDTH != 0)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			throw XDMAException(ss.str());
+		}
+
+		while (curSize < size)
+		{
+			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
+			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize, verbose);
+			curSize += writeSize;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+
+	void readStream(void* pData, const uint64_t& size, const bool& verbose)
+	{
+		uint64_t curSize = 0;
+
+		// Due to the AXI data width of the XDMA read size has to be a multiple of 512-Bit (64-Byte)
+		if (size % XDMA_AXI_DATA_WIDTH != 0)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			std::cerr << ss.str() << std::endl;
+			throw XDMAException(ss.str());
+		}
+
+		uint8_t* p = reinterpret_cast<uint8_t*>(pData);
+
+		while (curSize < size)
+		{
+			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
+			Read(XDMA_STREAM_OFFSET, p, readSize, verbose);
+			curSize += readSize;
+			p += readSize;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		}
+	}
+
 private:
 	XDMABackendShr m_pBackend;
 	std::map<MemoryType, MemoryManagerVec> m_memories;
+	std::future<void> m_readFuture  = {};
+	std::future<void> m_writeFuture = {};
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
 #endif
@@ -527,7 +663,6 @@ public:
 		m_mutex()
 #endif
 	{
-		// m_fd = OpenDevice(m_pioDeviceName);
 		m_fd        = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
 		int32_t err = errno;
 
