@@ -36,9 +36,6 @@
 // - Determine if the core is setup as memory mapped or streaming
 //   - from xdma0_control read 0x0H00 and check if it starts with 1fc08 - the 8 here means it's in streaming mode
 //   - cf. https://github.com/Xilinx/dma_ip_drivers/blob/master/XDMA/linux-kernel/tests/run_test.sh)
-// - Add proper streaming support, i.e., option to start a background thread that is constantly reading/writing data from/to the core
-//   - Make sure that exceptions thrown in the background thread are properly handled, as exceptions thrown in a thread are not propagated to the main thread
-//   - Reading/Writing a block of data might cause problems if the core is in streaming mode
 // - Try to force the use of aligned memory, e.g., by using the DMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // - Replace boolean flags with enums for better readability
@@ -608,8 +605,6 @@ private:
 			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
 			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize, verbose);
 			curSize += writeSize;
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 
@@ -634,8 +629,6 @@ private:
 			Read(XDMA_STREAM_OFFSET, p, readSize, verbose);
 			curSize += readSize;
 			p += readSize;
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 	}
 
