@@ -102,7 +102,7 @@ public:
 	{
 	}
 
-	void InitInterrupt(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
+	void InitInterrupt([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
 	{
 #ifdef _WIN32
 		std::cerr << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;

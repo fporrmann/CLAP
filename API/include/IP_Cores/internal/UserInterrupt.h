@@ -167,8 +167,8 @@ public:
 			std::cout << CLASS_TAG("UserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 #endif // XDMA_VERBOSE
 #endif // EMBEDDED_XILINX
-#endif // _WIN32
 		return false;
+#endif // _WIN32
 	}
 
 	void RegisterCallback([[maybe_unused]] const std::function<void(uint32_t)>& callback)

@@ -85,7 +85,7 @@ protected:
 	template<typename T>
 	void registerReg(Register<T>& reg, const uint64_t& offset = 0x0)
 	{
-		if (sizeof(T) > sizeof(uint64_t))
+		if constexpr (sizeof(T) > sizeof(uint64_t))
 		{
 			std::stringstream ss("");
 			ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
