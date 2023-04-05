@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: WatchDog.h
  *  Copyright (c) 2021 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -64,12 +64,12 @@ static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xd
 			std::cout << "[" << name << "] Polling Mode ... " << std::endl;
 #endif
 			while (!pStatus->PollDone())
-				usleep(1);
+				std::this_thread::sleep_for(std::chrono::microseconds(1));
 		}
 	}
 	catch (...)
 	{
-		//Set the global exception pointer in case of an exception
+		// Set the global exception pointer in case of an exception
 		g_pExcept = std::current_exception();
 	}
 
@@ -104,12 +104,20 @@ public:
 
 	void InitInterrupt(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
 	{
+#ifdef _WIN32
+		std::cerr << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+#else
 		m_interrupt.Init(devNum, interruptNum, pReg);
+#endif
 	}
 
 	void UnsetInterrupt()
 	{
+#ifdef _WIN32
+		std::cerr << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+#else
 		m_interrupt.Unset();
+#endif
 	}
 
 	void SetStatusRegister(HasStatus* pStatus)
@@ -204,7 +212,7 @@ private:
 			{
 				std::rethrow_exception(g_pExcept);
 			}
-			catch (const std::exception& ex)
+			catch ([[maybe_unused]] const std::exception& ex)
 			{
 			}
 		}

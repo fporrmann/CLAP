@@ -48,6 +48,7 @@
 #endif
 
 #include "Constants.h"
+#include "Defines.h"
 #include "Utils.h"
 
 #ifndef EMBEDDED_XILINX
@@ -64,36 +65,6 @@
  *	systems.)
  */
 static const uint32_t RW_MAX_SIZE = 0x7ffff000;
-
-#ifdef _WIN32
-using DeviceHandle = HANDLE;
-using FlagType     = DWORD;
-using FileOpType   = DWORD;
-using OffsetType   = LONG;
-using ByteCntType  = DWORD;
-
-#define INVALID_HANDLE              INVALID_HANDLE_VALUE
-#define DEFAULT_OPEN_FLAGS          (GENERIC_READ | GENERIC_WRITE)
-#define OPEN_DEVICE(NAME, FLAGS)    CreateFile(NAME, FLAGS, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)
-#define DEVICE_HANDLE_VALID(HANDLE) (HANDLE != INVALID_HANDLE_VALUE)
-#define CLOSE_DEVICE(HANDLE)        CloseHandle(HANDLE)
-#define SEEK(HANDLE, OFFSET)        SetFilePointer(HANDLE, OFFSET, NULL, FILE_BEGIN)
-#define SEEK_INVALID(RC, OFFSET)    (RC == INVALID_SET_FILE_POINTER)
-#else
-using DeviceHandle = int32_t;
-using FlagType     = int32_t;
-using FileOpType   = ssize_t;
-using OffsetType   = off_t;
-using ByteCntType  = uint64_t;
-
-#define INVALID_HANDLE              -1
-#define DEFAULT_OPEN_FLAGS          (O_RDWR | O_NONBLOCK)
-#define OPEN_DEVICE(NAME, FLAGS)    open(NAME, FLAGS)
-#define DEVICE_HANDLE_VALID(HANDLE) (HANDLE >= 0)
-#define CLOSE_DEVICE(HANDLE)        close(HANDLE)
-#define SEEK(HANDLE, OFFSET)        lseek(HANDLE, OFFSET, SEEK_SET)
-#define SEEK_INVALID(RC, OFFSET)    (RC != OFFSET)
-#endif
 
 DEFINE_EXCEPTION(XDMAException)
 

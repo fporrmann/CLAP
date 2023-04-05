@@ -161,7 +161,7 @@ public:
 	void SetDataAddr(const uint64_t& offset, const Memory& mem, const AddressType& addrType = AddressType::BIT_64)
 	{
 		if (addrType == AddressType::BIT_32)
-			setDataAddr<uint32_t>(offset, mem.GetBaseAddr());
+			setDataAddr<uint32_t>(offset, static_cast<uint32_t>(mem.GetBaseAddr()));
 		else
 			setDataAddr<uint64_t>(offset, mem.GetBaseAddr());
 	}

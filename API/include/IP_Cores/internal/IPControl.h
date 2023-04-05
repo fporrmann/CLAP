@@ -48,7 +48,7 @@ public:
 		XDMAManaged(pXdma),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
-		{}
+	{}
 
 	// Method used by the static update callback function to update
 	// the given register
@@ -102,13 +102,13 @@ protected:
 		switch (sizeof(T))
 		{
 			case 8:
-				return XDMA()->Read64(m_ctrlOffset + regOffset);
+				return static_cast<T>(XDMA()->Read64(m_ctrlOffset + regOffset));
 			case 4:
-				return XDMA()->Read32(m_ctrlOffset + regOffset);
+				return static_cast<T>(XDMA()->Read32(m_ctrlOffset + regOffset));
 			case 2:
-				return XDMA()->Read16(m_ctrlOffset + regOffset);
+				return static_cast<T>(XDMA()->Read16(m_ctrlOffset + regOffset));
 			case 1:
-				return XDMA()->Read8(m_ctrlOffset + regOffset);
+				return static_cast<T>(XDMA()->Read8(m_ctrlOffset + regOffset));
 		}
 
 		throw std::runtime_error("THIS SHOULD NOT HAPPEN - readRegister");
@@ -120,16 +120,16 @@ protected:
 		switch (sizeof(T))
 		{
 			case 8:
-				XDMA()->Write64(m_ctrlOffset + regOffset, regData);
+				XDMA()->Write64(m_ctrlOffset + regOffset, static_cast<uint64_t>(regData));
 				return;
 			case 4:
-				XDMA()->Write32(m_ctrlOffset + regOffset, regData);
+				XDMA()->Write32(m_ctrlOffset + regOffset, static_cast<uint32_t>(regData));
 				return;
 			case 2:
-				XDMA()->Write16(m_ctrlOffset + regOffset, regData);
+				XDMA()->Write16(m_ctrlOffset + regOffset, static_cast<uint16_t>(regData));
 				return;
 			case 1:
-				XDMA()->Write8(m_ctrlOffset + regOffset, regData);
+				XDMA()->Write8(m_ctrlOffset + regOffset, static_cast<uint8_t>(regData));
 				return;
 		}
 
