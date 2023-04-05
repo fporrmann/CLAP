@@ -32,8 +32,7 @@ namespace xdma
 /// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
 #include <stdlib.h>
 
-/* We can't depend on <stdlib.h> since the prototype of posix_memalign
-   may not be visible.  */
+// We can't depend on <stdlib.h> since the prototype of posix_memalign may not be visible.
 #ifndef __cplusplus
 extern int posix_memalign(void**, size_t, size_t);
 #else
@@ -41,7 +40,7 @@ extern "C" int posix_memalign(void**, size_t, size_t) throw();
 #endif
 
 static __inline void*
-_mm_malloc(size_t size, size_t alignment)
+aligned_alloc(size_t size, size_t alignment)
 {
 	void* ptr;
 	if (alignment == 1)
@@ -55,12 +54,12 @@ _mm_malloc(size_t size, size_t alignment)
 }
 
 static __inline void
-_mm_free(void* ptr)
+_aligned_free(void* ptr)
 {
 	free(ptr);
 }
 #else
-#include <mm_malloc.h>
+#include <malloc.h>
 #endif
 
 // Alignment allocator for std::vector
@@ -68,12 +67,20 @@ _mm_free(void* ptr)
 
 static inline void* alignedMalloc(size_t alignment, size_t size) noexcept
 {
-	return _mm_malloc(size, alignment);
+#ifdef WIN32
+	return _aligned_malloc(size, alignment);
+#else
+	return aligned_alloc(alignment, size);
+#endif
 }
 
 static inline void alignedFree(void* ptr) noexcept
 {
-	_mm_free(ptr);
+#ifdef WIN32
+	_aligned_free(ptr);
+#else
+	free(ptr);
+#endif
 }
 
 template<typename T, std::size_t Alignment = sizeof(void*)>

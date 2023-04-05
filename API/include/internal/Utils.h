@@ -60,6 +60,14 @@
 	};
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ >= 4)
+#define CHECK_RESULT __attribute__((warn_unused_result))
+#elif defined(_MSC_VER) && (_MSC_VER >= 1700)
+#define CHECK_RESULT _Check_return_
+#else
+#define CHECK_RESULT
+#endif
+
 static const int32_t WAIT_INFINITE = -1;
 
 /// -------------------------------------------------------------------- ///
@@ -159,7 +167,7 @@ static inline std::string SpeedWidthSuffix(double val)
 	return str;
 }
 
-static inline std::string SizeWithSuffix(uint64_t val)
+static inline std::string SizeWithSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
@@ -169,4 +177,14 @@ static inline std::string SizeWithSuffix(uint64_t val)
 	str.append(GetPrefix(order));
 
 	return str;
+}
+
+static inline std::string SizeWithSuffix(const uint64_t &val)
+{
+	return SizeWithSuffix(static_cast<double>(val));
+}
+
+static inline std::string SizeWithSuffix(const int64_t &val)
+{
+	return SizeWithSuffix(static_cast<double>(val));
 }

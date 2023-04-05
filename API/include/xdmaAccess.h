@@ -47,16 +47,13 @@
 #include <sys/types.h>
 /////////////////////////
 
-/////////////////////////
-// Include for read(), write(), lseek()
-#include <unistd.h>
-/////////////////////////
-
 #ifndef EMBEDDED_XILINX
+#ifndef _WIN32
 /////////////////////////
 // Include for mmap(), munmap()
 #include <sys/mman.h>
 /////////////////////////
+#endif
 #endif
 
 #include <algorithm>
@@ -371,7 +368,7 @@ public:
 	/// @param sizeInByte Size of the data buffer in bytes
 	/// @param verbose If true, additional information will be printed to the console
 	/// @return DMA buffer containing the read data
-	DMABuffer Read(const uint64_t& addr, const uint64_t& sizeInByte, const bool& verbose = false) __attribute__((warn_unused_result))
+	DMABuffer Read(const uint64_t& addr, const uint32_t& sizeInByte, const bool& verbose = false) CHECK_RESULT
 	{
 		DMABuffer buffer = DMABuffer(sizeInByte, 0);
 		Read(addr, buffer, sizeInByte, verbose);
@@ -386,7 +383,7 @@ public:
 	template<typename T>
 	T Read(const uint64_t& addr, const bool& verbose = false)
 	{
-		const uint64_t size = static_cast<uint64_t>(sizeof(T));
+		const uint32_t size = static_cast<uint32_t>(sizeof(T));
 		DMABuffer data      = Read(addr, size, verbose);
 		T res;
 		std::memcpy(&res, data.data(), size);
@@ -844,6 +841,7 @@ private:
 #endif
 };
 
+#ifndef _WIN32
 // TODO: Add backend classes for Pio
 class XDMAPio : virtual public XDMABase
 {
@@ -1016,6 +1014,7 @@ private:
 
 	static const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
 };
+#endif // XDMAPio
 
 inline XDMAManaged::XDMAManaged(std::shared_ptr<XDMABase> pXdma) :
 	m_pXdma(pXdma)

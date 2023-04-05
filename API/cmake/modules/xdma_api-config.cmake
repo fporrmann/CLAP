@@ -2,6 +2,13 @@ if(XDMA_API_FOUND)
 	return()
 endif()
 
+if(WIN32)
+	# When building with MSVC, disable the warning about using the "unsafe" version of the CRT functions.
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	# Disable the default min/max macros in Windows.h
+	add_definitions(-DNOMINMAX)
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)

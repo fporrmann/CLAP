@@ -31,12 +31,19 @@
 #include <mutex>
 #include <sstream>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <unistd.h>
+#endif
 
 #ifndef EMBEDDED_XILINX
 /////////////////////////
 // Include for mmap(), munmap()
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 /////////////////////////
 #endif
 
@@ -57,6 +64,36 @@
  *	systems.)
  */
 static const uint32_t RW_MAX_SIZE = 0x7ffff000;
+
+#ifdef _WIN32
+using DeviceHandle = HANDLE;
+using FlagType     = DWORD;
+using FileOpType   = DWORD;
+using OffsetType   = LONG;
+using ByteCntType  = DWORD;
+
+#define INVALID_HANDLE              INVALID_HANDLE_VALUE
+#define DEFAULT_OPEN_FLAGS          (GENERIC_READ | GENERIC_WRITE)
+#define OPEN_DEVICE(NAME, FLAGS)    CreateFile(NAME, FLAGS, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)
+#define DEVICE_HANDLE_VALID(HANDLE) (HANDLE != INVALID_HANDLE_VALUE)
+#define CLOSE_DEVICE(HANDLE)        CloseHandle(HANDLE)
+#define SEEK(HANDLE, OFFSET)        SetFilePointer(HANDLE, OFFSET, NULL, FILE_BEGIN)
+#define SEEK_INVALID(RC, OFFSET)    (RC == INVALID_SET_FILE_POINTER)
+#else
+using DeviceHandle = int32_t;
+using FlagType     = int32_t;
+using FileOpType   = ssize_t;
+using OffsetType   = off_t;
+using ByteCntType  = uint64_t;
+
+#define INVALID_HANDLE              -1
+#define DEFAULT_OPEN_FLAGS          (O_RDWR | O_NONBLOCK)
+#define OPEN_DEVICE(NAME, FLAGS)    open(NAME, FLAGS)
+#define DEVICE_HANDLE_VALID(HANDLE) (HANDLE >= 0)
+#define CLOSE_DEVICE(HANDLE)        close(HANDLE)
+#define SEEK(HANDLE, OFFSET)        lseek(HANDLE, OFFSET, SEEK_SET)
+#define SEEK_INVALID(RC, OFFSET)    (RC != OFFSET)
+#endif
 
 DEFINE_EXCEPTION(XDMAException)
 
@@ -90,12 +127,12 @@ public:
 			return m_nameWrite;
 	}
 
-	int32_t OpenDevice(const std::string& name, int32_t flags = O_RDWR | O_NONBLOCK) const
+	DeviceHandle OpenDevice(const std::string& name, FlagType flags = DEFAULT_OPEN_FLAGS) const
 	{
-		int32_t fd  = open(name.c_str(), flags);
-		int32_t err = errno;
+		DeviceHandle fd = OPEN_DEVICE(name.c_str(), flags);
+		int32_t err     = errno;
 
-		if (fd < 0)
+		if (!DEVICE_HANDLE_VALID(fd))
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("") << "Unable to open device " << name << "; errno: " << err;
@@ -139,8 +176,8 @@ public:
 		std::lock_guard<std::mutex> lockRd(m_readMutex);
 		std::lock_guard<std::mutex> lockWd(m_writeMutex);
 
-		close(m_h2cFd);
-		close(m_c2hFd);
+		CLOSE_DEVICE(m_h2cFd);
+		CLOSE_DEVICE(m_c2hFd);
 	}
 
 	uint32_t GetDevNum() const
@@ -171,30 +208,37 @@ public:
 		}
 
 		uint64_t count     = 0;
-		off_t offset       = addr;
+		OffsetType offset  = static_cast<OffsetType>(addr);
 		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
-		ssize_t rc;
+		FileOpType rc;
 		xdma::Timer timer;
 
 		if (verbose) timer.Start();
 
 		while (count < sizeInByte)
 		{
-			uint64_t bytes = sizeInByte - count;
+			ByteCntType bytes = (sizeInByte - count) > RW_MAX_SIZE ? RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			rc = lseek(m_c2hFd, offset, SEEK_SET);
-			if (rc != offset)
+			rc = SEEK(m_c2hFd, offset);
+			if (SEEK_INVALID(rc, offset))
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec;
 				throw XDMAException(ss.str());
 			}
 
-			rc            = ::read(m_c2hFd, pByteData + count, bytes);
+#if _WIN32
+			if (!ReadFile(m_c2hFd, pByteData + count, bytes, &rc, NULL))
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << bytes << " byte from offset 0x" << offset << " Error: " << GetLastError() << std::dec;
+				throw XDMAException(ss.str());
+			}
+#else
+			rc = ::read(m_c2hFd, pByteData + count, bytes);
+#endif
+
 			int32_t errsv = errno;
 
 			if (static_cast<uint64_t>(rc) != bytes)
@@ -249,29 +293,35 @@ public:
 
 		uint64_t count           = 0;
 		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
-		off_t offset             = addr;
+		OffsetType offset        = static_cast<OffsetType>(addr);
 
-		ssize_t rc;
+		FileOpType rc;
 		xdma::Timer timer;
 
 		if (verbose) timer.Start();
 
 		while (count < sizeInByte)
 		{
-			uint64_t bytes = sizeInByte - count;
+			ByteCntType bytes = (sizeInByte - count) > RW_MAX_SIZE ? RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			rc = lseek(m_h2cFd, offset, SEEK_SET);
-			if (rc != offset)
+			rc = SEEK(m_h2cFd, offset);
+			if (SEEK_INVALID(rc, offset))
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec << std::dec;
 				throw XDMAException(ss.str());
 			}
 
-			rc            = ::write(m_h2cFd, pByteData + count, bytes);
+#ifdef _WIN32
+			if (!WriteFile(m_h2cFd, pByteData + count, bytes, &rc, NULL))
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << bytes << " byte to offset 0x" << offset << " Error: " << GetLastError() << std::dec;
+				throw XDMAException(ss.str());
+			}
+#else
+			rc = ::write(m_h2cFd, pByteData + count, bytes);
+#endif
 			int32_t errsv = errno;
 
 			if (static_cast<uint64_t>(rc) != bytes)
@@ -304,12 +354,14 @@ public:
 private:
 	std::string m_h2cDeviceName;
 	std::string m_c2hDeviceName;
-	int32_t m_h2cFd = -1;
-	int32_t m_c2hFd = -1;
+	DeviceHandle m_h2cFd = INVALID_HANDLE;
+	DeviceHandle m_c2hFd = INVALID_HANDLE;
 	uint32_t m_devNum;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
 };
+
+#ifndef _WIN32
 
 class PetaLinuxBackend : virtual public XDMABackend
 {
@@ -454,7 +506,11 @@ private:
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
 };
-#endif
+
+#endif // _WIN32
+#endif // EMBEDDED_XILINX
+
+#ifndef _WIN32
 
 class BareMetalBackend : virtual public XDMABackend
 {
@@ -542,3 +598,5 @@ public:
 		}
 	}
 };
+
+#endif // _WIN32
