@@ -39,7 +39,9 @@
 // - Try to force the use of aligned memory, e.g., by using the DMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // - Replace boolean flags with enums for better readability
-
+// --------------------------------------------------------------------------------------------
+// - Improve / generalize the CMake environment for the samples
+// - Redesign some of the methods to remove the need for explizit casts
 /////////////////////////
 // Includes for open()
 #include <fcntl.h>
