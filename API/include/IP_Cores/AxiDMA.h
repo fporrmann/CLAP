@@ -66,7 +66,7 @@ class AxiDMA : public IPControlBase
 	};
 
 public:
-	AxiDMA(class XDMA* pXdma, const uint64_t& ctrlOffset) :
+	AxiDMA(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset) :
 		IPControlBase(pXdma, ctrlOffset),
 		m_watchDogMM2S("AxiDMA_MM2S"),
 		m_watchDogS2MM("AxiDMA_S2MM")

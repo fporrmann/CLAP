@@ -68,7 +68,7 @@ class VDMA : public IPControlBase
 	};
 
 public:
-	VDMA(class XDMA* pXdma, const uint64_t& ctrlOffset) :
+	VDMA(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset) :
 		IPControlBase(pXdma, ctrlOffset),
 		m_watchDogMM2S("VDMA_MM2S"),
 		m_watchDogS2MM("VDMA_S2MM")
