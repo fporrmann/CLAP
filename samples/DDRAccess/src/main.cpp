@@ -34,7 +34,7 @@ int main()
 	testData[7] = 0x37;
 
 	// Allocate memory for the data on the devices DDR
-	Memory buf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint8_t));
+	Memory buf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint8_t)));
 
 	// Write 0xFF to the memory, in this case, this operation writes data directly into the DDR
 	// attached to the FPGA. The data is written to the address specified by the buf object.

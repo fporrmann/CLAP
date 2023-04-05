@@ -8,7 +8,7 @@ using Buffer = std::vector<uint32_t, xdma::AlignmentAllocator<uint32_t, XDMA_ALI
 
 int main(int argc, char** argv)
 {
-	uint64_t testDataSize = 1024;
+	uint32_t testDataSize = 1024;
 
 	if (argc > 1)
 		testDataSize = std::atoi(argv[1]);
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 	// Validate the result data
 	bool success = true;
-	for (uint64_t i = 0; i < testDataSize; i++)
+	for (uint32_t i = 0; i < testDataSize; i++)
 	{
 		// +10 here due to the HLS core used in the example, remove incase of standard circular XDMA example
 		if (testDataRB[i] != (testData[i] + 10))

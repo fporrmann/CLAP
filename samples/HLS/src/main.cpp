@@ -49,8 +49,8 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		Memory inBuf  = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint16_t));
-		Memory outBuf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
+		Memory inBuf  = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
+		Memory outBuf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
 
 		// Set the addresses of the input and output memory used in the HLS core.
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDRIN_DATA, inBuf);
