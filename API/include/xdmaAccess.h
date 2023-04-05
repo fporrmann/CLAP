@@ -192,6 +192,31 @@ public:
 private:
 	using MemoryPair = std::pair<MemoryType, MemoryManagerVec>;
 
+	struct XDMAInfo
+	{
+		XDMAInfo(const uint32_t& reg0x0, const uint32_t& reg0x4)
+		{
+			channelID = (reg0x0 >> 8) & 0xF;
+			version   = (reg0x0 >> 0) & 0xF;
+			streaming = (reg0x0 >> 15) & 0x1;
+			polling   = (reg0x4 >> 26) & 0x1;
+		}
+
+		friend std::ostream& operator<<(std::ostream& os, const XDMAInfo& info)
+		{
+			os << "Channel ID: " << static_cast<uint32_t>(info.channelID) << std::endl;
+			os << "Version: " << static_cast<uint32_t>(info.version) << std::endl;
+			os << "Streaming: " << (info.streaming ? "true" : "false") << std::endl;
+			os << "Polling: " << (info.polling ? "true" : "false");
+			return os;
+		}
+
+		uint8_t channelID = 0;
+		uint8_t version = 0;
+		bool streaming = false;
+		bool polling = false;
+	};
+
 	XDMA(XDMABackendShr pBackend) :
 		XDMABase(pBackend->GetDevNum()),
 		m_pBackend(pBackend),
@@ -203,15 +228,23 @@ private:
 	{
 		m_memories.insert(MemoryPair(MemoryType::DDR, MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, MemoryManagerVec()));
+
+		LOG_VERBOSE << "XDMA instance created" << std::endl;
+		LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
+		LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
+		LOG_VERBOSE << readInfo() << std::endl;
 	}
 
 public:
+	/// @brief Creates a new XDMA instance
+	/// @tparam T Type of the backend to use
+	/// @return A shared pointer to the new XDMA instance
 	template<typename T>
-	static XDMAShr Create()
+	static XDMAShr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
 	{
 		// We have to use the result of new here, because the constructor is private
 		// and can therefore, not be called from make_shared
-		return XDMAShr(new XDMA(std::make_shared<T>()));
+		return XDMAShr(new XDMA(std::make_shared<T>(deviceNum, channelNum)));
 	}
 
 	~XDMA()
@@ -817,6 +850,44 @@ private:
 		m_readStreamTimer.Stop();
 	}
 
+	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+	uint8_t readCtrl8(const uint64_t& addr)
+	{
+		return readCtrl<uint8_t>(addr);
+	}
+
+	uint16_t readCtrl16(const uint64_t& addr)
+	{
+		return readCtrl<uint16_t>(addr);
+	}
+
+	uint32_t readCtrl32(const uint64_t& addr)
+	{
+		return readCtrl<uint32_t>(addr);
+	}
+
+	uint64_t readCtrl64(const uint64_t& addr)
+	{
+		return readCtrl<uint64_t>(addr);
+	}
+
+	template<typename T>
+	T readCtrl(const uint64_t& addr)
+	{
+		uint64_t tmp;
+		m_pBackend->ReadCtrl(addr, tmp, sizeof(T));
+		return static_cast<T>(tmp);
+	}
+
+	XDMAInfo readInfo()
+	{
+		uint32_t reg0 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x0);
+		uint32_t reg4 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x4);
+		return XDMAInfo(reg0, reg4);
+	}
+	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 private:
 	XDMABackendShr m_pBackend;
 	std::map<MemoryType, MemoryManagerVec> m_memories;
@@ -831,6 +902,7 @@ private:
 
 #ifndef _WIN32
 // TODO: Add backend classes for Pio
+// NOTE: PIO is used for the AXI-Lite interface of the XDMA -- But currently not fully supported by this API
 class XDMAPio : virtual public XDMABase
 {
 public:

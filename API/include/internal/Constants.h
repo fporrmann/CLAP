@@ -37,3 +37,6 @@ static const uint64_t USE_VECTOR_SIZE            = 0; // Flag to automatically c
 static const int32_t WAIT_INFINITE = -1;
 
 static const uint8_t SAME_AS_START_BIT = 0xFF;
+
+static const uint64_t XDMA_CTRL_BASE = 0x0;
+static const uint64_t XDMA_CTRL_SIZE = 0x100;
