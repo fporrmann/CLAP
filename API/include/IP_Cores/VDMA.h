@@ -578,7 +578,7 @@ public:
 			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride = 0;
+		uint16_t Stride    = 0;
 		uint8_t FrameDelay = 0;
 	};
 
@@ -591,7 +591,7 @@ public:
 			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride = 0;
+		uint16_t Stride    = 0;
 		uint8_t FrameDelay = 0;
 	};
 
@@ -623,18 +623,18 @@ public:
 		}
 
 		uint16_t XilinxInternal = 0;
-		uint8_t MinorVersion = 0;
-		uint8_t MajorVersion = 0;
+		uint8_t MinorVersion    = 0;
+		uint8_t MajorVersion    = 0;
 	};
 
 public:
-	MM2SControlRegister m_mm2sCtrlReg = MM2SControlRegister();
-	MM2SStatusRegister m_mm2sStatReg = MM2SStatusRegister();
-	ParkPointerRegister m_parkPntrReg = ParkPointerRegister();
-	VDMAVersionRegister m_versionReg = VDMAVersionRegister();
-	S2MMControlRegister m_s2mmCtrlReg = S2MMControlRegister();
-	S2MMStatusRegister m_s2mmStatReg = S2MMStatusRegister();
-	S2MMIrqMask m_s2mmIrqMask = S2MMIrqMask();
+	MM2SControlRegister m_mm2sCtrlReg                 = MM2SControlRegister();
+	MM2SStatusRegister m_mm2sStatReg                  = MM2SStatusRegister();
+	ParkPointerRegister m_parkPntrReg                 = ParkPointerRegister();
+	VDMAVersionRegister m_versionReg                  = VDMAVersionRegister();
+	S2MMControlRegister m_s2mmCtrlReg                 = S2MMControlRegister();
+	S2MMStatusRegister m_s2mmStatReg                  = S2MMStatusRegister();
+	S2MMIrqMask m_s2mmIrqMask                         = S2MMIrqMask();
 	MM2SFrameDelayStrideRegister m_mm2sFDelyStrideReg = MM2SFrameDelayStrideRegister();
 	SS2MFrameDelayStrideRegister m_s2mmFDelyStrideReg = SS2MFrameDelayStrideRegister();
 

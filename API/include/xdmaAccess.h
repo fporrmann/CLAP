@@ -212,9 +212,9 @@ private:
 		}
 
 		uint8_t channelID = 0;
-		uint8_t version = 0;
-		bool streaming = false;
-		bool polling = false;
+		uint8_t version   = 0;
+		bool streaming    = false;
+		bool polling      = false;
 	};
 
 	XDMA(XDMABackendShr pBackend) :

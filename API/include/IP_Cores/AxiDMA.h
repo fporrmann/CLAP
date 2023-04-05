@@ -454,9 +454,9 @@ public:
 
 public:
 	MM2SControlRegister m_mm2sCtrlReg = MM2SControlRegister();
-	MM2SStatusRegister m_mm2sStatReg = MM2SStatusRegister();
+	MM2SStatusRegister m_mm2sStatReg  = MM2SStatusRegister();
 	S2MMControlRegister m_s2mmCtrlReg = S2MMControlRegister();
-	S2MMStatusRegister m_s2mmStatReg = S2MMStatusRegister();
+	S2MMStatusRegister m_s2mmStatReg  = S2MMStatusRegister();
 
 private:
 	WatchDog m_watchDogMM2S;

@@ -26,8 +26,8 @@
 
 #pragma once
 
-#include "RegisterInterface.h"
 #include "../../internal/Logger.h"
+#include "RegisterInterface.h"
 
 class ApCtrl : public Register<uint8_t>, public HasStatus
 {

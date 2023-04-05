@@ -36,8 +36,8 @@
 #include <string>
 #include <vector>
 
-#include "../../internal/Logger.h"
 #include "../../internal/Constants.h"
+#include "../../internal/Logger.h"
 #include "../../internal/Utils.h"
 
 // Required to store the template class RegElem which will be used with different template types in a vector

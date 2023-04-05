@@ -122,10 +122,10 @@ public:
 	}
 
 protected:
-	bool m_valid            = false;
-	std::string m_nameRead  = "";
-	std::string m_nameWrite = "";
-	std::string m_nameCtrl  = "";
+	bool m_valid              = false;
+	std::string m_nameRead    = "";
+	std::string m_nameWrite   = "";
+	std::string m_nameCtrl    = "";
 	std::string m_backendName = "XDMA";
 };
 
@@ -144,15 +144,15 @@ public:
 		m_writeMutex(),
 		m_ctrlMutex()
 	{
-		m_nameRead  = m_c2hDeviceName;
-		m_nameWrite = m_h2cDeviceName;
-		m_nameCtrl  = m_ctrlDeviceName;
+		m_nameRead    = m_c2hDeviceName;
+		m_nameWrite   = m_h2cDeviceName;
+		m_nameCtrl    = m_ctrlDeviceName;
 		m_backendName = "XDMA PCIe";
 
-		m_h2cFd     = OpenDevice(m_h2cDeviceName);
-		m_c2hFd     = OpenDevice(m_c2hDeviceName);
-		m_ctrlFd    = OpenDevice(m_ctrlDeviceName, CTRL_OPEN_FLAGS);
-		m_valid     = (DEVICE_HANDLE_VALID(m_h2cFd) && DEVICE_HANDLE_VALID(m_c2hFd) && DEVICE_HANDLE_VALID(m_ctrlFd));
+		m_h2cFd  = OpenDevice(m_h2cDeviceName);
+		m_c2hFd  = OpenDevice(m_c2hDeviceName);
+		m_ctrlFd = OpenDevice(m_ctrlDeviceName, CTRL_OPEN_FLAGS);
+		m_valid  = (DEVICE_HANDLE_VALID(m_h2cFd) && DEVICE_HANDLE_VALID(m_c2hFd) && DEVICE_HANDLE_VALID(m_ctrlFd));
 	}
 
 	virtual ~PCIeBackend()
@@ -342,14 +342,14 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		if(byteCnt > 8)
+		if (byteCnt > 8)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "byteCnt is greater than 8 (64-bit), which is not supported.";
 			throw XDMAException(ss.str());
 		}
 
-		ByteCntType bytes = byteCnt;
+		ByteCntType bytes = static_cast<ByteCntType>(byteCnt);
 		OffsetType offset = static_cast<OffsetType>(addr);
 		FileOpType rc;
 
@@ -402,13 +402,12 @@ public:
 		m_readMutex(),
 		m_writeMutex()
 	{
-		m_nameRead  = m_memDev;
-		m_nameWrite = m_memDev;
+		m_nameRead    = m_memDev;
+		m_nameWrite   = m_memDev;
 		m_backendName = "PetaLinux";
 
-		
-		m_fd        = OpenDevice(m_memDev);
-		m_valid     = (m_fd >= 0);
+		m_fd    = OpenDevice(m_memDev);
+		m_valid = (m_fd >= 0);
 	}
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
@@ -543,10 +542,10 @@ class BareMetalBackend : virtual public XDMABackend
 public:
 	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
 	{
-		m_nameRead  = "BareMetal";
-		m_nameWrite = "BareMetal";
+		m_nameRead    = "BareMetal";
+		m_nameWrite   = "BareMetal";
 		m_backendName = "BareMetal";
-		m_valid     = true;
+		m_valid       = true;
 	}
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
