@@ -32,6 +32,8 @@
 
 #include "UserInterrupt.h"
 
+#include "../../internal/Logger.h"
+
 #ifndef EMBEDDED_XILINX
 #include "../../internal/Timer.h"
 #include <atomic>
@@ -53,16 +55,12 @@ static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xd
 	{
 		if (pUserIntr->IsSet())
 		{
-#ifdef XDMA_VERBOSE
-			std::cout << "[" << name << "] Interrupt Mode ... " << std::endl;
-#endif
+			LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
 			pUserIntr->WaitForInterrupt(WAIT_INFINITE);
 		}
 		else if (pStatus)
 		{
-#ifdef XDMA_VERBOSE
-			std::cout << "[" << name << "] Polling Mode ... " << std::endl;
-#endif
+			LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
 			while (!pStatus->PollDone())
 				std::this_thread::sleep_for(std::chrono::microseconds(1));
 		}
@@ -78,9 +76,7 @@ static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xd
 	pCv->notify_one();
 	pThreadDone->store(true, std::memory_order_release);
 
-#ifdef XDMA_VERBOSE
-	std::cout << "[" << name << "] Finished" << std::endl;
-#endif
+	LOG_DEBUG << "[" << name << "] Finished" << std::endl;
 }
 #endif
 
@@ -105,7 +101,7 @@ public:
 	void InitInterrupt([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
 	{
 #ifdef _WIN32
-		std::cerr << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_interrupt.Init(devNum, interruptNum, pReg);
 #endif
@@ -114,7 +110,7 @@ public:
 	void UnsetInterrupt()
 	{
 #ifdef _WIN32
-		std::cerr << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_interrupt.Unset();
 #endif
@@ -156,9 +152,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		using namespace std::chrono_literals;
 
-#ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
 
 		if (!m_threadRunning) return false;
 

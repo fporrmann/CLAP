@@ -49,13 +49,12 @@
 
 #include "Constants.h"
 #include "Defines.h"
+#include "Logger.h"
 #include "Utils.h"
 
 #ifndef EMBEDDED_XILINX
 #include "Timer.h"
 #endif
-
-#define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)
 
 /*
  * man 2 write:
@@ -82,8 +81,8 @@ public:
 
 	virtual ~XDMABackend() {}
 
-	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)        = 0;
-	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false) = 0;
+	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)        = 0;
+	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) = 0;
 
 	virtual uint32_t GetDevNum() const
 	{
@@ -156,11 +155,9 @@ public:
 		return m_devNum;
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << " verbose=" << verbose << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -185,7 +182,7 @@ public:
 		FileOpType rc;
 		xdma::Timer timer;
 
-		if (verbose) timer.Start();
+		timer.Start();
 
 		while (count < sizeInByte)
 		{
@@ -223,7 +220,7 @@ public:
 			offset += bytes; // TODO: this might cause problems in streaming mode
 		}
 
-		if (verbose) timer.Stop();
+		timer.Stop();
 
 		if (count != sizeInByte)
 		{
@@ -232,19 +229,13 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		if (verbose)
-		{
-			std::cout << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					  << " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
-		}
+		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-
-		std::cout << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << " verbose=" << verbose << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -269,7 +260,7 @@ public:
 		FileOpType rc;
 		xdma::Timer timer;
 
-		if (verbose) timer.Start();
+		timer.Start();
 
 		while (count < sizeInByte)
 		{
@@ -306,7 +297,7 @@ public:
 			offset += bytes; // TODO: This might casue problems in streaming mode
 		}
 
-		if (verbose) timer.Stop();
+		timer.Stop();
 
 		if (count != sizeInByte)
 		{
@@ -315,11 +306,8 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		if (verbose)
-		{
-			std::cout << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					  << " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
-		}
+		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 private:
@@ -350,11 +338,9 @@ public:
 		m_valid     = (m_fd >= 0);
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -376,7 +362,7 @@ public:
 
 		xdma::Timer timer;
 
-		if (verbose) timer.Start();
+		timer.Start();
 
 		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
 
@@ -395,7 +381,7 @@ public:
 
 		munmap(pMapBase, 0x10000 + sizeInByte);
 
-		if (verbose) timer.Stop();
+		timer.Stop();
 
 		if (count != sizeInByte)
 		{
@@ -404,19 +390,13 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		if (verbose)
-		{
-			std::cout << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					  << " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
-		}
+		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-
-		std::cout << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -436,7 +416,7 @@ public:
 
 		xdma::Timer timer;
 
-		if (verbose) timer.Start();
+		timer.Start();
 
 		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
 
@@ -455,7 +435,7 @@ public:
 
 		munmap(pMapBase, 0x10000 + sizeInByte);
 
-		if (verbose) timer.Stop();
+		timer.Stop();
 
 		if (count != sizeInByte)
 		{
@@ -464,11 +444,8 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		if (verbose)
-		{
-			std::cout << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					  << " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
-		}
+		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 private:
@@ -493,11 +470,9 @@ public:
 		m_valid     = true;
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{
@@ -531,11 +506,9 @@ public:
 		}
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, [[maybe_unused]] const bool& verbose = false)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-#ifdef XDMA_VERBOSE
-		std::cout << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
-#endif
+		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{

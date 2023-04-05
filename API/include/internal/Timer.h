@@ -33,6 +33,8 @@
 #include <string>
 #include <time.h>
 
+#include "Logger.h"
+
 namespace xdma
 {
 #ifdef PRINT_MU_SEC
@@ -187,8 +189,8 @@ public:
 	{
 		m_timer.Stop();
 		if (!m_funcName.empty())
-			std::cout << m_funcName << " - " << std::flush;
-		std::cout << "Execution Time: " << m_timer << std::endl;
+			LOG_INFO << m_funcName << " - " << std::flush;
+		LOG_INFO << "Execution Time: " << m_timer << std::endl;
 	}
 
 private:

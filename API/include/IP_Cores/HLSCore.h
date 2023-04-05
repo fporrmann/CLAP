@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "../internal/Logger.h"
 #include "internal/ApCtrl.h"
 #include "internal/IPControl.h"
 #include "internal/WatchDog.h"
@@ -103,13 +104,13 @@ public:
 
 		if (!m_watchDog.Start())
 		{
-			std::cerr << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+			LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 			return false;
 		}
 
 		if (!m_apCtrl.Start())
 		{
-			std::cerr << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
+			LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
 			return false;
 		}
 
@@ -201,7 +202,7 @@ public:
 
 	void PrintApStatus()
 	{
-		std::cout << "---- " << m_name << " ----" << std::endl;
+		LOG_INFO << "---- " << m_name << " ----" << std::endl;
 		m_apCtrl.PrintStatus();
 	}
 

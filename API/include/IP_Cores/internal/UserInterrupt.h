@@ -50,6 +50,7 @@
 #include <iostream>
 
 #include "../../internal/Defines.h"
+#include "../../internal/Logger.h"
 #include "../../internal/Utils.h"
 #include "RegisterInterface.h"
 
@@ -123,7 +124,7 @@ public:
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
 	{
 #ifdef _WIN32
-		std::cerr << CLASS_TAG("UserInterrupt") << " Currently not implemented for Windows" << std::endl;
+		LOG_ERROR << CLASS_TAG("UserInterrupt") << " Currently not implemented for Windows" << std::endl;
 		return false;
 #else
 		if (!IsSet())
@@ -157,15 +158,11 @@ public:
 			for (auto& callback : m_callbacks)
 				callback(m_pReg->GetLastInterrupt());
 
-#ifdef XDMA_VERBOSE
-			std::cout << CLASS_TAG("UserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
-#endif
+			LOG_DEBUG << CLASS_TAG("UserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
 		}
-#ifdef XDMA_VERBOSE
 		else
-			std::cout << CLASS_TAG("UserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
-#endif // XDMA_VERBOSE
+			LOG_DEBUG << CLASS_TAG("UserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 #endif // EMBEDDED_XILINX
 		return false;
 #endif // _WIN32

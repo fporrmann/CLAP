@@ -27,6 +27,7 @@
 #pragma once
 
 #include "RegisterInterface.h"
+#include "../../internal/Logger.h"
 
 class ApCtrl : public Register<uint8_t>, public HasStatus
 {
@@ -46,13 +47,13 @@ public:
 	void PrintStatus()
 	{
 		getStatus();
-		std::cout << "---- ap_ctrl: ----" << std::endl
-				  << "ap_start    : " << ap_start << std::endl
-				  << "ap_done     : " << ap_done << " (" << m_done << ")" << std::endl
-				  << "ap_idle     : " << ap_idle << std::endl
-				  << "ap_ready    : " << ap_ready << std::endl
-				  << "auto_restart: " << auto_restart << std::endl
-				  << "------------------" << std::endl;
+		LOG_INFO << "---- ap_ctrl: ----" << std::endl
+				 << "ap_start    : " << ap_start << std::endl
+				 << "ap_done     : " << ap_done << " (" << m_done << ")" << std::endl
+				 << "ap_idle     : " << ap_idle << std::endl
+				 << "ap_ready    : " << ap_ready << std::endl
+				 << "auto_restart: " << auto_restart << std::endl
+				 << "------------------" << std::endl;
 	}
 
 	void Reset()

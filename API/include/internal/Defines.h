@@ -61,3 +61,5 @@ using ByteCntType  = uint64_t;
 #define SEEK(HANDLE, OFFSET)        lseek(HANDLE, OFFSET, SEEK_SET)
 #define SEEK_INVALID(RC, OFFSET)    (RC != OFFSET)
 #endif
+
+#define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)

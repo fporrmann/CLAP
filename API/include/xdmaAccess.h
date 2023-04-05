@@ -315,18 +315,16 @@ public:
 	/// @param addr Address to read from
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		m_pBackend->Read(addr, pData, sizeInByte, verbose);
+		m_pBackend->Read(addr, pData, sizeInByte);
 	}
 
 	/// @brief Reads data from the specified memory object into the data buffer
 	/// @param mem Memory object to read from
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Read(const Memory& mem, void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE, const bool& verbose = false)
+	void Read(const Memory& mem, void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 		if (size > mem.GetSize())
@@ -336,15 +334,14 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		Read(mem.GetBaseAddr(), pData, size, verbose);
+		Read(mem.GetBaseAddr(), pData, size);
 	}
 
 	/// @brief Reads data from the specified address into the given DMA buffer
 	/// @param addr Address to read from
 	/// @param buffer DMA buffer to read into
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Read(const uint64_t& addr, DMABuffer& buffer, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Read(const uint64_t& addr, DMABuffer& buffer, const uint64_t& sizeInByte)
 	{
 		if (sizeInByte > buffer.size())
 		{
@@ -353,40 +350,37 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		Read(addr, buffer.data(), sizeInByte, verbose);
+		Read(addr, buffer.data(), sizeInByte);
 	}
 
 	/// @brief Reads data from the specified address into the given DMA buffer
 	/// @param addr Address to read from
 	/// @param buffer DMA buffer to read into
-	/// @param verbose If true, additional information will be printed to the console
-	void Read(const uint64_t& addr, DMABuffer& buffer, const bool& verbose = false)
+	void Read(const uint64_t& addr, DMABuffer& buffer)
 	{
-		Read(addr, buffer.data(), buffer.size(), verbose);
+		Read(addr, buffer.data(), buffer.size());
 	}
 
 	/// @brief Reads data from the specified address and returns it as a DMA buffer
 	/// @param addr Address to read from
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
 	/// @return DMA buffer containing the read data
-	DMABuffer Read(const uint64_t& addr, const uint32_t& sizeInByte, const bool& verbose = false) CHECK_RESULT
+	DMABuffer Read(const uint64_t& addr, const uint32_t& sizeInByte) CHECK_RESULT
 	{
 		DMABuffer buffer = DMABuffer(sizeInByte, 0);
-		Read(addr, buffer, sizeInByte, verbose);
+		Read(addr, buffer, sizeInByte);
 		return buffer;
 	}
 
 	/// @brief Reads data from the specified address and returns it as an object of the template type T
 	/// @tparam T Object type of the object into which the data will be read
 	/// @param addr Address to read from
-	/// @param verbose If true, additional information will be printed to the console
 	/// @return Object of type T containing the read data
 	template<typename T>
-	T Read(const uint64_t& addr, const bool& verbose = false)
+	T Read(const uint64_t& addr)
 	{
 		const uint32_t size = static_cast<uint32_t>(sizeof(T));
-		DMABuffer data      = Read(addr, size, verbose);
+		DMABuffer data      = Read(addr, size);
 		T res;
 		std::memcpy(&res, data.data(), size);
 		return res;
@@ -396,12 +390,11 @@ public:
 	/// @tparam T Object type of the object into which the data will be read
 	/// @param addr Address to read from
 	/// @param buffer Object into which the data will be read
-	/// @param verbose If true, additional information will be printed to the console
 	template<typename T>
-	void Read(const uint64_t& addr, T& buffer, const bool& verbose = false)
+	void Read(const uint64_t& addr, T& buffer)
 	{
 		const uint64_t size = static_cast<uint64_t>(sizeof(T));
-		DMABuffer data      = Read(addr, size, verbose);
+		DMABuffer data      = Read(addr, size);
 		std::memcpy(&buffer, data.data(), size);
 	}
 
@@ -410,12 +403,11 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
-	/// @param verbose If true, additional information will be printed to the console
 	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
-	void Read(const uint64_t& addr, std::vector<T, A>& data, const bool& verbose = false)
+	void Read(const uint64_t& addr, std::vector<T, A>& data)
 	{
 		std::size_t size = sizeof(T);
-		Read(addr, data.data(), data.size() * size, verbose);
+		Read(addr, data.data(), data.size() * size);
 	}
 
 	/// @brief Reads a single unsigned byte from the specified address
@@ -490,18 +482,16 @@ public:
 	/// @param addr Address to write to
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		m_pBackend->Write(addr, pData, sizeInByte, verbose);
+		m_pBackend->Write(addr, pData, sizeInByte);
 	}
 
 	/// @brief Writes data to the specified memory object
 	/// @param mem Memory object to write to
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Write(const Memory& mem, const void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE, const bool& verbose = false)
+	void Write(const Memory& mem, const void* pData, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 		if (size > mem.GetSize())
@@ -511,15 +501,14 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		Write(mem.GetBaseAddr(), pData, size, verbose);
+		Write(mem.GetBaseAddr(), pData, size);
 	}
 
 	/// @brief Writes data to the specified address
 	/// @param addr Address to write to
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Write(const uint64_t& addr, const DMABuffer& buffer, const uint64_t& sizeInByte, const bool& verbose = false)
+	void Write(const uint64_t& addr, const DMABuffer& buffer, const uint64_t& sizeInByte)
 	{
 		if (sizeInByte > buffer.size())
 		{
@@ -528,26 +517,24 @@ public:
 			throw XDMAException(ss.str());
 		}
 
-		Write(addr, buffer.data(), sizeInByte, verbose);
+		Write(addr, buffer.data(), sizeInByte);
 	}
 
 	/// @brief Writes data to the specified address
 	/// @param addr Address to write to
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @param verbose If true, additional information will be printed to the console
-	void Write(const uint64_t& addr, const DMABuffer& buffer, const bool& verbose = false)
+	void Write(const uint64_t& addr, const DMABuffer& buffer)
 	{
-		Write(addr, buffer.data(), buffer.size(), verbose);
+		Write(addr, buffer.data(), buffer.size());
 	}
 
 	/// @brief Writes data to the specified address
 	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
 	/// @param data Data to write to the specified address
-	/// @param verbose If true, additional information will be printed to the console
 	template<typename T>
-	void Write(const uint64_t& addr, const T& data, const bool& verbose = false)
+	void Write(const uint64_t& addr, const T& data)
 	{
 		//  === Ugly Workaround ===
 		// If a global const variable was passed as data argument
@@ -555,7 +542,7 @@ public:
 		// is created and passed to the underlying method
 		const T tmp = data;
 		//  === Ugly Workaround ===
-		Write(addr, reinterpret_cast<const void*>(&tmp), sizeof(T), verbose);
+		Write(addr, reinterpret_cast<const void*>(&tmp), sizeof(T));
 	}
 
 	/// @brief Writes data from a vector to the specified address
@@ -563,11 +550,10 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	/// @param verbose If true, additional information will be printed to the console
 	template<class T, class A = std::allocator<T>>
-	void Write(const uint64_t& addr, const std::vector<T, A>& data, const bool& verbose = false)
+	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
-		Write(addr, data.data(), data.size() * sizeof(T), verbose);
+		Write(addr, data.data(), data.size() * sizeof(T));
 	}
 
 	/// @brief Writes a single unsigned byte to the specified address
@@ -641,11 +627,10 @@ public:
 	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified DMA buffer
 	/// @param buffer DMA buffer to read into
 	/// @param sizeInByte Number of bytes to read
-	/// @param verbose If true, additional information will be printed to the console
-	void StartReadStream(DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	void StartReadStream(DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
-		startReadStream(buffer.data(), size, verbose);
+		startReadStream(buffer.data(), size);
 	}
 
 	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified vector
@@ -653,22 +638,20 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
-	/// @param verbose If true, additional information will be printed to the console
 	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
-	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
-		startReadStream(buffer.data(), size, verbose);
+		startReadStream(buffer.data(), size);
 	}
 
 	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified DMA buffer
 	/// @param buffer DMA buffer containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	/// @param verbose If true, additional information will be printed to the console
-	void StartWriteStream(const DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	void StartWriteStream(const DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
-		startWriteStream(buffer.data(), size, verbose);
+		startWriteStream(buffer.data(), size);
 	}
 
 	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified vector
@@ -676,12 +659,11 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	/// @param verbose If true, additional information will be printed to the console
 	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
-	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE, const bool& verbose = false)
+	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
-		startWriteStream(buffer.data(), size, verbose);
+		startWriteStream(buffer.data(), size);
 	}
 
 	/// @brief Waits for the read stream operation to finish
@@ -760,7 +742,7 @@ private:
 		return Write<T>(mem.GetBaseAddr(), data);
 	}
 
-	void startReadStream(void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void startReadStream(void* pData, const uint64_t& sizeInByte)
 	{
 		if (m_readFuture.valid())
 		{
@@ -769,10 +751,10 @@ private:
 			throw XDMAException(ss.str());
 		}
 
-		m_readFuture = std::async(&XDMA::readStream, this, pData, sizeInByte, verbose);
+		m_readFuture = std::async(&XDMA::readStream, this, pData, sizeInByte);
 	}
 
-	void startWriteStream(const void* pData, const uint64_t& sizeInByte, const bool& verbose = false)
+	void startWriteStream(const void* pData, const uint64_t& sizeInByte)
 	{
 		if (m_writeFuture.valid())
 		{
@@ -781,10 +763,10 @@ private:
 			throw XDMAException(ss.str());
 		}
 
-		m_writeFuture = std::async(&XDMA::writeStream, this, pData, sizeInByte, verbose);
+		m_writeFuture = std::async(&XDMA::writeStream, this, pData, sizeInByte);
 	}
 
-	void writeStream(const void* pData, const uint64_t& size, const bool& verbose)
+	void writeStream(const void* pData, const uint64_t& size)
 	{
 		// Due to the AXI data width of the XDMA write size has to be a multiple of 512-Bit (64-Byte)
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
@@ -800,21 +782,20 @@ private:
 		while (curSize < size)
 		{
 			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
-			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize, verbose);
+			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize);
 			curSize += writeSize;
 		}
 
 		m_writeStreamTimer.Stop();
 	}
 
-	void readStream(void* pData, const uint64_t& size, const bool& verbose)
+	void readStream(void* pData, const uint64_t& size)
 	{
 		// Due to the AXI data width of the XDMA read size has to be a multiple of 512-Bit (64-Byte)
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMA") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
-			std::cerr << ss.str() << std::endl;
 			throw XDMAException(ss.str());
 		}
 
@@ -824,7 +805,7 @@ private:
 		while (curSize < size)
 		{
 			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
-			Read(XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize, verbose);
+			Read(XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize);
 			curSize += readSize;
 		}
 
