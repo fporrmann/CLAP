@@ -212,7 +212,7 @@ template<typename T>
 class Register : public RegisterIntf
 {
 	static const std::string RESERVED_STRING;
-	const uint32_t RESERVED_STRING_LENGTH = RESERVED_STRING.length();
+	const std::size_t RESERVED_STRING_LENGTH = RESERVED_STRING.length();
 
 	using RegIntfShr = std::shared_ptr<class RegIntf<T>>;
 
@@ -313,7 +313,7 @@ public:
 		// Search for the max name length
 		const RegIntfShr maxElem = *std::max_element(m_regElems.begin(), m_regElems.end(), [](const RegIntfShr lhs, const RegIntfShr rhs) { return lhs->GetName().length() < rhs->GetName().length(); });
 
-		uint32_t maxLength = maxElem->GetName().length();
+		std::size_t maxLength = maxElem->GetName().length();
 
 		if (maxLength < RESERVED_STRING_LENGTH)
 			maxLength = RESERVED_STRING_LENGTH;
