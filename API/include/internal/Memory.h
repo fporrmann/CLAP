@@ -35,8 +35,6 @@
 
 DEFINE_EXCEPTION(MemoryException)
 
-static const uint64_t USE_MEMORY_SIZE = 0;
-
 class Memory
 {
 	friend class MemoryManager;
