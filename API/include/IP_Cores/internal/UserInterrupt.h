@@ -49,6 +49,7 @@
 
 #include <iostream>
 
+#include "../../internal/Constants.h"
 #include "../../internal/Defines.h"
 #include "../../internal/Logger.h"
 #include "../../internal/Utils.h"

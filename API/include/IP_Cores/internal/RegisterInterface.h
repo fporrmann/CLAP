@@ -37,9 +37,8 @@
 #include <vector>
 
 #include "../../internal/Logger.h"
+#include "../../internal/Constants.h"
 #include "../../internal/Utils.h"
-
-static const uint8_t SAME_AS_START_BIT = 0xFF;
 
 // Required to store the template class RegElem which will be used with different template types in a vector
 template<typename T>

@@ -32,6 +32,7 @@
 
 #include "UserInterrupt.h"
 
+#include "../../internal/Constants.h"
 #include "../../internal/Logger.h"
 
 #ifndef EMBEDDED_XILINX

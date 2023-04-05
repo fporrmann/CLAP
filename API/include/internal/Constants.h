@@ -33,3 +33,7 @@ static const std::size_t XDMA_AXI_DATA_WIDTH_BIT = 512; // 512-Bit
 static const std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT / 8;
 static const uint64_t XDMA_STREAM_OFFSET         = 0; // For streams data is always write/read from/to the offset 0
 static const uint64_t USE_VECTOR_SIZE            = 0; // Flag to automatically calculate the byte size based on the vector size and type
+
+static const int32_t WAIT_INFINITE = -1;
+
+static const uint8_t SAME_AS_START_BIT = 0xFF;
