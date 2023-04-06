@@ -65,3 +65,5 @@ using ByteCntType  = uint64_t;
 #define DEVICE_HANDLE_VALID(HANDLE) (HANDLE != INVALID_HANDLE)
 
 #define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)
+
+#define ROUND_UP_DIV(NUM, DEN) (((NUM) + (DEN) - 1) / (DEN))

@@ -17,12 +17,12 @@ int main()
 	pXdma->AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 	// Create host side buffer for the test data to be written to the input memory
-	std::vector<uint8_t> testData(TEST_DATA_SIZE, 0);
+	XDMABuffer<uint8_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
-	std::vector<uint8_t> testDataRB(TEST_DATA_SIZE, 0);
+	XDMABuffer<uint8_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFF,
 	// this way it is easy to observe if the process worked or not
-	std::vector<uint8_t> ff(TEST_DATA_SIZE, 0xFF);
+	XDMABuffer<uint8_t> ff(TEST_DATA_SIZE, 0xFF);
 
 	testData[0] = 0xDE;
 	testData[1] = 0xAD;
@@ -38,11 +38,11 @@ int main()
 
 	// Write 0xFF to the memory, in this case, this operation writes data directly into the DDR
 	// attached to the FPGA. The data is written to the address specified by the buf object.
-	pXdma->Write(buf, ff.data());
+	pXdma->Write(buf, ff);
 
 	// Readback the output data buffer and print it to show that it is indeed all 0xFF.
 	// This is done to show that the data is actually being written to the DDR memory.
-	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
+	pXdma->Read(buf, testDataRB);
 
 	std::cout << "Printing Memory Before Transfer:" << std::endl;
 	for (const uint32_t& d : testDataRB)
@@ -52,10 +52,10 @@ int main()
 			  << std::endl;
 
 	// Write the actual input data to the DDR memory.
-	pXdma->Write(buf, testData.data());
+	pXdma->Write(buf, testData);
 
 	// Readback the result data from the DDR memory.
-	pXdma->Read(buf, testDataRB.data(), TEST_DATA_SIZE);
+	pXdma->Read(buf, testDataRB);
 
 	// Print the result data
 	std::cout << "Printing Memory After Transfer:" << std::endl;

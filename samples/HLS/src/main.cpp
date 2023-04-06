@@ -21,12 +21,12 @@ static const uint32_t TEST_DATA_SIZE = 8;
 int main()
 {
 	// Create host side buffer for the test data to be written to the input memory
-	std::vector<uint16_t> testData(TEST_DATA_SIZE, 0);
+	XDMABuffer<uint16_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
-	std::vector<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
+	XDMABuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFFFFFFFF,
 	// this way it is easy to observe if the process worked or not
-	std::vector<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
+	XDMABuffer<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
 
 	try
 	{
@@ -61,11 +61,11 @@ int main()
 
 		// Write 0xFFFFFFFF to the memory, in this case, this operation writes data directly into the DDR
 		// attached to the FPGA. The data is written to the address specified by the outBuf object.
-		pXdma->Write(outBuf, ff.data());
+		pXdma->Write(outBuf, ff);
 
 		// Readback the output data buffer and print it to show that it is indeed all 0xFFFFFFFF.
 		// This is done to show that the data is actually being written to the DDR memory.
-		pXdma->Read(outBuf, testDataRB.data());
+		pXdma->Read(outBuf, testDataRB);
 
 		std::cout << "Printing Output Memory Before HLS Execution:" << std::endl;
 		for (const uint32_t& d : testDataRB)
@@ -75,7 +75,7 @@ int main()
 				  << std::endl;
 
 		// Write the actual input data to the DDR memory.
-		pXdma->Write(inBuf, testData.data());
+		pXdma->Write(inBuf, testData);
 
 		// Configure the HLS core to use its interrupt signal to determine when the core is finished.
 		// The number (0) specifies which of the up to 16 interrupt events the HLS core is connected to.

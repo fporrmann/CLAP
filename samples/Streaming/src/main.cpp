@@ -4,8 +4,6 @@
 
 #include <xdmaAccess.h>
 
-using Buffer = std::vector<uint32_t, xdma::AlignmentAllocator<uint32_t, XDMA_ALIGNMENT>>;
-
 int main(int argc, char** argv)
 {
 	uint32_t testDataSize = 1024;
@@ -17,9 +15,9 @@ int main(int argc, char** argv)
 	XDMAShr pXdma = XDMA::Create<PCIeBackend>();
 
 	// Create host side buffer for the test data to be written to the input memory
-	Buffer testData(testDataSize, 0);
+	XDMABuffer<uint32_t> testData(testDataSize, 0);
 	// Create host side buffer for the data read from the destination memory
-	Buffer testDataRB(testDataSize, 0);
+	XDMABuffer<uint32_t> testDataRB(testDataSize, 0);
 
 	// Initialize the test data with increasing values
 	std::iota(testData.begin(), testData.end(), 0);

@@ -39,7 +39,7 @@
 //   - from xdma0_control read 0x0H00 and check if it starts with 1fc08 - the 8 here means it's in streaming mode
 //   - cf. https://github.com/Xilinx/dma_ip_drivers/blob/master/XDMA/linux-kernel/tests/run_test.sh)
 // --------------------------------------------------------------------------------------------
-// - Try to force the use of aligned memory, e.g., by using the DMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
+// - Try to force the use of aligned memory, e.g., by using the XXDMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // --------------------------------------------------------------------------------------------
 // - Replace boolean flags with enums for better readability
@@ -49,6 +49,8 @@
 // - Redesign some of the methods to remove the need for explizit casts
 // --------------------------------------------------------------------------------------------
 // - Replace pointers, e.g., in XDMAManaged with smart pointers
+// --------------------------------------------------------------------------------------------
+// - Update the documentation - especially the Read/Write methods
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////
@@ -89,9 +91,10 @@
 #include "internal/xdmaBackend.h"
 
 #ifdef EMBEDDED_XILINX
-using DMABuffer = std::vector<uint8_t>;
+using XDMABuffer = std::vector<uint8_t>;
 #else
-using DMABuffer = std::vector<uint8_t, xdma::AlignmentAllocator<uint8_t, XDMA_ALIGNMENT>>;
+template<class T>
+using XDMABuffer = std::vector<T, xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
 #endif
 using XDMAManagedShr   = std::shared_ptr<class XDMAManaged>;
 using XDMABackendShr   = std::shared_ptr<class XDMABackend>;
@@ -372,23 +375,45 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw XDMAException(ss.str());
 		}
 
 		Read(mem.GetBaseAddr(), pData, size);
 	}
 
+	template<typename T>
+	void Read(const Memory& mem, XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	{
+		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+		if (size > mem.GetSize())
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw XDMAException(ss.str());
+		}
+
+		if (size > (buffer.size() * sizeof(T)))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << size << ")";
+			throw XDMAException(ss.str());
+		}
+
+		Read(mem, buffer.data(), buffer.size() * sizeof(T));
+	}
+
 	/// @brief Reads data from the specified address into the given DMA buffer
 	/// @param addr Address to read from
 	/// @param buffer DMA buffer to read into
 	/// @param sizeInByte Size of the data buffer in bytes
-	void Read(const uint64_t& addr, DMABuffer& buffer, const uint64_t& sizeInByte)
+	template<typename T>
+	void Read(const uint64_t& addr, XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
-		if (sizeInByte > buffer.size())
+		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size of buffer provided (" << std::dec << buffer.size() << ") is smaller than the desired read size (" << sizeInByte << ")";
+			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << sizeInByte << ")";
 			throw XDMAException(ss.str());
 		}
 
@@ -398,19 +423,21 @@ public:
 	/// @brief Reads data from the specified address into the given DMA buffer
 	/// @param addr Address to read from
 	/// @param buffer DMA buffer to read into
-	void Read(const uint64_t& addr, DMABuffer& buffer)
+	template<typename T>
+	void Read(const uint64_t& addr, XDMABuffer<T>& buffer)
 	{
-		Read(addr, buffer.data(), buffer.size());
+		Read(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
 
 	/// @brief Reads data from the specified address and returns it as a DMA buffer
 	/// @param addr Address to read from
 	/// @param sizeInByte Size of the data buffer in bytes
 	/// @return DMA buffer containing the read data
-	DMABuffer Read(const uint64_t& addr, const uint32_t& sizeInByte) CHECK_RESULT
+	template<typename T>
+	XDMABuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint32_t& sizeInByte)
 	{
-		DMABuffer buffer = DMABuffer(sizeInByte, 0);
-		Read(addr, buffer, sizeInByte);
+		XDMABuffer<T> buffer = XDMABuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
+		Read<T>(addr, buffer, sizeInByte);
 		return buffer;
 	}
 
@@ -422,7 +449,8 @@ public:
 	T Read(const uint64_t& addr)
 	{
 		const uint32_t size = static_cast<uint32_t>(sizeof(T));
-		DMABuffer data      = Read(addr, size);
+
+		XDMABuffer<uint8_t> data = Read<uint8_t>(addr, size);
 		T res;
 		std::memcpy(&res, data.data(), size);
 		return res;
@@ -435,8 +463,8 @@ public:
 	template<typename T>
 	void Read(const uint64_t& addr, T& buffer)
 	{
-		const uint64_t size = static_cast<uint64_t>(sizeof(T));
-		DMABuffer data      = Read(addr, size);
+		const uint32_t size      = static_cast<uint32_t>(sizeof(T));
+		XDMABuffer<uint8_t> data = Read<uint8_t>(addr, size);
 		std::memcpy(&buffer, data.data(), size);
 	}
 
@@ -539,7 +567,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given buffer (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw XDMAException(ss.str());
 		}
 
@@ -547,15 +575,43 @@ public:
 	}
 
 	/// @brief Writes data to the specified address
+	/// @tparam T Type of the data to write
+	/// @param mem Memory object to write to
+	/// @param buffer Buffer containing the data to write
+	/// @param sizeInByte Size of the data buffer in bytes
+	template<typename T>
+	void Write(const Memory& mem, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	{
+		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+		if (size > mem.GetSize())
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw XDMAException(ss.str());
+		}
+
+		if (size > (buffer.size() * sizeof(T)))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
+			throw XDMAException(ss.str());
+		}
+
+		Write(mem, buffer.data(), size);
+	}
+
+	/// @brief Writes data to the specified address
+	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
-	void Write(const uint64_t& addr, const DMABuffer& buffer, const uint64_t& sizeInByte)
+	template<typename T>
+	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
-		if (sizeInByte > buffer.size())
+		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size of buffer provided (" << std::dec << buffer.size() << ") is smaller than the desired write size (" << sizeInByte << ")";
+			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << sizeInByte << ")";
 			throw XDMAException(ss.str());
 		}
 
@@ -563,12 +619,13 @@ public:
 	}
 
 	/// @brief Writes data to the specified address
+	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
-	/// @param pData Pointer to the data buffer
-	/// @param sizeInByte Size of the data buffer in bytes
-	void Write(const uint64_t& addr, const DMABuffer& buffer)
+	/// @param buffer Buffer containing the data to write
+	template<typename T>
+	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer)
 	{
-		Write(addr, buffer.data(), buffer.size());
+		Write(addr, buffer.data(), ROUND_UP_DIV(buffer.size(), sizeof(T)));
 	}
 
 	/// @brief Writes data to the specified address
@@ -578,13 +635,9 @@ public:
 	template<typename T>
 	void Write(const uint64_t& addr, const T& data)
 	{
-		//  === Ugly Workaround ===
-		// If a global const variable was passed as data argument
-		// the write call fails, to circumvent this a local copy
-		// is created and passed to the underlying method
-		const T tmp = data;
-		//  === Ugly Workaround ===
-		Write(addr, reinterpret_cast<const void*>(&tmp), sizeof(T));
+		// Create a temporary XDMABuffer containing the data, in order to properly align the data
+		const XDMABuffer<T> tmp = XDMABuffer<T>(1, data);
+		Write<T>(addr, tmp);
 	}
 
 	/// @brief Writes data from a vector to the specified address
@@ -592,7 +645,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	template<class T, class A = std::allocator<T>>
+	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
 		Write(addr, data.data(), data.size() * sizeof(T));
@@ -669,9 +722,10 @@ public:
 	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified DMA buffer
 	/// @param buffer DMA buffer to read into
 	/// @param sizeInByte Number of bytes to read
-	void StartReadStream(DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
+	template<typename T>
+	void StartReadStream(XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
-		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
 		startReadStream(buffer.data(), size);
 	}
 
@@ -690,9 +744,10 @@ public:
 	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified DMA buffer
 	/// @param buffer DMA buffer containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	void StartWriteStream(const DMABuffer& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
+	template<typename T>
+	void StartWriteStream(const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
-		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(DMABuffer::value_type) : sizeInByte);
+		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
 		startWriteStream(buffer.data(), size);
 	}
 
