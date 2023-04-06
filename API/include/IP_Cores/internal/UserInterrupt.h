@@ -52,8 +52,8 @@
 #include "../../internal/Constants.h"
 #include "../../internal/Defines.h"
 #include "../../internal/Logger.h"
+#include "../../internal/RegisterInterface.h"
 #include "../../internal/Utils.h"
-#include "RegisterInterface.h"
 
 DEFINE_EXCEPTION(UserIntrruptException)
 

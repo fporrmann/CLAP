@@ -27,7 +27,6 @@
 #pragma once
 
 #include "internal/IPControl.h"
-#include "internal/RegisterInterface.h"
 #include "internal/WatchDog.h"
 
 enum VDMAInterrupts

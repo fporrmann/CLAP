@@ -26,9 +26,9 @@
 
 #pragma once
 
+#include "../../internal/RegisterInterface.h"
 #include "../../internal/Utils.h"
 #include "../../xdmaAccess.h"
-#include "RegisterInterface.h"
 #include <vector>
 
 DEFINE_EXCEPTION(IPCoreException)
