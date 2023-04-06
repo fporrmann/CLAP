@@ -47,6 +47,10 @@
 // - Improve / generalize the CMake environment for the samples
 // --------------------------------------------------------------------------------------------
 // - Redesign some of the methods to remove the need for explizit casts
+// --------------------------------------------------------------------------------------------
+// - Replace pointers, e.g., in XDMAManaged with smart pointers
+///////////////////////////////////////////////////////////////////////////////////////////////
+
 /////////////////////////
 // Includes for open()
 #include <fcntl.h>

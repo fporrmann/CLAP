@@ -29,6 +29,7 @@
 #include "../xdmaAccess.h"
 #include "RegisterInterface.h"
 #include "Utils.h"
+
 #include <vector>
 
 // TODO: Move this to a more appropriate place
