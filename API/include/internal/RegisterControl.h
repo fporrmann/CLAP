@@ -26,25 +26,24 @@
 
 #pragma once
 
-#include "../../internal/RegisterInterface.h"
-#include "../../internal/Utils.h"
-#include "../../xdmaAccess.h"
+#include "../xdmaAccess.h"
+#include "RegisterInterface.h"
+#include "Utils.h"
 #include <vector>
 
-DEFINE_EXCEPTION(IPCoreException)
-
+// TODO: Move this to a more appropriate place
 enum class DMAChannel
 {
 	MM2S,
 	S2MM
 };
 
-class IPControlBase : public XDMAManaged
+class RegisterControlBase : public XDMAManaged
 {
-	DISABLE_COPY_ASSIGN_MOVE(IPControlBase)
+	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
 
 public:
-	IPControlBase(std::shared_ptr<class XDMABase> pXdma, const uint64_t& ctrlOffset) :
+	RegisterControlBase(std::shared_ptr<class XDMABase> pXdma, const uint64_t& ctrlOffset) :
 		XDMAManaged(pXdma),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
@@ -72,8 +71,8 @@ public:
 	template<typename T>
 	static void UpdateCallBack(Register<T>* pReg, const uint64_t& offset, const Direction& dir, void* pObj)
 	{
-		// Make sure that the given object pointer is in fact an IPControlBase object
-		IPControlBase* pIPCtrl = static_cast<IPControlBase*>(pObj);
+		// Make sure that the given object pointer is in fact an RegisterControlBase object
+		RegisterControlBase* pIPCtrl = static_cast<RegisterControlBase*>(pObj);
 		if (!pIPCtrl) return;
 
 		pIPCtrl->UpdateRegister(pReg, offset, dir);

@@ -26,7 +26,7 @@
 
 #pragma once
 
-#include "internal/IPControl.h"
+#include "../internal/RegisterControl.h"
 #include "internal/WatchDog.h"
 
 enum VDMAInterrupts
@@ -40,7 +40,7 @@ enum VDMAInterrupts
 // The template defines the address width of the VDMA
 // required to read and write input/output addresses
 template<typename T>
-class VDMA : public IPControlBase
+class VDMA : public RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(VDMA)
 
@@ -68,7 +68,7 @@ class VDMA : public IPControlBase
 
 public:
 	VDMA(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset) :
-		IPControlBase(pXdma, ctrlOffset),
+		RegisterControlBase(pXdma, ctrlOffset),
 		m_watchDogMM2S("VDMA_MM2S"),
 		m_watchDogS2MM("VDMA_S2MM")
 	{

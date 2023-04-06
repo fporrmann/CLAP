@@ -27,8 +27,8 @@
 #pragma once
 
 #include "../internal/Logger.h"
+#include "../internal/RegisterControl.h"
 #include "internal/ApCtrl.h"
-#include "internal/IPControl.h"
 #include "internal/WatchDog.h"
 
 #include <functional>
@@ -46,7 +46,7 @@ enum class AddressType
 	BIT_64 = sizeof(uint64_t)
 };
 
-class HLSCore : public IPControlBase
+class HLSCore : public RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(HLSCore)
 
@@ -82,7 +82,7 @@ class HLSCore : public IPControlBase
 
 public:
 	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name) :
-		IPControlBase(pXdma, ctrlOffset),
+		RegisterControlBase(pXdma, ctrlOffset),
 		m_apCtrl(),
 		m_intrCtrl(),
 		m_intrStat(),
