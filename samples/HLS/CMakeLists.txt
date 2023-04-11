@@ -9,7 +9,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
 
-message(STATUS "Build Mode: ${CMAKE_BUILD_TYPE}")
+message(STATUS "[${PROJECT_NAME}] Build Mode: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

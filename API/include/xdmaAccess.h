@@ -35,16 +35,10 @@
 //   - Would require some edits to the memory manager
 //   - Would require that the DDR address is below 4GB
 // --------------------------------------------------------------------------------------------
-// - Determine if the core is setup as memory mapped or streaming
-//   - from xdma0_control read 0x0H00 and check if it starts with 1fc08 - the 8 here means it's in streaming mode
-//   - cf. https://github.com/Xilinx/dma_ip_drivers/blob/master/XDMA/linux-kernel/tests/run_test.sh)
-// --------------------------------------------------------------------------------------------
 // - Try to force the use of aligned memory, e.g., by using the XXDMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // --------------------------------------------------------------------------------------------
 // - Replace boolean flags with enums for better readability
-// --------------------------------------------------------------------------------------------
-// - Improve / generalize the CMake environment for the samples
 // --------------------------------------------------------------------------------------------
 // - Redesign some of the methods to remove the need for explicit casts
 // --------------------------------------------------------------------------------------------
