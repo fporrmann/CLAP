@@ -46,11 +46,10 @@
 // --------------------------------------------------------------------------------------------
 // - Improve / generalize the CMake environment for the samples
 // --------------------------------------------------------------------------------------------
-// - Redesign some of the methods to remove the need for explizit casts
+// - Redesign some of the methods to remove the need for explicit casts
 // --------------------------------------------------------------------------------------------
 // - Replace pointers, e.g., in XDMAManaged with smart pointers
 // --------------------------------------------------------------------------------------------
-// - Update the documentation - especially the Read/Write methods
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////
@@ -246,6 +245,8 @@ public:
 	/// @brief Creates a new XDMA instance
 	/// @tparam T Type of the backend to use
 	/// @return A shared pointer to the new XDMA instance
+	/// @param deviceNum Device number of the XDMA device
+	/// @param channelNum Channel number of the XDMA device
 	template<typename T>
 	static XDMAShr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
 	{
@@ -303,7 +304,7 @@ public:
 		throw XDMAException(ss.str());
 	}
 
-	/// @brief Allocates a memory block of the specified size and type
+	/// @brief Allocates a memory block for n-elements
 	/// @param type Type of memory to allocate
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
@@ -314,7 +315,7 @@ public:
 		return AllocMemory(type, elements * sizeOfElement, memIdx);
 	}
 
-	/// @brief Allocates a DDR memory block of the specified size
+	/// @brief Allocates a DDR memory block for n-elements
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
 	/// @param memIdx Index of the memory region to allocate from
@@ -324,7 +325,7 @@ public:
 		return AllocMemory(MemoryType::DDR, elements, sizeOfElement, memIdx);
 	}
 
-	/// @brief Allocates a BRAM memory block of the specified size
+	/// @brief Allocates a BRAM memory block for n-elements
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
 	/// @param memIdx Index of the memory region to allocate from
@@ -356,7 +357,7 @@ public:
 	///                      Read Methods                                    ///
 	////////////////////////////////////////////////////////////////////////////
 
-	/// @brief Reads data from the specified address into the data buffer
+	/// @brief Reads data from the specified address into a data buffer
 	/// @param addr Address to read from
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
@@ -365,7 +366,7 @@ public:
 		m_pBackend->Read(addr, pData, sizeInByte);
 	}
 
-	/// @brief Reads data from the specified memory object into the data buffer
+	/// @brief Reads data from the specified memory object into a data buffer
 	/// @param mem Memory object to read from
 	/// @param pData Pointer to the data buffer
 	/// @param sizeInByte Size of the data buffer in bytes
@@ -382,6 +383,11 @@ public:
 		Read(mem.GetBaseAddr(), pData, size);
 	}
 
+	/// @brief Reads data from the given memory object into the given XDMA buffer
+	/// @tparam T Type of the data to read
+	/// @param mem Memory object to read from
+	/// @param buffer XDMA buffer to read into
+	/// @param sizeInByte Size of the XDMA buffer in bytes
 	template<typename T>
 	void Read(const Memory& mem, XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
@@ -403,10 +409,11 @@ public:
 		Read(mem, buffer.data(), buffer.size() * sizeof(T));
 	}
 
-	/// @brief Reads data from the specified address into the given DMA buffer
+	/// @brief Reads data from the specified address into the given XDMA buffer
+	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
-	/// @param buffer DMA buffer to read into
-	/// @param sizeInByte Size of the data buffer in bytes
+	/// @param buffer XDMA buffer to read into
+	/// @param sizeInByte Size of the XDMA buffer in bytes
 	template<typename T>
 	void Read(const uint64_t& addr, XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
@@ -420,19 +427,21 @@ public:
 		Read(addr, buffer.data(), sizeInByte);
 	}
 
-	/// @brief Reads data from the specified address into the given DMA buffer
+	/// @brief Reads data from the specified address into the given XDMA buffer
+	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
-	/// @param buffer DMA buffer to read into
+	/// @param buffer XDMA buffer to read into
 	template<typename T>
 	void Read(const uint64_t& addr, XDMABuffer<T>& buffer)
 	{
 		Read(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
 
-	/// @brief Reads data from the specified address and returns it as a DMA buffer
+	/// @brief Reads data from the specified address and returns it as an XDMA buffer
+	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @return DMA buffer containing the read data
+	/// @return XDMA buffer containing the read data
 	template<typename T>
 	XDMABuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint32_t& sizeInByte)
 	{
@@ -442,7 +451,7 @@ public:
 	}
 
 	/// @brief Reads data from the specified address and returns it as an object of the template type T
-	/// @tparam T Object type of the object into which the data will be read
+	/// @tparam T Type of the object into which the data will be read
 	/// @param addr Address to read from
 	/// @return Object of type T containing the read data
 	template<typename T>
@@ -456,10 +465,10 @@ public:
 		return res;
 	}
 
-	/// @brief Reads data from the specified address and writes it into the given object
-	/// @tparam T Object type of the object into which the data will be read
+	/// @brief Reads a datum of type T from the specified address and writes it into the given buffer
+	/// @tparam T Type of the object into which the datum will be read
 	/// @param addr Address to read from
-	/// @param buffer Object into which the data will be read
+	/// @param buffer Object into which the datum will be read
 	template<typename T>
 	void Read(const uint64_t& addr, T& buffer)
 	{
@@ -468,8 +477,8 @@ public:
 		std::memcpy(&buffer, data.data(), size);
 	}
 
-	/// @brief Reads data from the specified address and writes it into the given alligned vector
-	/// @tparam T Object type of the vector into which the data will be read
+	/// @brief Reads data from the specified address and writes it into the given vector
+	/// @tparam T Type of the vector into which the data will be read
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
@@ -574,10 +583,10 @@ public:
 		Write(mem.GetBaseAddr(), pData, size);
 	}
 
-	/// @brief Writes data to the specified address
+	/// @brief Writes data to the specified memory object
 	/// @tparam T Type of the data to write
 	/// @param mem Memory object to write to
-	/// @param buffer Buffer containing the data to write
+	/// @param buffer XDMA Buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
 	void Write(const Memory& mem, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
@@ -603,7 +612,7 @@ public:
 	/// @brief Writes data to the specified address
 	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
-	/// @param pData Pointer to the data buffer
+	/// @param buffer XDMA Buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
 	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
@@ -621,17 +630,17 @@ public:
 	/// @brief Writes data to the specified address
 	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
-	/// @param buffer Buffer containing the data to write
+	/// @param buffer XDMA Buffer containing the data to write
 	template<typename T>
 	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer)
 	{
 		Write(addr, buffer.data(), ROUND_UP_DIV(buffer.size(), sizeof(T)));
 	}
 
-	/// @brief Writes data to the specified address
-	/// @tparam T Type of the data to write
+	/// @brief Writes a datum of type T to the specified address
+	/// @tparam T Type of the datum to write
 	/// @param addr Address to write to
-	/// @param data Data to write to the specified address
+	/// @param data Datum to write to the specified address
 	template<typename T>
 	void Write(const uint64_t& addr, const T& data)
 	{
@@ -641,7 +650,7 @@ public:
 	}
 
 	/// @brief Writes data from a vector to the specified address
-	/// @tparam T Object type of the vector from which the data will be written
+	/// @tparam T Type of the vector from which the data will be written
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
@@ -719,8 +728,9 @@ public:
 	///                      Streaming Methods                               ///
 	////////////////////////////////////////////////////////////////////////////
 
-	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified DMA buffer
-	/// @param buffer DMA buffer to read into
+	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified XDMA buffer
+	/// @tparam T Type of the XDMA buffer into which the data will be read
+	/// @param buffer XDMA buffer to read into
 	/// @param sizeInByte Number of bytes to read
 	template<typename T>
 	void StartReadStream(XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
@@ -730,7 +740,7 @@ public:
 	}
 
 	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified vector
-	/// @tparam T Object type of the vector into which the data will be read
+	/// @tparam T Type of the vector into which the data will be read
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
@@ -741,8 +751,9 @@ public:
 		startReadStream(buffer.data(), size);
 	}
 
-	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified DMA buffer
-	/// @param buffer DMA buffer containing the data to write
+	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified XDMA buffer
+	/// @tparam T Type of the XDMA buffer from which the data will be written
+	/// @param buffer XDMA buffer containing the data to write
 	/// @param sizeInByte Number of bytes to write
 	template<typename T>
 	void StartWriteStream(const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
@@ -752,7 +763,7 @@ public:
 	}
 
 	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified vector
-	/// @tparam T Object type of the vector from which the data will be written
+	/// @tparam T Type of the vector from which the data will be written
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
