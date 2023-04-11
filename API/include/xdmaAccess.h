@@ -200,6 +200,8 @@ private:
 
 	struct XDMAInfo
 	{
+		XDMAInfo() = default;
+
 		XDMAInfo(const uint32_t& reg0x0, const uint32_t& reg0x4)
 		{
 			channelID = (reg0x0 >> 8) & 0xF;
@@ -235,10 +237,12 @@ private:
 		m_memories.insert(MemoryPair(MemoryType::DDR, MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, MemoryManagerVec()));
 
+		readInfo();
+
 		LOG_VERBOSE << "XDMA instance created" << std::endl;
 		LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
 		LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
-		LOG_VERBOSE << readInfo() << std::endl;
+		LOG_VERBOSE << m_info << std::endl;
 	}
 
 public:
@@ -852,6 +856,13 @@ private:
 
 	void startReadStream(void* pData, const uint64_t& sizeInByte)
 	{
+		if(!m_info.streaming)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "The XDMA endpoint is not in streaming mode";
+			throw XDMAException(ss.str());
+		}
+
 		if (m_readFuture.valid())
 		{
 			std::stringstream ss;
@@ -864,6 +875,13 @@ private:
 
 	void startWriteStream(const void* pData, const uint64_t& sizeInByte)
 	{
+		if(!m_info.streaming)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("XDMA") << "The XDMA endpoint is not in streaming mode";
+			throw XDMAException(ss.str());
+		}
+
 		if (m_writeFuture.valid())
 		{
 			std::stringstream ss;
@@ -950,11 +968,11 @@ private:
 		return static_cast<T>(tmp);
 	}
 
-	XDMAInfo readInfo()
+	void readInfo()
 	{
 		uint32_t reg0 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x0);
 		uint32_t reg4 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x4);
-		return XDMAInfo(reg0, reg4);
+		m_info = XDMAInfo(reg0, reg4);
 	}
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -965,6 +983,9 @@ private:
 	std::future<void> m_writeFuture = {};
 	xdma::Timer m_readStreamTimer   = {};
 	xdma::Timer m_writeStreamTimer  = {};
+
+	XDMAInfo m_info = {};
+
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
 #endif
