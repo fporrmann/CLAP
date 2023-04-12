@@ -98,7 +98,7 @@ constexpr typename std::underlying_type<T>::type ToUnderlying(const T& t) noexce
 	return static_cast<typename std::underlying_type<T>::type>(t);
 }
 
-Verbosity ToVerbosity(const int32_t& val)
+static inline Verbosity ToVerbosity(const int32_t& val)
 {
 	if (val < ToUnderlying(Verbosity::VB_DEBUG) || val > ToUnderlying(Verbosity::VB_ERROR))
 		return Verbosity::VB_INFO;
@@ -106,7 +106,7 @@ Verbosity ToVerbosity(const int32_t& val)
 	return static_cast<Verbosity>(val);
 }
 
-void SetVerbosity(const Verbosity& v)
+static inline void SetVerbosity(const Verbosity& v)
 {
 	g_debug.SetVerbosity(v);
 	g_verbose.SetVerbosity(v);
