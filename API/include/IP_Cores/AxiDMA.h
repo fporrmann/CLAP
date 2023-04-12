@@ -29,14 +29,6 @@
 #include "../internal/RegisterControl.h"
 #include "internal/WatchDog.h"
 
-enum DMAInterrupts
-{
-	INTR_ON_COMPLETE = 1 << 0,
-	INTR_ON_DELAY    = 1 << 1,
-	INTR_ON_ERROR    = 1 << 2,
-	INTR_ALL         = (1 << 3) - 1 // All bits set
-};
-
 template<typename T>
 class AxiDMA : public RegisterControlBase
 {
@@ -62,6 +54,15 @@ class AxiDMA : public RegisterControlBase
 		S2MM_DA           = 0x48,
 		S2MM_DA_MSB       = 0x4C,
 		S2MM_LENGTH       = 0x58
+	};
+
+public:
+	enum DMAInterrupts
+	{
+		INTR_ON_COMPLETE = 1 << 0,
+		INTR_ON_DELAY    = 1 << 1,
+		INTR_ON_ERROR    = 1 << 2,
+		INTR_ALL         = (1 << 3) - 1 // All bits set
 	};
 
 public:

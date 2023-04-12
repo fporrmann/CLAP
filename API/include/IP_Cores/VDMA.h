@@ -29,14 +29,6 @@
 #include "../internal/RegisterControl.h"
 #include "internal/WatchDog.h"
 
-enum VDMAInterrupts
-{
-	VDMA_INTR_ON_FRAME_COUNT = 1 << 0,
-	VDMA_INTR_ON_DELAY       = 1 << 1,
-	VDMA_INTR_ON_ERROR       = 1 << 2,
-	VDMA_INTR_ALL            = (1 << 3) - 1 // All bits set
-};
-
 // The template defines the address width of the VDMA
 // required to read and write input/output addresses
 template<typename T>
@@ -64,6 +56,15 @@ class VDMA : public RegisterControlBase
 		S2MM_FRMDLY_STRIDE   = 0xA8,
 		S2MM_START_ADDRESS   = 0xAC,
 		ENABLE_VERTICAL_FLIP = 0xEC
+	};
+
+public:
+	enum VDMAInterrupts
+	{
+		VDMA_INTR_ON_FRAME_COUNT = 1 << 0,
+		VDMA_INTR_ON_DELAY       = 1 << 1,
+		VDMA_INTR_ON_ERROR       = 1 << 2,
+		VDMA_INTR_ALL            = (1 << 3) - 1 // All bits set
 	};
 
 public:

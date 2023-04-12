@@ -33,19 +33,6 @@
 
 #include <functional>
 
-enum APInterrupts
-{
-	AP_INTR_DONE  = 1 << 0,
-	AP_INTR_READY = 1 << 1,
-	AP_INTR_ALL   = (1 << 2) - 1 // All bits set
-};
-
-enum class AddressType
-{
-	BIT_32 = sizeof(uint32_t),
-	BIT_64 = sizeof(uint64_t)
-};
-
 class HLSCore : public RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(HLSCore)
@@ -81,6 +68,20 @@ class HLSCore : public RegisterControlBase
 	};
 
 public:
+	enum APInterrupts
+	{
+		AP_INTR_DONE  = 1 << 0,
+		AP_INTR_READY = 1 << 1,
+		AP_INTR_ALL   = (1 << 2) - 1 // All bits set
+	};
+
+	enum class AddressType
+	{
+		BIT_32 = sizeof(uint32_t),
+		BIT_64 = sizeof(uint64_t)
+	};
+
+public:
 	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name) :
 		RegisterControlBase(pXdma, ctrlOffset),
 		m_apCtrl(),
@@ -97,6 +98,8 @@ public:
 	}
 
 	////////////////////////////////////////
+
+
 
 	bool Start()
 	{
