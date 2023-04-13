@@ -44,6 +44,10 @@
 // --------------------------------------------------------------------------------------------
 // - Replace pointers, e.g., in XDMAManaged with smart pointers
 // --------------------------------------------------------------------------------------------
+// - Detect if the control address of an IP Core is within the range of a memory block / other IP Core
+// --------------------------------------------------------------------------------------------
+// - Suppress log messages when polling for completion
+// --------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////
@@ -632,7 +636,7 @@ public:
 	template<typename T>
 	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer)
 	{
-		Write(addr, buffer.data(), ROUND_UP_DIV(buffer.size(), sizeof(T)));
+		Write(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
 
 	/// @brief Writes a datum of type T to the specified address
