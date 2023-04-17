@@ -109,31 +109,46 @@ protected:
 				return static_cast<T>(XDMA()->Read16(m_ctrlOffset + regOffset));
 			case 1:
 				return static_cast<T>(XDMA()->Read8(m_ctrlOffset + regOffset));
+			default:
+				std::stringstream ss("");
+				ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				throw std::runtime_error(ss.str());
 		}
-
-		throw std::runtime_error("THIS SHOULD NOT HAPPEN - readRegister");
 	}
 
 	template<typename T>
-	void writeRegister(const uint64_t& regOffset, const T& regData)
+	void writeRegister(const uint64_t& regOffset, const T& regData, const bool& validate = false)
 	{
 		switch (sizeof(T))
 		{
 			case 8:
 				XDMA()->Write64(m_ctrlOffset + regOffset, static_cast<uint64_t>(regData));
-				return;
+				break;
 			case 4:
 				XDMA()->Write32(m_ctrlOffset + regOffset, static_cast<uint32_t>(regData));
-				return;
+				break;
 			case 2:
 				XDMA()->Write16(m_ctrlOffset + regOffset, static_cast<uint16_t>(regData));
-				return;
+				break;
 			case 1:
 				XDMA()->Write8(m_ctrlOffset + regOffset, static_cast<uint8_t>(regData));
-				return;
+				break;
+			default:
+				std::stringstream ss("");
+				ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				throw std::runtime_error(ss.str());
 		}
 
-		throw std::runtime_error("THIS SHOULD NOT HAPPEN - writeRegister");
+		if(validate)
+		{
+			const T readData = readRegister<T>(regOffset);
+			if (readData != regData)
+			{
+				std::stringstream ss("");
+				ss << CLASS_TAG("") << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
+				throw std::runtime_error(ss.str());
+			}
+		}
 	}
 
 	uint32_t getDevNum()

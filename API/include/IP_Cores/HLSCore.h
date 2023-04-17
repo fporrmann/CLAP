@@ -224,7 +224,7 @@ private:
 	template<typename T>
 	void setDataAddr(const uint64_t& offset, const T addr)
 	{
-		writeRegister<T>(offset, addr);
+		writeRegister<T>(offset, addr, true);
 	}
 
 	template<typename T>
