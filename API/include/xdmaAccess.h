@@ -193,6 +193,15 @@ public:
 		BRAM
 	};
 
+	struct MemoryRegion
+	{
+		MemoryType type;
+		uint64_t   baseAddress;
+		uint64_t   size;
+	};
+
+	using MemoryRegions = std::vector<MemoryRegion>;
+
 private:
 	using MemoryPair = std::pair<MemoryType, MemoryManagerVec>;
 
@@ -268,6 +277,11 @@ public:
 	void AddMemoryRegion(const MemoryType& type, const uint64_t& baseAddr, const uint64_t& size)
 	{
 		m_memories[type].push_back(std::make_shared<MemoryManager>(baseAddr, size));
+	}
+
+	void AddMemoryRegion(const MemoryRegion& region)
+	{
+		AddMemoryRegion(region.type, region.baseAddress, region.size);
 	}
 
 	/// @brief Allocates a memory block of the specified size and type
