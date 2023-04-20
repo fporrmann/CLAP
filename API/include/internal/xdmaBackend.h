@@ -533,6 +533,7 @@ class BareMetalBackend : virtual public XDMABackend
 public:
 	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
 	{
+		LOG_WARNING << CLASS_TAG("BareMetalBackend") << "WARNING: BareMetalBackend is currently untested and therefore, probably not fully functional." << std::endl;
 		m_nameRead    = "BareMetal";
 		m_nameWrite   = "BareMetal";
 		m_backendName = "BareMetal";
