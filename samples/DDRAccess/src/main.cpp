@@ -12,7 +12,7 @@ const uint64_t TEST_DATA_SIZE = 8;
 int main()
 {
 	// Create an XDMA object
-	XDMAShr pXdma = XDMA::Create<PCIeBackend>();
+	XDMAPtr pXdma = XDMA::Create<PCIeBackend>();
 	// Add a DDR memory region to the XDMA
 	pXdma->AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 

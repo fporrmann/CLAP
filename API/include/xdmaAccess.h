@@ -93,11 +93,11 @@ using XDMABuffer = std::vector<uint8_t>;
 template<class T>
 using XDMABuffer = std::vector<T, xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
 #endif
-using XDMAManagedShr   = std::shared_ptr<class XDMAManaged>;
-using XDMABackendShr   = std::shared_ptr<class XDMABackend>;
-using XDMAShr          = std::shared_ptr<class XDMA>;
-using MemoryManagerShr = std::shared_ptr<MemoryManager>;
-using MemoryManagerVec = std::vector<MemoryManagerShr>;
+using XDMAManagedPtr   = std::shared_ptr<class XDMAManaged>;
+using XDMABackendPtr   = std::shared_ptr<class XDMABackend>;
+using XDMAPtr          = std::shared_ptr<class XDMA>;
+using MemoryManagerPtr = std::shared_ptr<MemoryManager>;
+using MemoryManagerVec = std::vector<MemoryManagerPtr>;
 
 class XDMAManaged
 {
@@ -232,7 +232,7 @@ private:
 		bool polling      = false;
 	};
 
-	XDMA(XDMABackendShr pBackend) :
+	XDMA(XDMABackendPtr pBackend) :
 		XDMABase(pBackend->GetDevNum()),
 		m_pBackend(pBackend),
 		m_memories()
@@ -259,11 +259,11 @@ public:
 	/// @param deviceNum Device number of the XDMA device
 	/// @param channelNum Channel number of the XDMA device
 	template<typename T>
-	static XDMAShr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
+	static XDMAPtr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
 	{
 		// We have to use the result of new here, because the constructor is private
 		// and can therefore, not be called from make_shared
-		return XDMAShr(new XDMA(std::make_shared<T>(deviceNum, channelNum)));
+		return XDMAPtr(new XDMA(std::make_shared<T>(deviceNum, channelNum)));
 	}
 
 	~XDMA()
@@ -297,7 +297,7 @@ public:
 
 		if (memIdx == -1)
 		{
-			for (MemoryManagerShr& mem : m_memories[type])
+			for (MemoryManagerPtr& mem : m_memories[type])
 			{
 				if (mem->GetAvailableSpace() >= byteSize)
 					return mem->AllocMemory(byteSize);
@@ -989,7 +989,7 @@ private:
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
-	XDMABackendShr m_pBackend;
+	XDMABackendPtr m_pBackend;
 	std::map<MemoryType, MemoryManagerVec> m_memories;
 	std::future<void> m_readFuture  = {};
 	std::future<void> m_writeFuture = {};

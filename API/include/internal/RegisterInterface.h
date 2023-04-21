@@ -214,7 +214,7 @@ class Register : public RegisterIntf
 	static const std::string RESERVED_STRING;
 	const std::size_t RESERVED_STRING_LENGTH = RESERVED_STRING.length();
 
-	using RegIntfShr = std::shared_ptr<class RegIntf<T>>;
+	using RegIntfPtr = std::shared_ptr<class RegIntf<T>>;
 
 	DISABLE_COPY_ASSIGN_MOVE(Register)
 
@@ -256,7 +256,7 @@ public:
 					  << ") has already been registered, either entirely or partially by:" << std::endl;
 
 			// Print the elements occupying the target bit space
-			for (const RegIntfShr& pRElem : m_regElems)
+			for (const RegIntfPtr& pRElem : m_regElems)
 			{
 				if ((pRElem->GetShiftValue() & shiftVal) != 0)
 					LOG_ERROR << pRElem->GetName() << " " << pRElem->GetStartBit() << "-" << pRElem->GetEndBit() << std::endl;
@@ -289,7 +289,7 @@ public:
 	// Update the all registered elements using the given value
 	void Update(const uint32_t& val)
 	{
-		for (RegIntfShr pElem : m_regElems)
+		for (RegIntfPtr pElem : m_regElems)
 			pElem->UpdateValue(val);
 	}
 
@@ -298,7 +298,7 @@ public:
 	{
 		T value = 0x0;
 
-		for (const RegIntfShr& pRElem : m_regElems)
+		for (const RegIntfPtr& pRElem : m_regElems)
 			value |= (pRElem->GetValue() << pRElem->GetStartBit());
 
 		return value;
@@ -311,7 +311,7 @@ public:
 		if (update) Update();
 
 		// Search for the max name length
-		const RegIntfShr maxElem = *std::max_element(m_regElems.begin(), m_regElems.end(), [](const RegIntfShr lhs, const RegIntfShr rhs) { return lhs->GetName().length() < rhs->GetName().length(); });
+		const RegIntfPtr maxElem = *std::max_element(m_regElems.begin(), m_regElems.end(), [](const RegIntfPtr lhs, const RegIntfPtr rhs) { return lhs->GetName().length() < rhs->GetName().length(); });
 
 		std::size_t maxLength = maxElem->GetName().length();
 
@@ -353,7 +353,7 @@ public:
 		}
 
 		// Add strings for all registered elements to the map
-		for (const RegIntfShr pElem : m_regElems)
+		for (const RegIntfPtr pElem : m_regElems)
 			map[pElem->GetStartBit()] = pElem->ToString(maxLength);
 
 		// Build up the register address map header string
@@ -378,7 +378,7 @@ public:
 	}
 
 private:
-	std::vector<RegIntfShr> m_regElems;
+	std::vector<RegIntfPtr> m_regElems;
 	uint32_t m_registerBitSize;
 	T m_regUsage = 0;
 	std::string m_name;

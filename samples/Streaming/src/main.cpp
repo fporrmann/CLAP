@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 		testDataSize = std::atoi(argv[1]);
 
 	// Create an XDMA object
-	XDMAShr pXdma = XDMA::Create<PCIeBackend>();
+	XDMAPtr pXdma = XDMA::Create<PCIeBackend>();
 
 	// Create host side buffer for the test data to be written to the input memory
 	XDMABuffer<uint32_t> testData(testDataSize, 0);
