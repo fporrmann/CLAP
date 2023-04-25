@@ -83,7 +83,8 @@ public:
 private:
 	Memory(const uint64_t& baseAddr, const uint64_t& size) :
 		m_baseAddr(baseAddr),
-		m_size(size)
+		m_size(size),
+		m_valid(true)
 	{}
 
 	void invalidate()
@@ -95,8 +96,8 @@ private:
 
 private:
 	uint64_t m_baseAddr = 0;
-	uint64_t m_size = 0;
-	bool m_valid = true;
+	uint64_t m_size     = 0;
+	bool m_valid        = false;
 };
 
 class MemoryManager
