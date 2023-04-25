@@ -40,6 +40,8 @@ class Memory
 	friend class MemoryManager;
 
 public:
+	Memory() = default;
+
 	const uint64_t& GetBaseAddr() const
 	{
 		if (!m_valid)
@@ -92,8 +94,8 @@ private:
 	}
 
 private:
-	uint64_t m_baseAddr;
-	uint64_t m_size;
+	uint64_t m_baseAddr = 0;
+	uint64_t m_size = 0;
 	bool m_valid = true;
 };
 
