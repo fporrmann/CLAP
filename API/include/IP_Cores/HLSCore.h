@@ -184,6 +184,11 @@ public:
 			return getDataAddr<uint64_t>(offset);
 	}
 
+	const std::string& GetName() const
+	{
+		return m_name;
+	}
+
 	////////////////////////////////////////
 
 	////////////////////////////////////////
