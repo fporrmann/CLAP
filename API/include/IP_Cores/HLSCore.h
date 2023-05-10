@@ -120,7 +120,12 @@ public:
 		return true;
 	}
 
-	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
+	bool WaitForFinish()
+	{
+		return WaitForFinish(WAIT_INFINITE);
+	}
+
+	bool WaitForFinish(const int32_t& timeoutMS)
 	{
 		return m_watchDog.WaitForFinish(timeoutMS);
 	}
@@ -134,14 +139,24 @@ public:
 
 	////////////////////////////////////////
 
-	void EnableInterrupts(const uint32_t& eventNo, const APInterrupts& intr = AP_INTR_ALL)
+	void EnableInterrupts(const uint32_t& eventNo)
+	{
+		EnableInterrupts(eventNo, AP_INTR_ALL);
+	}
+
+	void EnableInterrupts(const uint32_t& eventNo, const APInterrupts& intr)
 	{
 		m_watchDog.InitInterrupt(getDevNum(), eventNo, &m_intrStat);
 		m_intrCtrl.EnableInterrupts(intr);
 		writeRegister<uint8_t>(ADDR_GIE, 1);
 	}
 
-	void DisableInterrupts(const APInterrupts& intr = AP_INTR_ALL)
+	void DisableInterrupts()
+	{
+		DisableInterrupts(AP_INTR_ALL);
+	}
+
+	void DisableInterrupts(const APInterrupts& intr)
 	{
 		m_intrCtrl.DisableInterrupts(intr);
 
