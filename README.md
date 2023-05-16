@@ -1,4 +1,4 @@
-# XDMA API
+# CLAP
 
 A simple, header-only C++ API for the Xilinx XDMA IP-Core.<br>
 NOTE: Currently only linux is supported.
@@ -80,22 +80,22 @@ For a fully working example please refer to the examples provided in the samples
 
 Clone the git into your project or add it as a submodule
 
-	git clone https://github.com/fporrmann/XDMA_API.git
+	git clone https://github.com/fporrmann/CLAP.git
 
-When using CMake simply add the XDMA API as follows:
+When using CMake simply add CLAP as follows:
 
 ```cmake
-# Find the XDMA_API and initialize its variables
-find_package(XDMA_API PATHS XDMA_API/API/cmake/modules REQUIRED)
+# Find CLAP and initialize its variables
+find_package(CLAP PATHS CLAP/API/cmake/modules REQUIRED)
 
-# Add the XDMA API to the include directories
-include_directories(${XDMA_API_INCLUDE_DIRS})
+# Add CLAP to the include directories
+include_directories(${CLAP_INCLUDE_DIRS})
 
-# Link against the libraries required by the XDMA API
-target_link_libraries (<YOUR_PROJECT_NAME> PRIVATE ${XDMA_API_LIBS})
+# Link against the libraries required by the CLAP
+target_link_libraries (<YOUR_PROJECT_NAME> PRIVATE ${CLAP_LIBS})
 ```
 
-When not using CMake, add XDMA_API/API/include to the include search path of your environment and link against pthread (or which ever threading library is used by your compiler in combination with std::thread).
+When not using CMake, add CLAP/API/include to the include search path of your environment and link against pthread (or which ever threading library is used by your compiler in combination with std::thread).
 
 ### Use the API
 

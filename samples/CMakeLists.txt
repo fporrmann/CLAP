@@ -1,9 +1,9 @@
 # Set the minimum required CMake version
 cmake_minimum_required(VERSION 3.10)
 
-project("XDMA API Examples")
+project("CLAP Examples")
 
-find_package(XDMA_API PATHS ../API/cmake/modules REQUIRED)
+find_package(CLAP PATHS ../API/cmake/modules REQUIRED)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
