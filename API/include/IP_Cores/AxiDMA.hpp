@@ -34,7 +34,7 @@
 namespace clap
 {
 template<typename T>
-class AxiDMA : public RegisterControlBase
+class AxiDMA : public internal::RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(AxiDMA)
 	enum REGISTER_MAP
@@ -276,7 +276,7 @@ private:
 	////////////////////////////////////////
 
 public:
-	struct ControlRegister : public Register<uint32_t>
+	struct ControlRegister : public internal::Register<uint32_t>
 	{
 		ControlRegister(const std::string& name) :
 			Register(name)
@@ -316,7 +316,7 @@ public:
 		{
 			Update();
 			Reset = 1;
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 
 			// The Reset bit will be set to 0 once the reset has been completed
 			while (Reset)
@@ -331,7 +331,7 @@ public:
 			// Set/Unset the Run-Stop bit
 			RS = run;
 			// Write changes to the register
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 		void setInterrupts(bool enable, const DMAInterrupts& intr)
@@ -343,7 +343,7 @@ public:
 			if (intr & INTR_ON_ERROR)
 				ErrIrqEn = enable;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 	public:
@@ -358,7 +358,7 @@ public:
 		uint8_t IRQDelay     = 0;
 	};
 
-	struct StatusRegister : public Register<uint32_t>, public HasInterrupt
+	struct StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
 	{
 		StatusRegister(const std::string& name) :
 			Register(name)
@@ -405,7 +405,7 @@ public:
 			if (intr & INTR_ON_ERROR)
 				ErrIrq = 1;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 		bool Halted             = false;
@@ -463,7 +463,7 @@ public:
 	S2MMStatusRegister m_s2mmStatReg  = S2MMStatusRegister();
 
 private:
-	WatchDog m_watchDogMM2S;
-	WatchDog m_watchDogS2MM;
+	internal::WatchDog m_watchDogMM2S;
+	internal::WatchDog m_watchDogS2MM;
 };
 } // namespace clap

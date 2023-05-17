@@ -46,6 +46,8 @@
 
 namespace clap
 {
+namespace internal
+{
 static std::exception_ptr g_pExcept = nullptr;
 
 DEFINE_EXCEPTION(WatchDogException)
@@ -229,4 +231,5 @@ private:
 #endif
 	HasStatus* m_pStatus = nullptr;
 };
+} // namespace internal
 } // namespace clap

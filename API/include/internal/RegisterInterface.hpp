@@ -42,6 +42,8 @@
 
 namespace clap
 {
+namespace internal
+{
 // Required to store the template class RegElem which will be used with different template types in a vector
 template<typename T>
 class RegIntf
@@ -428,4 +430,5 @@ public:
 protected:
 	uint32_t m_lastInterrupt = 0;
 };
+} // namespace internal
 } // namespace clap

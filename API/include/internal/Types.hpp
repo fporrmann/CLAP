@@ -38,14 +38,18 @@ using XDMABuffer = std::vector<uint8_t>;
 #else
 #include "AlignmentAllocator.hpp"
 template<class T>
-using XDMABuffer = std::vector<T, clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
+using XDMABuffer = std::vector<T, clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
 #endif
 
+using CLAPPtr = std::shared_ptr<class CLAP>;
+
+using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
+
+namespace internal
+{
 using CLAPBasePtr      = std::shared_ptr<class CLAPBase>;
 using CLAPManagedPtr   = std::shared_ptr<class CLAPManaged>;
-using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
-using CLAPPtr          = std::shared_ptr<class CLAP>;
 using MemoryManagerPtr = std::shared_ptr<class MemoryManager>;
 using MemoryManagerVec = std::vector<MemoryManagerPtr>;
-
+} // namespace internal
 } // namespace clap

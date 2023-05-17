@@ -58,7 +58,6 @@
 
 namespace clap
 {
-
 DEFINE_EXCEPTION(CLAPException)
 
 class CLAPBackend
@@ -199,7 +198,7 @@ public:
 
 		while (count < sizeInByte)
 		{
-			ByteCntType bytes = (sizeInByte - count) > RW_MAX_SIZE ? RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
+			ByteCntType bytes = (sizeInByte - count) > internal::RW_MAX_SIZE ? internal::RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
 
 			rc = SEEK(m_c2hFd, offset);
 			if (SEEK_INVALID(rc, offset))
@@ -277,7 +276,7 @@ public:
 
 		while (count < sizeInByte)
 		{
-			ByteCntType bytes = (sizeInByte - count) > RW_MAX_SIZE ? RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
+			ByteCntType bytes = (sizeInByte - count) > internal::RW_MAX_SIZE ? internal::RW_MAX_SIZE : static_cast<ByteCntType>(sizeInByte - count);
 
 			rc = SEEK(m_h2cFd, offset);
 			if (SEEK_INVALID(rc, offset))
@@ -436,8 +435,8 @@ public:
 		{
 			uint64_t bytes = sizeInByte - count;
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
+			if (bytes > internal::RW_MAX_SIZE)
+				bytes = internal::RW_MAX_SIZE;
 
 			memcpy(pByteData + count, (void*)(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), bytes);
 
@@ -490,8 +489,8 @@ public:
 		{
 			uint64_t bytes = sizeInByte - count;
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
+			if (bytes > internal::RW_MAX_SIZE)
+				bytes = internal::RW_MAX_SIZE;
 
 			memcpy((void*)(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), pByteData + count, bytes);
 
@@ -562,8 +561,8 @@ public:
 		{
 			uint64_t bytes = sizeInByte - count;
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
+			if (bytes > internal::RW_MAX_SIZE)
+				bytes = internal::RW_MAX_SIZE;
 
 			memcpy(pByteData + count, (void*)(offset), bytes);
 
@@ -598,8 +597,8 @@ public:
 		{
 			uint64_t bytes = sizeInByte - count;
 
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
+			if (bytes > internal::RW_MAX_SIZE)
+				bytes = internal::RW_MAX_SIZE;
 
 			memcpy((void*)(offset), pByteData + count, bytes);
 
@@ -622,5 +621,4 @@ public:
 };
 
 #endif // _WIN32
-
 } // namespace clap

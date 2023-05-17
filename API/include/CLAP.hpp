@@ -92,18 +92,19 @@
 
 namespace clap
 {
-
+namespace internal
+{
 class CLAPManaged
 {
 	friend class CLAPBase;
 	DISABLE_COPY_ASSIGN_MOVE(CLAPManaged)
 
 protected:
-	CLAPManaged(std::shared_ptr<class CLAPBase> pClap);
+	CLAPManaged(internal::CLAPBasePtr pClap);
 
 	~CLAPManaged();
 
-	std::shared_ptr<class CLAPBase> CLAP()
+	internal::CLAPBasePtr CLAP()
 	{
 		checkCLAPValid();
 		return m_pClap;
@@ -126,7 +127,7 @@ private:
 	}
 
 private:
-	CLAPBasePtr m_pClap;
+	internal::CLAPBasePtr m_pClap;
 };
 
 class CLAPBase
@@ -177,8 +178,9 @@ protected:
 	uint32_t m_devNum;
 	std::vector<CLAPManaged*> m_managedObjects;
 };
+} // namespace internal
 
-class CLAP : virtual public CLAPBase
+class CLAP : virtual public internal::CLAPBase
 {
 public:
 	enum class MemoryType
@@ -197,7 +199,7 @@ public:
 	using MemoryRegions = std::vector<MemoryRegion>;
 
 private:
-	using MemoryPair = std::pair<MemoryType, MemoryManagerVec>;
+	using MemoryPair = std::pair<MemoryType, internal::MemoryManagerVec>;
 
 	struct XDMAInfo
 	{
@@ -235,8 +237,8 @@ private:
 		m_mutex()
 #endif
 	{
-		m_memories.insert(MemoryPair(MemoryType::DDR, MemoryManagerVec()));
-		m_memories.insert(MemoryPair(MemoryType::BRAM, MemoryManagerVec()));
+		m_memories.insert(MemoryPair(MemoryType::DDR, internal::MemoryManagerVec()));
+		m_memories.insert(MemoryPair(MemoryType::BRAM, internal::MemoryManagerVec()));
 
 		readInfo();
 
@@ -270,7 +272,7 @@ public:
 	/// @param size Size of the memory region in bytes
 	void AddMemoryRegion(const MemoryType& type, const uint64_t& baseAddr, const uint64_t& size)
 	{
-		m_memories[type].push_back(std::make_shared<MemoryManager>(baseAddr, size));
+		m_memories[type].push_back(std::make_shared<internal::MemoryManager>(baseAddr, size));
 	}
 
 	void AddMemoryRegion(const MemoryRegion& region)
@@ -291,7 +293,7 @@ public:
 
 		if (memIdx == -1)
 		{
-			for (MemoryManagerPtr& mem : m_memories[type])
+			for (internal::MemoryManagerPtr& mem : m_memories[type])
 			{
 				if (mem->GetAvailableSpace() >= byteSize)
 					return mem->AllocMemory(byteSize);
@@ -492,7 +494,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
-	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void Read(const uint64_t& addr, std::vector<T, A>& data)
 	{
 		std::size_t size = sizeof(T);
@@ -664,7 +666,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
 		Write(addr, data.data(), data.size() * sizeof(T));
@@ -754,7 +756,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
-	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -777,7 +779,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -901,10 +903,10 @@ private:
 	void writeStream(const void* pData, const uint64_t& size)
 	{
 		// Due to the AXI data width of the XDMA write size has to be a multiple of 512-Bit (64-Byte)
-		if (size % XDMA_AXI_DATA_WIDTH != 0)
+		if (size % internal::XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
 			throw CLAPException(ss.str());
 		}
 
@@ -914,7 +916,7 @@ private:
 		while (curSize < size)
 		{
 			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
-			Write(XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize);
+			Write(internal::XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize);
 			curSize += writeSize;
 		}
 
@@ -924,10 +926,10 @@ private:
 	void readStream(void* pData, const uint64_t& size)
 	{
 		// Due to the AXI data width of the XDMA read size has to be a multiple of 512-Bit (64-Byte)
-		if (size % XDMA_AXI_DATA_WIDTH != 0)
+		if (size % internal::XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
 			throw CLAPException(ss.str());
 		}
 
@@ -937,7 +939,7 @@ private:
 		while (curSize < size)
 		{
 			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
-			Read(XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize);
+			Read(internal::XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize);
 			curSize += readSize;
 		}
 
@@ -976,19 +978,19 @@ private:
 
 	void readInfo()
 	{
-		uint32_t reg0 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x0);
-		uint32_t reg4 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x4);
+		uint32_t reg0 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x0);
+		uint32_t reg4 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x4);
 		m_info        = XDMAInfo(reg0, reg4);
 	}
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
 	CLAPBackendPtr m_pBackend;
-	std::map<MemoryType, MemoryManagerVec> m_memories;
+	std::map<MemoryType, internal::MemoryManagerVec> m_memories;
 	std::future<void> m_readFuture  = {};
 	std::future<void> m_writeFuture = {};
-	Timer m_readStreamTimer   = {};
-	Timer m_writeStreamTimer  = {};
+	Timer m_readStreamTimer         = {};
+	Timer m_writeStreamTimer        = {};
 
 	XDMAInfo m_info = {};
 
@@ -1000,7 +1002,7 @@ private:
 #ifndef _WIN32
 // TODO: Add backend classes for Pio
 // NOTE: PIO is used for the AXI-Lite interface of the XDMA -- But currently not fully supported by this API
-class XDMAPio : virtual public CLAPBase
+class XDMAPio : virtual public internal::CLAPBase
 {
 public:
 	XDMAPio(const uint32_t& deviceNum, const std::size_t& pioSize, const std::size_t& pioOffset = 0) :
@@ -1173,7 +1175,9 @@ private:
 };
 #endif // XDMAPio
 
-inline CLAPManaged::CLAPManaged(CLAPBasePtr pClap) :
+namespace internal
+{
+inline CLAPManaged::CLAPManaged(internal::CLAPBasePtr pClap) :
 	m_pClap(pClap)
 {
 	if (m_pClap)
@@ -1185,5 +1189,6 @@ inline CLAPManaged::~CLAPManaged()
 	if (m_pClap)
 		m_pClap->unregisterObject(this);
 }
+} // namespace internal
 
 } // namespace clap

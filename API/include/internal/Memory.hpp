@@ -38,11 +38,18 @@
 
 namespace clap
 {
+	// Forward declaration is required here to allow for the friend declaration
+	// TODO: Find a better way to do this -- maybe a separate header file?
+	namespace internal
+	{
+		class MemoryManager;
+	}
+
 DEFINE_EXCEPTION(MemoryException)
 
 class Memory
 {
-	friend class MemoryManager;
+	friend class internal::MemoryManager;
 
 public:
 	Memory() = default;
@@ -105,6 +112,8 @@ private:
 	bool m_valid        = false;
 };
 
+namespace internal
+{
 class MemoryManager
 {
 	static const uint32_t ALIGNMENT          = 0x40;
@@ -265,4 +274,5 @@ private:
 	MemList m_freeMemory;
 	MemList m_usedMemory;
 };
+} // namespace internal
 } // namespace clap

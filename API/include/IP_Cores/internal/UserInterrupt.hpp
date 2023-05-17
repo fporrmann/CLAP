@@ -61,6 +61,8 @@
 
 namespace clap
 {
+namespace internal
+{
 DEFINE_EXCEPTION(UserIntrruptException)
 
 class UserInterrupt
@@ -194,4 +196,5 @@ private:
 #endif
 	uint32_t m_interruptNum = 0;
 };
+} // namespace internal
 } // namespace clap

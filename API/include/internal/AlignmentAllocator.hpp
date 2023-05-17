@@ -28,6 +28,8 @@
 
 namespace clap
 {
+namespace internal
+{
 #ifdef __arm__
 /// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
 #include <stdlib.h>
@@ -192,5 +194,5 @@ inline bool operator!=(const AlignmentAllocator<T, Alignment>&, const AlignmentA
 {
 	return false;
 }
-
+} // namespace internal
 } // namespace clap

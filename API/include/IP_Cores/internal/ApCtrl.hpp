@@ -31,6 +31,8 @@
 
 namespace clap
 {
+namespace internal
+{
 class ApCtrl : public Register<uint8_t>, public HasStatus
 {
 	DISABLE_COPY_ASSIGN_MOVE(ApCtrl)
@@ -118,4 +120,5 @@ private:
 	bool ap_ready     = false;
 	bool auto_restart = false;
 };
+} // namespace internal
 } // namespace clap

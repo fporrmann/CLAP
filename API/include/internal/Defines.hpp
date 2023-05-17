@@ -26,6 +26,8 @@
 
 #pragma once
 
+namespace clap
+{
 #ifdef _WIN32
 #include <windows.h>
 using DeviceHandle = HANDLE;
@@ -67,3 +69,4 @@ using ByteCntType  = uint64_t;
 #define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)
 
 #define ROUND_UP_DIV(NUM, DEN) (((NUM) + (DEN)-1) / (DEN))
+} // namespace clap

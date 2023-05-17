@@ -37,7 +37,7 @@
 
 namespace clap
 {
-class HLSCore : public RegisterControlBase
+class HLSCore : public internal::RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(HLSCore)
 
@@ -241,7 +241,7 @@ private:
 	}
 
 private:
-	struct InterruptEnableRegister : public Register<uint8_t>
+	struct InterruptEnableRegister : public internal::Register<uint8_t>
 	{
 		InterruptEnableRegister() :
 			Register("Interrupt Enable Register"),
@@ -275,7 +275,7 @@ private:
 			if (intr & AP_INTR_READY)
 				ap_ready = enable;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 	public:
@@ -283,7 +283,7 @@ private:
 		bool ap_ready;
 	};
 
-	struct InterruptStatusRegister : public Register<uint8_t>, public HasInterrupt
+	struct InterruptStatusRegister : public internal::Register<uint8_t>, public internal::HasInterrupt
 	{
 		InterruptStatusRegister() :
 			Register("Interrupt Status Register"),
@@ -317,7 +317,7 @@ private:
 			if (intr & AP_INTR_READY)
 				ap_ready = 1;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 		bool ap_done;
@@ -325,10 +325,10 @@ private:
 	};
 
 private:
-	ApCtrl m_apCtrl;
+	internal::ApCtrl m_apCtrl;
 	InterruptEnableRegister m_intrCtrl;
 	InterruptStatusRegister m_intrStat;
-	WatchDog m_watchDog;
+	internal::WatchDog m_watchDog;
 	std::string m_name;
 };
 } // namespace clap

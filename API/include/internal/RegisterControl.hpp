@@ -44,6 +44,8 @@ enum class DMAChannel
 
 namespace clap
 {
+namespace internal
+{
 class RegisterControlBase : public CLAPManaged
 {
 	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
@@ -165,4 +167,5 @@ protected:
 	uint64_t m_ctrlOffset;
 	std::vector<RegisterIntf*> m_registers;
 };
+} // namespace internal
 } // namespace clap

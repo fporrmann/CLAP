@@ -36,7 +36,7 @@ namespace clap
 // The template defines the address width of the VDMA
 // required to read and write input/output addresses
 template<typename T>
-class VDMA : public RegisterControlBase
+class VDMA : public internal::RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(VDMA)
 
@@ -131,7 +131,7 @@ public:
 
 			// Set the Stride to hSize
 			m_mm2sFDelyStrideReg.Stride = hSize;
-			m_mm2sFDelyStrideReg.Update(Direction::WRITE);
+			m_mm2sFDelyStrideReg.Update(internal::Direction::WRITE);
 
 			// Set the amount of bytes in horizontal direction
 			setMM2SHSize(hSize);
@@ -155,7 +155,7 @@ public:
 
 			// Set the Stride to hSize
 			m_s2mmFDelyStrideReg.Stride = hSize;
-			m_s2mmFDelyStrideReg.Update(Direction::WRITE);
+			m_s2mmFDelyStrideReg.Update(internal::Direction::WRITE);
 
 			// Set the amount of bytes in horizontal direction
 			setS2MMHSize(hSize);
@@ -365,7 +365,7 @@ private:
 	////////////////////////////////////////
 
 public:
-	struct ControlRegister : public Register<uint32_t>
+	struct ControlRegister : public internal::Register<uint32_t>
 	{
 		ControlRegister(const std::string& name) :
 			Register(name)
@@ -408,7 +408,7 @@ public:
 		{
 			Update();
 			Reset = 1;
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 
 			// The Reset bit will be set to 0 once the reset has been completed
 			while (Reset)
@@ -423,7 +423,7 @@ public:
 			// Set/Unset the Run-Stop bit
 			RS = run;
 			// Write changes to the register
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 		void setInterrupts(bool enable, const VDMAInterrupts& intr)
@@ -435,7 +435,7 @@ public:
 			if (intr & VDMA_INTR_ON_ERROR)
 				ErrIrqEn = enable;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 	public:
@@ -453,7 +453,7 @@ public:
 		uint8_t IRQDelayCount = 0;
 	};
 
-	struct StatusRegister : public Register<uint32_t>, public HasInterrupt
+	struct StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
 	{
 		StatusRegister(const std::string& name) :
 			Register(name)
@@ -496,7 +496,7 @@ public:
 			if (intr & VDMA_INTR_ON_ERROR)
 				ErrIrq = 1;
 
-			Update(Direction::WRITE);
+			Update(internal::Direction::WRITE);
 		}
 
 		bool Halted            = false;
@@ -517,7 +517,7 @@ public:
 			ControlRegister("MM2S Control Register")
 		{
 			// Reference to base class is require due to template inheritance
-			Register<uint32_t>::RegisterElement<uint8_t>(&RdPntrNum, "RdPntrNum", 8, 11);
+			internal::Register<uint32_t>::RegisterElement<uint8_t>(&RdPntrNum, "RdPntrNum", 8, 11);
 		}
 
 		uint8_t RdPntrNum = 0;
@@ -535,7 +535,7 @@ public:
 		S2MMControlRegister() :
 			ControlRegister("S2MM Control Register")
 		{
-			Register<uint32_t>::RegisterElement<uint8_t>(&WrPntrNum, "WrPntrNum", 8, 11);
+			internal::Register<uint32_t>::RegisterElement<uint8_t>(&WrPntrNum, "WrPntrNum", 8, 11);
 		}
 
 		uint8_t WrPntrNum = 0;
@@ -546,9 +546,9 @@ public:
 		S2MMStatusRegister() :
 			StatusRegister("S2MM Status Register")
 		{
-			Register<uint32_t>::RegisterElement<bool>(&EOLEarlyErr, "EOLEarlyErr", 8);
-			Register<uint32_t>::RegisterElement<bool>(&SOFLateErr, "SOFLateErr", 11);
-			Register<uint32_t>::RegisterElement<bool>(&EOLLateErr, "EOLLateErr", 15);
+			internal::Register<uint32_t>::RegisterElement<bool>(&EOLEarlyErr, "EOLEarlyErr", 8);
+			internal::Register<uint32_t>::RegisterElement<bool>(&SOFLateErr, "SOFLateErr", 11);
+			internal::Register<uint32_t>::RegisterElement<bool>(&EOLLateErr, "EOLLateErr", 15);
 		}
 
 		bool EOLEarlyErr = false;
@@ -556,7 +556,7 @@ public:
 		bool EOLLateErr  = false;
 	};
 
-	struct S2MMIrqMask : public Register<uint32_t>
+	struct S2MMIrqMask : public internal::Register<uint32_t>
 	{
 		S2MMIrqMask() :
 			Register("S2MM IRQ Mask")
@@ -573,7 +573,7 @@ public:
 		bool IRQMaskEOLLateErr  = false;
 	};
 
-	struct MM2SFrameDelayStrideRegister : public Register<uint32_t>
+	struct MM2SFrameDelayStrideRegister : public internal::Register<uint32_t>
 	{
 		MM2SFrameDelayStrideRegister() :
 			Register("MM2S FrameDelay & Stride Register")
@@ -586,7 +586,7 @@ public:
 		uint8_t FrameDelay = 0;
 	};
 
-	struct SS2MFrameDelayStrideRegister : public Register<uint32_t>
+	struct SS2MFrameDelayStrideRegister : public internal::Register<uint32_t>
 	{
 		SS2MFrameDelayStrideRegister() :
 			Register("SS2M FrameDelay & Stride Register")
@@ -599,7 +599,7 @@ public:
 		uint8_t FrameDelay = 0;
 	};
 
-	struct ParkPointerRegister : public Register<uint32_t>
+	struct ParkPointerRegister : public internal::Register<uint32_t>
 	{
 		ParkPointerRegister() :
 			Register("Park Pointer Register")
@@ -616,7 +616,7 @@ public:
 		uint8_t WrFramStore = 0;
 	};
 
-	struct VDMAVersionRegister : public Register<uint32_t>
+	struct VDMAVersionRegister : public internal::Register<uint32_t>
 	{
 		VDMAVersionRegister() :
 			Register("VDMA Version Register")
@@ -643,7 +643,7 @@ public:
 	SS2MFrameDelayStrideRegister m_s2mmFDelyStrideReg = SS2MFrameDelayStrideRegister();
 
 private:
-	WatchDog m_watchDogMM2S;
-	WatchDog m_watchDogS2MM;
+	internal::WatchDog m_watchDogMM2S;
+	internal::WatchDog m_watchDogS2MM;
 };
 } // namespace clap
