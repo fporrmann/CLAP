@@ -1,5 +1,5 @@
 /* 
- *  File: VDMA.h
+ *  File: VDMA.hpp
  *  Copyright (c) 2021 Florian Porrmann
  *  
  *  MIT License
@@ -26,9 +26,13 @@
 
 #pragma once
 
-#include "../internal/RegisterControl.h"
-#include "internal/WatchDog.h"
+#include "../internal/RegisterControl.hpp"
+#include "internal/WatchDog.hpp"
 
+#include <cstdint>
+
+namespace clap
+{
 // The template defines the address width of the VDMA
 // required to read and write input/output addresses
 template<typename T>
@@ -68,8 +72,8 @@ public:
 	};
 
 public:
-	VDMA(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pXdma, ctrlOffset),
+	VDMA(CLAPPtr pClap, const uint64_t& ctrlOffset) :
+		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDogMM2S("VDMA_MM2S"),
 		m_watchDogS2MM("VDMA_S2MM")
 	{
@@ -642,3 +646,4 @@ private:
 	WatchDog m_watchDogMM2S;
 	WatchDog m_watchDogS2MM;
 };
+} // namespace clap

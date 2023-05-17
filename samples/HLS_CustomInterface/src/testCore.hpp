@@ -6,11 +6,11 @@
  * 
  ***/
 
-#include <IP_Cores/HLSCore.h>
+#include <IP_Cores/HLSCore.hpp>
 #include <ostream>
 #include <string>
 
-class testCore : public HLSCore
+class testCore : public clap::HLSCore
 {
 	DISABLE_COPY_ASSIGN_MOVE(testCore)
 
@@ -27,8 +27,8 @@ class testCore : public HLSCore
 	///////////////////////////////////////
 
 public:
-	testCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name = "test") :
-		HLSCore(pXdma, ctrlOffset, name)
+	testCore(clap::CLAPPtr pClap, const uint64_t& ctrlOffset, const std::string& name = "test") :
+		clap::HLSCore(pClap, ctrlOffset, name)
 	{}
 
 	///////////////////////////////////////
@@ -42,7 +42,7 @@ public:
 		SetElementsAddr(elements);
 	}
 
-	void Init(const Memory& pDDRIn, const Memory& pDDROut, const uint32_t& elements)
+	void Init(const clap::Memory& pDDRIn, const clap::Memory& pDDROut, const uint32_t& elements)
 	{
 		SetPDDRInAddr(pDDRIn);
 		SetPDDROutAddr(pDDROut);
@@ -62,7 +62,7 @@ public:
 		SetDataAddr(PDDRIN_ADDR, addr);
 	}
 
-	void SetPDDRInAddr(const Memory& mem)
+	void SetPDDRInAddr(const clap::Memory& mem)
 	{
 		SetDataAddr(PDDRIN_ADDR, mem, AddressType::BIT_64);
 	}
@@ -72,7 +72,7 @@ public:
 		SetDataAddr(PDDROUT_ADDR, addr);
 	}
 
-	void SetPDDROutAddr(const Memory& mem)
+	void SetPDDROutAddr(const clap::Memory& mem)
 	{
 		SetDataAddr(PDDROUT_ADDR, mem, AddressType::BIT_64);
 	}

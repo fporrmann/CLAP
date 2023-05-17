@@ -1,5 +1,5 @@
 /* 
- *  File: Logger.h
+ *  File: Logger.hpp
  *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
@@ -29,9 +29,9 @@
 #include <iostream>
 #include <sstream>
 
-namespace xdma
+namespace clap
 {
-namespace Logging
+namespace logging
 {
 enum class Verbosity
 {
@@ -115,22 +115,23 @@ static inline void SetVerbosity(const Verbosity& v)
 	g_error.SetVerbosity(v);
 }
 
-} // namespace Logging
-} // namespace xdma
+} // namespace logging
 
 #ifndef DISABLE_LOGGING
-#define LOG_DEBUG   xdma::Logging::g_debug
-#define LOG_VERBOSE xdma::Logging::g_verbose
-#define LOG_INFO    xdma::Logging::g_info
-#define LOG_WARNING xdma::Logging::g_warning
-#define LOG_ERROR   xdma::Logging::g_error
+#define LOG_DEBUG   logging::g_debug
+#define LOG_VERBOSE logging::g_verbose
+#define LOG_INFO    logging::g_info
+#define LOG_WARNING logging::g_warning
+#define LOG_ERROR   logging::g_error
 #else
-#define LOG_DEBUG   xdma::Logging::g_none
-#define LOG_VERBOSE xdma::Logging::g_none
-#define LOG_INFO    xdma::Logging::g_none
-#define LOG_WARNING xdma::Logging::g_none
-#define LOG_ERROR   xdma::Logging::g_none
+#define LOG_DEBUG   logging::g_none
+#define LOG_VERBOSE logging::g_none
+#define LOG_INFO    logging::g_none
+#define LOG_WARNING logging::g_none
+#define LOG_ERROR   logging::g_none
 #endif
 
 /// Info log messages that will not be disabled by the DISABLE_LOGGING macro
-#define LOG_INFO_ALWAYS xdma::Logging::g_info
+#define LOG_INFO_ALWAYS logging::g_info
+
+} // namespace clap

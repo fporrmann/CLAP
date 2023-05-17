@@ -1,6 +1,6 @@
 /* 
- *  File: xdmaAlignmentAllocator.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: AlignmentAllocator.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,7 +26,7 @@
 
 #pragma once
 
-namespace xdma
+namespace clap
 {
 #ifdef __arm__
 /// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
@@ -59,6 +59,7 @@ _aligned_free(void* ptr)
 	free(ptr);
 }
 #else
+#include <cstdlib>
 #include <malloc.h>
 #endif
 
@@ -192,4 +193,4 @@ inline bool operator!=(const AlignmentAllocator<T, Alignment>&, const AlignmentA
 	return false;
 }
 
-} // namespace xdma
+} // namespace clap

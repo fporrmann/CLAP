@@ -1,6 +1,6 @@
 /*
- *  File: UserInterrupt.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: UserInterrupt.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *
  *  MIT License
  *
@@ -47,14 +47,20 @@
 #include <functional>
 #endif
 
+#include <cstdint>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
-#include "../../internal/Constants.h"
-#include "../../internal/Defines.h"
-#include "../../internal/Logger.h"
-#include "../../internal/RegisterInterface.h"
-#include "../../internal/Utils.h"
+#include "../../internal/Constants.hpp"
+#include "../../internal/Defines.hpp"
+#include "../../internal/Logger.hpp"
+#include "../../internal/RegisterInterface.hpp"
+#include "../../internal/Utils.hpp"
 
+namespace clap
+{
 DEFINE_EXCEPTION(UserIntrruptException)
 
 class UserInterrupt
@@ -188,3 +194,4 @@ private:
 #endif
 	uint32_t m_interruptNum = 0;
 };
+} // namespace clap

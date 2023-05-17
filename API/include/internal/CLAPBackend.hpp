@@ -1,6 +1,6 @@
 /* 
- *  File: xdmaBackend.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: CLAPBackend.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -47,18 +47,21 @@
 /////////////////////////
 #endif
 
-#include "Constants.h"
-#include "Defines.h"
-#include "Logger.h"
-#include "Utils.h"
+#include "Constants.hpp"
+#include "Defines.hpp"
+#include "Logger.hpp"
+#include "Utils.hpp"
 
 #ifndef EMBEDDED_XILINX
-#include "Timer.h"
+#include "Timer.hpp"
 #endif
 
-DEFINE_EXCEPTION(XDMAException)
+namespace clap
+{
 
-class XDMABackend
+DEFINE_EXCEPTION(CLAPException)
+
+class CLAPBackend
 {
 public:
 	enum class TYPE
@@ -69,9 +72,9 @@ public:
 	};
 
 public:
-	XDMABackend() {}
+	CLAPBackend() {}
 
-	virtual ~XDMABackend() {}
+	virtual ~CLAPBackend() {}
 
 	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)        = 0;
 	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) = 0;
@@ -106,7 +109,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("") << "Unable to open device " << name << "; errno: " << err;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		return fd;
@@ -117,11 +120,11 @@ protected:
 	std::string m_nameRead    = "";
 	std::string m_nameWrite   = "";
 	std::string m_nameCtrl    = "";
-	std::string m_backendName = "XDMA";
+	std::string m_backendName = "CLAP";
 };
 
 #ifndef EMBEDDED_XILINX
-class PCIeBackend : virtual public XDMABackend
+class PCIeBackend : virtual public CLAPBackend
 {
 	DISABLE_COPY_ASSIGN_MOVE(PCIeBackend)
 
@@ -174,15 +177,15 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("PCIeBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t count     = 0;
@@ -190,7 +193,7 @@ public:
 		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
 		FileOpType rc;
-		xdma::Timer timer;
+		Timer timer;
 
 		timer.Start();
 
@@ -203,7 +206,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec;
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 
 #if _WIN32
@@ -211,7 +214,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << bytes << " byte from offset 0x" << offset << " Error: " << GetLastError() << std::dec;
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 #else
 			rc = ::read(m_c2hFd, pByteData + count, bytes);
@@ -223,7 +226,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << bytes << " byte from offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << std::dec << errsv << " (" << strerror(errsv) << ")";
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 
 			count += bytes;
@@ -236,11 +239,11 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << m_c2hDeviceName << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
@@ -252,15 +255,15 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("PCIeBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t count           = 0;
@@ -268,7 +271,7 @@ public:
 		OffsetType offset        = static_cast<OffsetType>(addr);
 
 		FileOpType rc;
-		xdma::Timer timer;
+		Timer timer;
 
 		timer.Start();
 
@@ -281,7 +284,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to seek to offset 0x" << std::hex << offset << " (rc: 0x" << rc << ")" << std::dec;
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 
 #ifdef _WIN32
@@ -289,7 +292,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << bytes << " byte to offset 0x" << offset << " Error: " << GetLastError() << std::dec;
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 #else
 			rc = ::write(m_h2cFd, pByteData + count, bytes);
@@ -300,7 +303,7 @@ public:
 			{
 				std::stringstream ss;
 				ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << bytes << " byte to offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << std::dec << errsv << " (" << strerror(errsv) << ")";
-				throw XDMAException(ss.str());
+				throw CLAPException(ss.str());
 			}
 
 			count += bytes;
@@ -313,11 +316,11 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << m_h2cDeviceName << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt)
@@ -329,15 +332,15 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("PCIeBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		if (byteCnt > 8)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << "byteCnt is greater than 8 (64-bit), which is not supported.";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		ByteCntType bytes = static_cast<ByteCntType>(byteCnt);
@@ -353,7 +356,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << m_ctrlDeviceName << ", failed to read 0x" << std::hex << bytes << " byte from offset 0x" << addr << " Error: " << GetLastError() << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 #else
 		rc = ::pread(m_ctrlFd, &data, bytes, offset);
@@ -364,7 +367,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PCIeBackend") << m_ctrlDeviceName << ", failed to read 0x" << std::hex << bytes << " byte to offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << std::dec << errsv << " (" << strerror(errsv) << ")";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 	}
 
@@ -383,7 +386,7 @@ private:
 
 #ifndef _WIN32
 
-class PetaLinuxBackend : virtual public XDMABackend
+class PetaLinuxBackend : virtual public CLAPBackend
 {
 	DISABLE_COPY_ASSIGN_MOVE(PetaLinuxBackend)
 
@@ -410,8 +413,8 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("PetaLinuxBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		// Split the address into a rough base address and the specific offset
@@ -423,7 +426,7 @@ public:
 		off_t offset       = addr;
 		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
-		xdma::Timer timer;
+		Timer timer;
 
 		timer.Start();
 
@@ -450,11 +453,11 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
@@ -466,8 +469,8 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("PetaLinuxBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t addrBase   = addr & 0xFFFFFFFFFFFF0000;
@@ -477,7 +480,7 @@ public:
 		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
 		off_t offset             = addr;
 
-		xdma::Timer timer;
+		Timer timer;
 
 		timer.Start();
 
@@ -504,11 +507,11 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
@@ -528,7 +531,7 @@ private:
 
 #ifndef _WIN32
 
-class BareMetalBackend : virtual public XDMABackend
+class BareMetalBackend : virtual public CLAPBackend
 {
 public:
 	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
@@ -547,8 +550,8 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("BareMetalBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t count     = 0;
@@ -572,7 +575,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("BareMetalBackend") << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 	}
 
@@ -583,8 +586,8 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << "XDMA Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("BareMetalBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t count           = 0;
@@ -608,7 +611,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("BareMetalBackend") << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 	}
 
@@ -619,3 +622,5 @@ public:
 };
 
 #endif // _WIN32
+
+} // namespace clap

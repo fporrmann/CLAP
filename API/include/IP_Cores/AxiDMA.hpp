@@ -1,6 +1,6 @@
 /* 
- *  File: AxiDMA.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: AxiDMA.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,9 +26,13 @@
 
 #pragma once
 
-#include "../internal/RegisterControl.h"
-#include "internal/WatchDog.h"
+#include "../internal/RegisterControl.hpp"
+#include "internal/WatchDog.hpp"
 
+#include <cstdint>
+
+namespace clap
+{
 template<typename T>
 class AxiDMA : public RegisterControlBase
 {
@@ -66,8 +70,8 @@ public:
 	};
 
 public:
-	AxiDMA(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pXdma, ctrlOffset),
+	AxiDMA(CLAPPtr pClap, const uint64_t& ctrlOffset) :
+		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDogMM2S("AxiDMA_MM2S"),
 		m_watchDogS2MM("AxiDMA_S2MM")
 	{
@@ -462,3 +466,4 @@ private:
 	WatchDog m_watchDogMM2S;
 	WatchDog m_watchDogS2MM;
 };
+} // namespace clap

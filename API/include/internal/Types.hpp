@@ -1,5 +1,5 @@
 /* 
- *  File: Constants.h
+ *  File: Types.hpp
  *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
@@ -26,28 +26,26 @@
 
 #pragma once
 
-#include <cstddef>
+#include <memory>
+#include <vector>
 
-static const std::size_t XDMA_ALIGNMENT          = 4096;
-static const std::size_t XDMA_AXI_DATA_WIDTH_BIT = 512; // 512-Bit
-static const std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT / 8;
-static const uint64_t XDMA_STREAM_OFFSET         = 0; // For streams data is always write/read from/to the offset 0
-static const uint64_t USE_VECTOR_SIZE            = 0; // Flag to automatically calculate the byte size based on the vector size and type
+#include "Constants.hpp"
 
-static const int32_t WAIT_INFINITE = -1;
+namespace clap
+{
+#ifdef EMBEDDED_XILINX
+using XDMABuffer = std::vector<uint8_t>;
+#else
+#include "AlignmentAllocator.hpp"
+template<class T>
+using XDMABuffer = std::vector<T, clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
+#endif
 
-static const uint8_t SAME_AS_START_BIT = 0xFF;
+using CLAPBasePtr      = std::shared_ptr<class CLAPBase>;
+using CLAPManagedPtr   = std::shared_ptr<class CLAPManaged>;
+using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
+using CLAPPtr          = std::shared_ptr<class CLAP>;
+using MemoryManagerPtr = std::shared_ptr<class MemoryManager>;
+using MemoryManagerVec = std::vector<MemoryManagerPtr>;
 
-static const uint64_t XDMA_CTRL_BASE = 0x0;
-static const uint64_t XDMA_CTRL_SIZE = 0x100;
-
-/*
- * man 2 write:
- * On Linux, write() (and similar system calls) will transfer at most
- * 	0x7ffff000 (2,147,479,552) bytes, returning the number of bytes
- *	actually transferred.  (This is true on both 32-bit and 64-bit
- *	systems.)
- */
-static const uint32_t RW_MAX_SIZE = 0x7ffff000;
-
-static const uint64_t USE_MEMORY_SIZE = 0;
+} // namespace clap

@@ -1,6 +1,6 @@
 /* 
- *  File: xdmaAccess.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: CLAP.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -29,13 +29,11 @@
 ////// TODO:
 // - Maybe change the way IP core objects are created, possible to create from an XDMA object?
 // --------------------------------------------------------------------------------------------
-// - Rename this file to something more appropriate
-// --------------------------------------------------------------------------------------------
 // - Look into 32-bit AXI interfaces, although this is disabled by default it might still be used
 //   - Would require some edits to the memory manager
 //   - Would require that the DDR address is below 4GB
 // --------------------------------------------------------------------------------------------
-// - Try to force the use of aligned memory, e.g., by using the XXDMABuffer type, alternative force vector types to be aligned with the xdmaAlignmentAllocator
+// - Try to force the use of aligned memory, e.g., by using the XXDMABuffer type, alternative force vector types to be aligned with the clapAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // --------------------------------------------------------------------------------------------
 // - Replace boolean flags with enums for better readability
@@ -47,6 +45,10 @@
 // - Detect if the control address of an IP Core is within the range of a memory block / other IP Core
 // --------------------------------------------------------------------------------------------
 // - Suppress log messages when polling for completion
+// --------------------------------------------------------------------------------------------
+// - Generalize some logging calls, e.g., Read/Write runtime in backend
+// --------------------------------------------------------------------------------------------
+// - Write examples using AxiDMA and VDMA
 // --------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -76,68 +78,60 @@
 #include <sstream>
 #include <vector>
 
-#include "internal/Constants.h"
-#include "internal/Memory.h"
-#include "internal/Utils.h"
+#include "internal/Constants.hpp"
+#include "internal/Memory.hpp"
+#include "internal/Types.hpp"
+#include "internal/Utils.hpp"
 
 #ifndef EMBEDDED_XILINX
-#include "internal/Timer.h"
-#include "internal/xdmaAlignmentAllocator.h"
+#include "internal/AlignmentAllocator.hpp"
+#include "internal/Timer.hpp"
 #endif
 
-#include "internal/xdmaBackend.h"
+#include "internal/CLAPBackend.hpp"
 
-#ifdef EMBEDDED_XILINX
-using XDMABuffer = std::vector<uint8_t>;
-#else
-template<class T>
-using XDMABuffer = std::vector<T, xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
-#endif
-using XDMAManagedPtr   = std::shared_ptr<class XDMAManaged>;
-using XDMABackendPtr   = std::shared_ptr<class XDMABackend>;
-using XDMAPtr          = std::shared_ptr<class XDMA>;
-using MemoryManagerPtr = std::shared_ptr<MemoryManager>;
-using MemoryManagerVec = std::vector<MemoryManagerPtr>;
-
-class XDMAManaged
+namespace clap
 {
-	friend class XDMABase;
-	DISABLE_COPY_ASSIGN_MOVE(XDMAManaged)
+
+class CLAPManaged
+{
+	friend class CLAPBase;
+	DISABLE_COPY_ASSIGN_MOVE(CLAPManaged)
 
 protected:
-	XDMAManaged(std::shared_ptr<class XDMABase> pXdma);
+	CLAPManaged(std::shared_ptr<class CLAPBase> pClap);
 
-	~XDMAManaged();
+	~CLAPManaged();
 
-	std::shared_ptr<class XDMABase> XDMA()
+	std::shared_ptr<class CLAPBase> CLAP()
 	{
-		checkXDMAValid();
-		return m_pXdma;
+		checkCLAPValid();
+		return m_pClap;
 	}
 
 private:
-	void markXDMAInvalid()
+	void markCLAPInvalid()
 	{
-		m_pXdma = nullptr;
+		m_pClap = nullptr;
 	}
 
-	void checkXDMAValid() const
+	void checkCLAPValid() const
 	{
-		if (m_pXdma == nullptr)
+		if (m_pClap == nullptr)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAManaged") << "XDMA/XDMAPio instance is not valid or has been destroyed";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAPManaged") << "CLAP/CLAPPio instance is not valid or has been destroyed";
+			throw CLAPException(ss.str());
 		}
 	}
 
 private:
-	std::shared_ptr<class XDMABase> m_pXdma;
+	CLAPBasePtr m_pClap;
 };
 
-class XDMABase
+class CLAPBase
 {
-	friend class XDMAManaged;
+	friend class CLAPManaged;
 
 public:
 	virtual uint8_t Read8(const uint64_t& addr)   = 0;
@@ -156,35 +150,35 @@ public:
 	}
 
 protected:
-	XDMABase(const uint32_t& devNum) :
+	CLAPBase(const uint32_t& devNum) :
 		m_devNum(devNum),
 		m_managedObjects()
 	{
 	}
 
-	virtual ~XDMABase()
+	virtual ~CLAPBase()
 	{
-		for (XDMAManaged* pM : m_managedObjects)
-			pM->markXDMAInvalid();
+		for (CLAPManaged* pM : m_managedObjects)
+			pM->markCLAPInvalid();
 	}
 
 private:
-	void registerObject(XDMAManaged* pObj)
+	void registerObject(CLAPManaged* pObj)
 	{
 		m_managedObjects.push_back(pObj);
 	}
 
-	void unregisterObject(XDMAManaged* pObj)
+	void unregisterObject(CLAPManaged* pObj)
 	{
 		m_managedObjects.erase(std::remove(m_managedObjects.begin(), m_managedObjects.end(), pObj), m_managedObjects.end());
 	}
 
 protected:
 	uint32_t m_devNum;
-	std::vector<XDMAManaged*> m_managedObjects;
+	std::vector<CLAPManaged*> m_managedObjects;
 };
 
-class XDMA : virtual public XDMABase
+class CLAP : virtual public CLAPBase
 {
 public:
 	enum class MemoryType
@@ -196,8 +190,8 @@ public:
 	struct MemoryRegion
 	{
 		MemoryType type;
-		uint64_t   baseAddress;
-		uint64_t   size;
+		uint64_t baseAddress;
+		uint64_t size;
 	};
 
 	using MemoryRegions = std::vector<MemoryRegion>;
@@ -232,8 +226,8 @@ private:
 		bool polling      = false;
 	};
 
-	XDMA(XDMABackendPtr pBackend) :
-		XDMABase(pBackend->GetDevNum()),
+	CLAP(CLAPBackendPtr pBackend) :
+		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(pBackend),
 		m_memories()
 #ifndef EMBEDDED_XILINX
@@ -246,31 +240,31 @@ private:
 
 		readInfo();
 
-		LOG_VERBOSE << "XDMA instance created" << std::endl;
+		LOG_VERBOSE << "CLAP instance created" << std::endl;
 		LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
 		LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
 		LOG_VERBOSE << m_info << std::endl;
 	}
 
 public:
-	/// @brief Creates a new XDMA instance
+	/// @brief Creates a new CLAP instance
 	/// @tparam T Type of the backend to use
-	/// @return A shared pointer to the new XDMA instance
-	/// @param deviceNum Device number of the XDMA device
-	/// @param channelNum Channel number of the XDMA device
+	/// @return A shared pointer to the new CLAP instance
+	/// @param deviceNum Device number of the CLAP device
+	/// @param channelNum Channel number of the CLAP device
 	template<typename T>
-	static XDMAPtr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
+	static CLAPPtr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
 	{
 		// We have to use the result of new here, because the constructor is private
 		// and can therefore, not be called from make_shared
-		return XDMAPtr(new XDMA(std::make_shared<T>(deviceNum, channelNum)));
+		return CLAPPtr(new CLAP(std::make_shared<T>(deviceNum, channelNum)));
 	}
 
-	~XDMA()
+	~CLAP()
 	{
 	}
 
-	/// @brief Adds a memory region to the XDMA instance
+	/// @brief Adds a memory region to the CLAP instance
 	/// @param type Type of memory
 	/// @param baseAddr Base address of the memory region
 	/// @param size Size of the memory region in bytes
@@ -308,16 +302,16 @@ public:
 			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("XDMA") << "Specified memory region " << std::dec << memIdx << " does not exist.";
-				throw XDMAException(ss.str());
+				ss << CLASS_TAG("CLAP") << "Specified memory region " << std::dec << memIdx << " does not exist.";
+				throw CLAPException(ss.str());
 			}
 
 			return m_memories[type][memIdx]->AllocMemory(byteSize);
 		}
 
 		std::stringstream ss;
-		ss << CLASS_TAG("XDMA") << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
-		throw XDMAException(ss.str());
+		ss << CLASS_TAG("CLAP") << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
+		throw CLAPException(ss.str());
 	}
 
 	/// @brief Allocates a memory block for n-elements
@@ -392,8 +386,8 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Read(mem.GetBaseAddr(), pData, size);
@@ -411,15 +405,15 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw CLAPException(ss.str());
 		}
 
 		if (size > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << size << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << size << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Read(mem, buffer.data(), buffer.size() * sizeof(T));
@@ -436,8 +430,8 @@ public:
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << sizeInByte << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << sizeInByte << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Read(addr, buffer.data(), sizeInByte);
@@ -498,7 +492,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
-	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void Read(const uint64_t& addr, std::vector<T, A>& data)
 	{
 		std::size_t size = sizeof(T);
@@ -592,8 +586,8 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Write(mem.GetBaseAddr(), pData, size);
@@ -611,15 +605,15 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << m_pBackend->GetName(XDMABackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw CLAPException(ss.str());
 		}
 
 		if (size > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Write(mem, buffer.data(), size);
@@ -636,8 +630,8 @@ public:
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << sizeInByte << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << sizeInByte << ")";
+			throw CLAPException(ss.str());
 		}
 
 		Write(addr, buffer.data(), sizeInByte);
@@ -670,7 +664,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
 		Write(addr, data.data(), data.size() * sizeof(T));
@@ -760,7 +754,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
-	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -783,7 +777,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	template<class T, class A = xdma::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::AlignmentAllocator<T, XDMA_ALIGNMENT>>
 	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -846,8 +840,8 @@ private:
 		if (sizeof(T) > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired read size (" << sizeof(T) << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired read size (" << sizeof(T) << ")";
+			throw CLAPException(ss.str());
 		}
 
 		return Read<T>(mem.GetBaseAddr());
@@ -859,8 +853,8 @@ private:
 		if (sizeof(T) > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired write size (" << sizeof(T) << ")";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired write size (" << sizeof(T) << ")";
+			throw CLAPException(ss.str());
 		}
 
 		return Write<T>(mem.GetBaseAddr(), data);
@@ -868,40 +862,40 @@ private:
 
 	void startReadStream(void* pData, const uint64_t& sizeInByte)
 	{
-		if(!m_info.streaming)
+		if (!m_info.streaming)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "The XDMA endpoint is not in streaming mode";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
+			throw CLAPException(ss.str());
 		}
 
 		if (m_readFuture.valid())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Read stream is already running";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Read stream is already running";
+			throw CLAPException(ss.str());
 		}
 
-		m_readFuture = std::async(&XDMA::readStream, this, pData, sizeInByte);
+		m_readFuture = std::async(&CLAP::readStream, this, pData, sizeInByte);
 	}
 
 	void startWriteStream(const void* pData, const uint64_t& sizeInByte)
 	{
-		if(!m_info.streaming)
+		if (!m_info.streaming)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "The XDMA endpoint is not in streaming mode";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
+			throw CLAPException(ss.str());
 		}
 
 		if (m_writeFuture.valid())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Write stream is already running";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Write stream is already running";
+			throw CLAPException(ss.str());
 		}
 
-		m_writeFuture = std::async(&XDMA::writeStream, this, pData, sizeInByte);
+		m_writeFuture = std::async(&CLAP::writeStream, this, pData, sizeInByte);
 	}
 
 	void writeStream(const void* pData, const uint64_t& size)
@@ -910,8 +904,8 @@ private:
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t curSize = 0;
@@ -933,8 +927,8 @@ private:
 		if (size % XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMA") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
-			throw XDMAException(ss.str());
+			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << XDMA_AXI_DATA_WIDTH << ").";
+			throw CLAPException(ss.str());
 		}
 
 		uint64_t curSize = 0;
@@ -984,17 +978,17 @@ private:
 	{
 		uint32_t reg0 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x0);
 		uint32_t reg4 = readCtrl32(XDMA_CTRL_BASE + m_devNum * XDMA_CTRL_SIZE + 0x4);
-		m_info = XDMAInfo(reg0, reg4);
+		m_info        = XDMAInfo(reg0, reg4);
 	}
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
-	XDMABackendPtr m_pBackend;
+	CLAPBackendPtr m_pBackend;
 	std::map<MemoryType, MemoryManagerVec> m_memories;
 	std::future<void> m_readFuture  = {};
 	std::future<void> m_writeFuture = {};
-	xdma::Timer m_readStreamTimer   = {};
-	xdma::Timer m_writeStreamTimer  = {};
+	Timer m_readStreamTimer   = {};
+	Timer m_writeStreamTimer  = {};
 
 	XDMAInfo m_info = {};
 
@@ -1006,11 +1000,11 @@ private:
 #ifndef _WIN32
 // TODO: Add backend classes for Pio
 // NOTE: PIO is used for the AXI-Lite interface of the XDMA -- But currently not fully supported by this API
-class XDMAPio : virtual public XDMABase
+class XDMAPio : virtual public CLAPBase
 {
 public:
 	XDMAPio(const uint32_t& deviceNum, const std::size_t& pioSize, const std::size_t& pioOffset = 0) :
-		XDMABase(deviceNum),
+		CLAPBase(deviceNum),
 		m_pioDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_user"),
 		m_pioSize(pioSize),
 		m_pioOffset(pioOffset)
@@ -1026,7 +1020,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("") << "Unable to open device " << m_pioDeviceName << "; errno: " << err;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 #ifndef EMBEDDED_XILINX
@@ -1037,7 +1031,7 @@ public:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Failed to map memory into userspace, errno: " << err;
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 #endif
 
@@ -1108,7 +1102,7 @@ private:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		const std::size_t size = sizeof(T);
@@ -1116,14 +1110,14 @@ private:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		if (addr >= m_pioSize + m_pioOffset)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Address: (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		uint8_t* vAddr = reinterpret_cast<uint8_t*>(m_pMapBase) + addr;
@@ -1142,7 +1136,7 @@ private:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		const std::size_t size = sizeof(T);
@@ -1150,14 +1144,14 @@ private:
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		if (addr >= m_pioSize + m_pioOffset)
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("XDMAPio") << "Address (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
-			throw XDMAException(ss.str());
+			throw CLAPException(ss.str());
 		}
 
 		uint8_t* vAddr                 = reinterpret_cast<uint8_t*>(m_pMapBase) + addr;
@@ -1179,15 +1173,17 @@ private:
 };
 #endif // XDMAPio
 
-inline XDMAManaged::XDMAManaged(std::shared_ptr<XDMABase> pXdma) :
-	m_pXdma(pXdma)
+inline CLAPManaged::CLAPManaged(CLAPBasePtr pClap) :
+	m_pClap(pClap)
 {
-	if (m_pXdma)
-		m_pXdma->registerObject(this);
+	if (m_pClap)
+		m_pClap->registerObject(this);
 }
 
-inline XDMAManaged::~XDMAManaged()
+inline CLAPManaged::~CLAPManaged()
 {
-	if (m_pXdma)
-		m_pXdma->unregisterObject(this);
+	if (m_pClap)
+		m_pClap->unregisterObject(this);
 }
+
+} // namespace clap

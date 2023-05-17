@@ -1,6 +1,6 @@
 /* 
- *  File: IPControl.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: RegisterControl.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,10 +26,13 @@
 
 #pragma once
 
-#include "../xdmaAccess.h"
-#include "RegisterInterface.h"
-#include "Utils.h"
+#include "../CLAP.hpp"
+#include "RegisterInterface.hpp"
+#include "Utils.hpp"
 
+#include "Types.hpp"
+
+#include <cstdint>
 #include <vector>
 
 // TODO: Move this to a more appropriate place
@@ -39,13 +42,15 @@ enum class DMAChannel
 	S2MM
 };
 
-class RegisterControlBase : public XDMAManaged
+namespace clap
+{
+class RegisterControlBase : public CLAPManaged
 {
 	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
 
 public:
-	RegisterControlBase(std::shared_ptr<class XDMABase> pXdma, const uint64_t& ctrlOffset) :
-		XDMAManaged(pXdma),
+	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset) :
+		CLAPManaged(pClap),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
 	{}
@@ -102,13 +107,13 @@ protected:
 		switch (sizeof(T))
 		{
 			case 8:
-				return static_cast<T>(XDMA()->Read64(m_ctrlOffset + regOffset));
+				return static_cast<T>(CLAP()->Read64(m_ctrlOffset + regOffset));
 			case 4:
-				return static_cast<T>(XDMA()->Read32(m_ctrlOffset + regOffset));
+				return static_cast<T>(CLAP()->Read32(m_ctrlOffset + regOffset));
 			case 2:
-				return static_cast<T>(XDMA()->Read16(m_ctrlOffset + regOffset));
+				return static_cast<T>(CLAP()->Read16(m_ctrlOffset + regOffset));
 			case 1:
-				return static_cast<T>(XDMA()->Read8(m_ctrlOffset + regOffset));
+				return static_cast<T>(CLAP()->Read8(m_ctrlOffset + regOffset));
 			default:
 				std::stringstream ss("");
 				ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
@@ -122,16 +127,16 @@ protected:
 		switch (sizeof(T))
 		{
 			case 8:
-				XDMA()->Write64(m_ctrlOffset + regOffset, static_cast<uint64_t>(regData));
+				CLAP()->Write64(m_ctrlOffset + regOffset, static_cast<uint64_t>(regData));
 				break;
 			case 4:
-				XDMA()->Write32(m_ctrlOffset + regOffset, static_cast<uint32_t>(regData));
+				CLAP()->Write32(m_ctrlOffset + regOffset, static_cast<uint32_t>(regData));
 				break;
 			case 2:
-				XDMA()->Write16(m_ctrlOffset + regOffset, static_cast<uint16_t>(regData));
+				CLAP()->Write16(m_ctrlOffset + regOffset, static_cast<uint16_t>(regData));
 				break;
 			case 1:
-				XDMA()->Write8(m_ctrlOffset + regOffset, static_cast<uint8_t>(regData));
+				CLAP()->Write8(m_ctrlOffset + regOffset, static_cast<uint8_t>(regData));
 				break;
 			default:
 				std::stringstream ss("");
@@ -139,7 +144,7 @@ protected:
 				throw std::runtime_error(ss.str());
 		}
 
-		if(validate)
+		if (validate)
 		{
 			const T readData = readRegister<T>(regOffset);
 			if (readData != regData)
@@ -153,10 +158,11 @@ protected:
 
 	uint32_t getDevNum()
 	{
-		return XDMA()->GetDevNum();
+		return CLAP()->GetDevNum();
 	}
 
 protected:
 	uint64_t m_ctrlOffset;
 	std::vector<RegisterIntf*> m_registers;
 };
+} // namespace clap

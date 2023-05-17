@@ -1,6 +1,6 @@
 /* 
- *  File: Memory.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: Memory.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,13 +26,18 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
 #include <list>
 #include <memory>
 #include <mutex>
+#include <ostream>
 #include <sstream>
 
-#include "Utils.h"
+#include "Utils.hpp"
 
+namespace clap
+{
 DEFINE_EXCEPTION(MemoryException)
 
 class Memory
@@ -260,3 +265,4 @@ private:
 	MemList m_freeMemory;
 	MemList m_usedMemory;
 };
+} // namespace clap

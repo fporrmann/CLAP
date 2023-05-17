@@ -1,5 +1,5 @@
 /* 
- *  File: Defines.h
+ *  File: Defines.hpp
  *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
@@ -43,7 +43,7 @@ using ByteCntType  = DWORD;
 #define SEEK_INVALID(RC, OFFSET) (RC == INVALID_SET_FILE_POINTER)
 #define CTRL_OPEN_FLAGS          (DEFAULT_OPEN_FLAGS | FILE_FLAG_OVERLAPPED)
 #else
-#include <stdint.h>
+#include <cstdint>
 #include <sys/types.h>
 
 using DeviceHandle = int32_t;
@@ -66,4 +66,4 @@ using ByteCntType  = uint64_t;
 
 #define IS_ALIGNED(POINTER, ALIGNMENT) ((reinterpret_cast<uintptr_t>(reinterpret_cast<const void*>(POINTER)) % (ALIGNMENT)) == 0)
 
-#define ROUND_UP_DIV(NUM, DEN) (((NUM) + (DEN) - 1) / (DEN))
+#define ROUND_UP_DIV(NUM, DEN) (((NUM) + (DEN)-1) / (DEN))

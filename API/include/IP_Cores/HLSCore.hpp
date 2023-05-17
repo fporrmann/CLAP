@@ -1,6 +1,6 @@
 /* 
- *  File: HLSCore.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: HLSCore.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,13 +26,17 @@
 
 #pragma once
 
-#include "../internal/Logger.h"
-#include "../internal/RegisterControl.h"
-#include "internal/ApCtrl.h"
-#include "internal/WatchDog.h"
+#include "../internal/Logger.hpp"
+#include "../internal/RegisterControl.hpp"
+#include "../internal/Types.hpp"
+#include "internal/ApCtrl.hpp"
+#include "internal/WatchDog.hpp"
 
 #include <functional>
+#include <string>
 
+namespace clap
+{
 class HLSCore : public RegisterControlBase
 {
 	DISABLE_COPY_ASSIGN_MOVE(HLSCore)
@@ -82,8 +86,8 @@ public:
 	};
 
 public:
-	HLSCore(std::shared_ptr<class XDMA> pXdma, const uint64_t& ctrlOffset, const std::string& name) :
-		RegisterControlBase(pXdma, ctrlOffset),
+	HLSCore(CLAPPtr pClap, const uint64_t& ctrlOffset, const std::string& name) :
+		RegisterControlBase(pClap, ctrlOffset),
 		m_apCtrl(),
 		m_intrCtrl(),
 		m_intrStat(),
@@ -98,8 +102,6 @@ public:
 	}
 
 	////////////////////////////////////////
-
-
 
 	bool Start()
 	{
@@ -329,3 +331,4 @@ private:
 	WatchDog m_watchDog;
 	std::string m_name;
 };
+} // namespace clap

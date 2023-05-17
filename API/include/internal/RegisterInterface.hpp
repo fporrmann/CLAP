@@ -1,6 +1,6 @@
 /* 
- *  File: RegisterInterface.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: RegisterInterface.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -36,10 +36,12 @@
 #include <string>
 #include <vector>
 
-#include "Constants.h"
-#include "Logger.h"
-#include "Utils.h"
+#include "Constants.hpp"
+#include "Logger.hpp"
+#include "Utils.hpp"
 
+namespace clap
+{
 // Required to store the template class RegElem which will be used with different template types in a vector
 template<typename T>
 class RegIntf
@@ -371,7 +373,7 @@ public:
 		LOG_INFO << std::left << std::setfill('-') << std::setw(header.str().length()) << "-" << std::endl;
 
 		// Print the actuall register address map
-		for (const std::pair<uint32_t, std::string> p : ReverseIterate(map))
+		for (const std::pair<uint32_t, std::string> p : utils::ReverseIterate(map))
 			LOG_INFO << p.second << std::endl;
 
 		LOG_INFO << std::endl;
@@ -426,3 +428,4 @@ public:
 protected:
 	uint32_t m_lastInterrupt = 0;
 };
+} // namespace clap

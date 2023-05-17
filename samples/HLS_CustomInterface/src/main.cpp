@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <xdmaAccess.h>
+#include <CLAP.hpp>
 
 #include "testCore.hpp"
 
@@ -22,23 +22,23 @@ void InterruptCallBack(const uint32_t& mask)
 int main()
 {
 	// Create host side buffer for the test data to be written to the input memory
-	XDMABuffer<uint16_t> testData(TEST_DATA_SIZE, 0);
+	clap::XDMABuffer<uint16_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
-	XDMABuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
+	clap::XDMABuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFFFFFFFF,
 	// this way it is easy to observe if the process worked or not
-	XDMABuffer<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
+	clap::XDMABuffer<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
 
 	try
 	{
-		// Create an XDMA object
-		XDMAPtr pXdma = XDMA::Create<PCIeBackend>();
-		// Add a DDR memory region to the XDMA
-		pXdma->AddMemoryRegion(XDMA::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
+		// Create a CLAP object
+		clap::CLAPPtr pClap = clap::CLAP::Create<clap::PCIeBackend>();
+		// Add a DDR memory region
+		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Create a testCore object, whose control registers are located at HLS_TEST_CORE_BASE_ADDR
 		// with the name "HLS_Test".
-		testCore hlsTest(pXdma, HLS_TEST_CORE_BASE_ADDR, "HLS_Test");
+		testCore hlsTest(pClap, HLS_TEST_CORE_BASE_ADDR, "HLS_Test");
 
 		testData[0] = 0xDEAD;
 		testData[1] = 0xBEEF;
@@ -50,8 +50,8 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		Memory inBuf  = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
-		Memory outBuf = pXdma->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
+		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
+		clap::Memory outBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
 
 #if 0
 		// Set the addresses of the input and output memory used in the HLS core.
@@ -66,11 +66,11 @@ int main()
 
 		// Write 0xFFFFFFFF to the memory, in this case, this operation writes data directly into the DDR
 		// attached to the FPGA. The data is written to the address specified by the outBuf object.
-		pXdma->Write(outBuf, ff);
+		pClap->Write(outBuf, ff);
 
 		// Readback the output data buffer and print it to show that it is indeed all 0xFFFFFFFF.
 		// This is done to show that the data is actually being written to the DDR memory.
-		pXdma->Read(outBuf, testDataRB);
+		pClap->Read(outBuf, testDataRB);
 
 		std::cout << "Printing Output Memory Before HLS Execution:" << std::endl;
 		for (const uint32_t& d : testDataRB)
@@ -80,7 +80,7 @@ int main()
 				  << std::endl;
 
 		// Write the actual input data to the DDR memory.
-		pXdma->Write(inBuf, testData);
+		pClap->Write(inBuf, testData);
 
 		// Configure the HLS core to use its interrupt signal to determine when the core is finished.
 		// The number (0) specifies which of the up to 16 interrupt events the HLS core is connected to.
@@ -105,7 +105,7 @@ int main()
 				  << std::endl;
 
 		// Readback the result data from the DDR memory.
-		pXdma->Read(outBuf, testDataRB.data());
+		pClap->Read(outBuf, testDataRB.data());
 	}
 	catch (std::exception& e)
 	{

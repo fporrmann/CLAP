@@ -1,6 +1,6 @@
 /*
- *  File: WatchDog.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: WatchDog.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *
  *  MIT License
  *
@@ -27,27 +27,31 @@
 #pragma once
 
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
+#include <string>
 #include <thread>
 
-#include "UserInterrupt.h"
+#include "UserInterrupt.hpp"
 
-#include "../../internal/Constants.h"
-#include "../../internal/Logger.h"
+#include "../../internal/Constants.hpp"
+#include "../../internal/Logger.hpp"
 
 #ifndef EMBEDDED_XILINX
-#include "../../internal/Timer.h"
+#include "../../internal/Timer.hpp"
 #include <atomic>
 #include <chrono>
 #include <functional>
 #endif
 
+namespace clap
+{
 static std::exception_ptr g_pExcept = nullptr;
 
 DEFINE_EXCEPTION(WatchDogException)
 
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, xdma::Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
+static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
 {
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
@@ -221,7 +225,8 @@ private:
 	std::condition_variable m_cv;
 	bool m_threadRunning = false;
 	std::atomic<bool> m_threadDone;
-	xdma::Timer m_timer;
+	Timer m_timer;
 #endif
 	HasStatus* m_pStatus = nullptr;
 };
+} // namespace clap

@@ -1,6 +1,6 @@
 /* 
- *  File: ApCtrl.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: ApCtrl.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -26,9 +26,11 @@
 
 #pragma once
 
-#include "../../internal/Logger.h"
-#include "../../internal/RegisterInterface.h"
+#include "../../internal/Logger.hpp"
+#include "../../internal/RegisterInterface.hpp"
 
+namespace clap
+{
 class ApCtrl : public Register<uint8_t>, public HasStatus
 {
 	DISABLE_COPY_ASSIGN_MOVE(ApCtrl)
@@ -116,3 +118,4 @@ private:
 	bool ap_ready     = false;
 	bool auto_restart = false;
 };
+} // namespace clap

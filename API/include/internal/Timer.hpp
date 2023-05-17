@@ -1,6 +1,6 @@
 /* 
- *  File: Timer.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: Timer.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -27,15 +27,15 @@
 #pragma once
 #include <chrono>
 #include <cmath>
+#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <ostream>
 #include <string>
-#include <time.h>
 
-#include "Logger.h"
+#include "Logger.hpp"
 
-namespace xdma
+namespace clap
 {
 #ifdef PRINT_MU_SEC
 #define TIME_FUNC  GetElapsedTimeInMicroSec
@@ -197,4 +197,4 @@ private:
 	Timer m_timer;
 	std::string m_funcName;
 };
-} // namespace xdma
+} // namespace clap

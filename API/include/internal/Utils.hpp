@@ -1,6 +1,6 @@
 /* 
- *  File: Utils.h
- *  Copyright (c) 2021 Florian Porrmann
+ *  File: Utils.hpp
+ *  Copyright (c) 2023 Florian Porrmann
  *  
  *  MIT License
  *  
@@ -68,6 +68,10 @@
 #define CHECK_RESULT
 #endif
 
+namespace clap
+{
+namespace utils
+{
 /// -------------------------------------------------------------------- ///
 /// -------------------------------------------------------------------- ///
 /// -------------------------------------------------------------------- ///
@@ -186,3 +190,6 @@ static inline std::string SizeWithSuffix(const int64_t &val)
 {
 	return SizeWithSuffix(static_cast<double>(val));
 }
+
+} // namespace utils
+} // namespace clap
