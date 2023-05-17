@@ -2,9 +2,6 @@
 
 #include <CLAP.hpp>
 
-#include <IP_Cores/AxiDMA.hpp>
-#include <IP_Cores/VDMA.hpp>
-
 // The DDR is located at 0x000000000
 static const uint64_t DDR_BASE_ADDR = 0x000000000;
 // The size of the DDR is 4GB
@@ -26,9 +23,6 @@ int main()
 	// Create host side buffer to set the destination memory to 0xFF,
 	// this way it is easy to observe if the process worked or not
 	clap::XDMABuffer<uint8_t> ff(TEST_DATA_SIZE, 0xFF);
-
-	clap::AxiDMA<uint32_t> aDMA(pClap, 0x0);
-	clap::VDMA<uint32_t> vDMA(pClap, 0x0);
 
 	testData[0] = 0xDE;
 	testData[1] = 0xAD;
