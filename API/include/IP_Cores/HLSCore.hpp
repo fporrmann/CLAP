@@ -87,7 +87,7 @@ public:
 
 public:
 	HLSCore(CLAPPtr pClap, const uint64_t& ctrlOffset, const std::string& name) :
-		RegisterControlBase(pClap, ctrlOffset),
+		RegisterControlBase(std::move(pClap), ctrlOffset),
 		m_apCtrl(),
 		m_intrCtrl(),
 		m_intrStat(),

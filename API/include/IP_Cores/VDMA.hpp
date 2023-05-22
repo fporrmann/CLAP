@@ -73,7 +73,7 @@ public:
 
 public:
 	VDMA(CLAPPtr pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset),
+		RegisterControlBase(std::move(pClap), ctrlOffset),
 		m_watchDogMM2S("VDMA_MM2S"),
 		m_watchDogS2MM("VDMA_S2MM")
 	{

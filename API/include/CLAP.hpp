@@ -230,7 +230,7 @@ private:
 
 	CLAP(CLAPBackendPtr pBackend) :
 		CLAPBase(pBackend->GetDevNum()),
-		m_pBackend(pBackend),
+		m_pBackend(std::move(pBackend)),
 		m_memories()
 #ifndef EMBEDDED_XILINX
 		,
@@ -1178,7 +1178,7 @@ private:
 namespace internal
 {
 inline CLAPManaged::CLAPManaged(internal::CLAPBasePtr pClap) :
-	m_pClap(pClap)
+	m_pClap(std::move(pClap))
 {
 	if (m_pClap)
 		m_pClap->registerObject(this);

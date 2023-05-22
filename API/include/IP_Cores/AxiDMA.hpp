@@ -71,7 +71,7 @@ public:
 
 public:
 	AxiDMA(CLAPPtr pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset),
+		RegisterControlBase(std::move(pClap), ctrlOffset),
 		m_watchDogMM2S("AxiDMA_MM2S"),
 		m_watchDogS2MM("AxiDMA_S2MM")
 	{

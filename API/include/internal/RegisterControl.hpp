@@ -52,7 +52,7 @@ class RegisterControlBase : public CLAPManaged
 
 public:
 	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset) :
-		CLAPManaged(pClap),
+		CLAPManaged(std::move(pClap)),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
 	{}
