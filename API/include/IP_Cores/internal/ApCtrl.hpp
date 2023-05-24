@@ -60,12 +60,6 @@ public:
 				 << "------------------" << std::endl;
 	}
 
-	void Reset()
-	{
-		getStatus();
-		m_done = false;
-	}
-
 	bool Start()
 	{
 		getStatus();
@@ -84,22 +78,10 @@ public:
 		Update(Direction::WRITE);
 	}
 
-	bool IsDone()
-	{
-		if (m_done) return m_done;
-		getStatus();
-		return m_done;
-	}
-
 	bool IsIdle()
 	{
 		getStatus();
 		return ap_idle;
-	}
-
-	bool PollDone()
-	{
-		return IsDone();
 	}
 
 private:
@@ -112,8 +94,6 @@ private:
 	}
 
 private:
-	bool m_done = false;
-
 	bool ap_start     = false;
 	bool ap_done      = false;
 	bool ap_idle      = false;

@@ -405,8 +405,27 @@ public:
 
 	virtual bool PollDone()
 	{
-		return false;
+		return IsDone();
 	}
+
+	virtual bool IsDone()
+	{
+		if (m_done) return m_done;
+		getStatus();
+		return m_done;
+	}
+
+	virtual void Reset()
+	{
+		getStatus();
+		m_done = false;
+	}
+
+protected:
+	virtual void getStatus() = 0;
+
+protected:
+	bool m_done = false;
 };
 
 class HasInterrupt

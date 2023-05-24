@@ -81,6 +81,9 @@ public:
 		registerReg<uint32_t>(m_s2mmStatReg, S2MM_DMASR);
 
 		UpdateAllRegisters();
+
+		m_watchDogMM2S.SetStatusRegister(&m_mm2sStatReg);
+		m_watchDogS2MM.SetStatusRegister(&m_s2mmStatReg);
 	}
 
 	////////////////////////////////////////
@@ -108,6 +111,14 @@ public:
 	{
 		if (channel == DMAChannel::MM2S)
 		{
+			if (!m_watchDogMM2S.Start())
+			{
+				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for MM2S already running!" << std::endl;
+				return;
+			}
+
+			m_mm2sStatReg.Reset();
+
 			// Set the RunStop bit
 			m_mm2sCtrlReg.Start();
 			// Set the source address
@@ -118,6 +129,14 @@ public:
 
 		if (channel == DMAChannel::S2MM)
 		{
+			if (!m_watchDogS2MM.Start())
+			{
+				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for S2MM already running!" << std::endl;
+				return;
+			}
+
+			m_s2mmStatReg.Reset();
+
 			// Set the RunStop bit
 			m_s2mmCtrlReg.Start();
 			// Set the destination address
@@ -276,20 +295,21 @@ private:
 	////////////////////////////////////////
 
 public:
-	struct ControlRegister : public internal::Register<uint32_t>
+	class ControlRegister : public internal::Register<uint32_t>
 	{
+	public:
 		ControlRegister(const std::string& name) :
 			Register(name)
 		{
-			RegisterElement<bool>(&RS, "RS", 0);
-			RegisterElement<bool>(&Reset, "Reset", 2);
-			RegisterElement<bool>(&Keyhole, "Keyhole", 3);
-			RegisterElement<bool>(&CyclicBDEnable, "CyclicBDEnable", 4);
-			RegisterElement<bool>(&IOCIrqEn, "IOCIrqEn", 12);
-			RegisterElement<bool>(&DlyIrqEn, "DlyIrqEn", 13);
-			RegisterElement<bool>(&ErrIrqEn, "ErrIrqEn", 14);
-			RegisterElement<uint8_t>(&IRQThreshold, "IRQThreshold", 16, 23);
-			RegisterElement<uint8_t>(&IRQDelay, "IRQDelay", 24, 31);
+			RegisterElement<bool>(&m_rs, "RS", 0);
+			RegisterElement<bool>(&m_reset, "Reset", 2);
+			RegisterElement<bool>(&m_keyhole, "Keyhole", 3);
+			RegisterElement<bool>(&m_cyclicBDEnable, "CyclicBDEnable", 4);
+			RegisterElement<bool>(&m_ioCIrqEn, "IOCIrqEn", 12);
+			RegisterElement<bool>(&m_dlyIrqEn, "DlyIrqEn", 13);
+			RegisterElement<bool>(&m_errIrqEn, "ErrIrqEn", 14);
+			RegisterElement<uint8_t>(&m_irqThreshold, "IRQThreshold", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelay, "IRQDelay", 24, 31);
 		}
 
 		void EnableInterrupts(const DMAInterrupts& intr = INTR_ALL)
@@ -329,7 +349,7 @@ public:
 			// Update the register
 			Update();
 			// Set/Unset the Run-Stop bit
-			RS = run;
+			m_rs = run;
 			// Write changes to the register
 			Update(internal::Direction::WRITE);
 		}
@@ -337,46 +357,47 @@ public:
 		void setInterrupts(bool enable, const DMAInterrupts& intr)
 		{
 			if (intr & INTR_ON_COMPLETE)
-				IOCIrqEn = enable;
+				m_ioCIrqEn = enable;
 			if (intr & INTR_ON_DELAY)
-				DlyIrqEn = enable;
+				m_dlyIrqEn = enable;
 			if (intr & INTR_ON_ERROR)
-				ErrIrqEn = enable;
+				m_errIrqEn = enable;
 
 			Update(internal::Direction::WRITE);
 		}
 
-	public:
-		bool RS              = false;
-		bool Reset           = false;
-		bool Keyhole         = false;
-		bool CyclicBDEnable  = false;
-		bool IOCIrqEn        = false;
-		bool DlyIrqEn        = false;
-		bool ErrIrqEn        = false;
-		uint8_t IRQThreshold = 0;
-		uint8_t IRQDelay     = 0;
+	private:
+		bool m_rs              = false;
+		bool m_reset           = false;
+		bool m_keyhole         = false;
+		bool m_cyclicBDEnable  = false;
+		bool m_ioCIrqEn        = false;
+		bool m_dlyIrqEn        = false;
+		bool m_errIrqEn        = false;
+		uint8_t m_irqThreshold = 0;
+		uint8_t m_irqDelay     = 0;
 	};
 
-	struct StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
+	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt, public internal::HasStatus
 	{
+	public:
 		StatusRegister(const std::string& name) :
 			Register(name)
 		{
-			RegisterElement<bool>(&Halted, "Halted", 0);
-			RegisterElement<bool>(&Idle, "Idle", 1);
-			RegisterElement<bool>(&SGIncld, "SGIncld", 3);
-			RegisterElement<bool>(&DMAIntErr, "DMAIntErr", 4);
-			RegisterElement<bool>(&DMASlvErr, "DMASlvErr", 5);
-			RegisterElement<bool>(&DMADecErr, "DMADecErr", 6);
-			RegisterElement<bool>(&SGIntErr, "SGIntErr", 8);
-			RegisterElement<bool>(&SGSlvErr, "SGSlvErr", 9);
-			RegisterElement<bool>(&SGDecErr, "SGDecErr", 10);
-			RegisterElement<bool>(&IOCIrq, "IOCIrq", 12);
-			RegisterElement<bool>(&DlyIrq, "DlyIrq", 13);
-			RegisterElement<bool>(&ErrIrq, "ErrIrq", 14);
-			RegisterElement<uint8_t>(&IRQThresholdSts, "IRQThresholdSts", 16, 23);
-			RegisterElement<uint8_t>(&IRQDelaySts, "IRQDelaySts", 24, 31);
+			RegisterElement<bool>(&m_halted, "Halted", 0);
+			RegisterElement<bool>(&m_idle, "Idle", 1);
+			RegisterElement<bool>(&m_sgIncld, "SGIncld", 3);
+			RegisterElement<bool>(&m_dmaIntErr, "DMAIntErr", 4);
+			RegisterElement<bool>(&m_dmaSlvErr, "DMASlvErr", 5);
+			RegisterElement<bool>(&m_dmaDecErr, "DMADecErr", 6);
+			RegisterElement<bool>(&m_sgIntErr, "SGIntErr", 8);
+			RegisterElement<bool>(&m_sgSlvErr, "SGSlvErr", 9);
+			RegisterElement<bool>(&m_sgDecErr, "SGDecErr", 10);
+			RegisterElement<bool>(&m_ioCIrq, "IOCIrq", 12);
+			RegisterElement<bool>(&m_dlyIrq, "DlyIrq", 13);
+			RegisterElement<bool>(&m_errIrq, "ErrIrq", 14);
+			RegisterElement<uint8_t>(&m_irqThresholdSts, "IRQThresholdSts", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelaySts, "IRQDelaySts", 24, 31);
 		}
 
 		void ClearInterrupts()
@@ -389,9 +410,9 @@ public:
 		{
 			Update();
 			uint32_t intr = 0;
-			intr |= IOCIrq << (INTR_ON_COMPLETE >> 1);
-			intr |= DlyIrq << (INTR_ON_DELAY >> 1);
-			intr |= ErrIrq << (INTR_ON_ERROR >> 1);
+			intr |= m_ioCIrq << (INTR_ON_COMPLETE >> 1);
+			intr |= m_dlyIrq << (INTR_ON_DELAY >> 1);
+			intr |= m_errIrq << (INTR_ON_ERROR >> 1);
 
 			return intr;
 		}
@@ -399,57 +420,70 @@ public:
 		void ResetInterrupts(const DMAInterrupts& intr)
 		{
 			if (intr & INTR_ON_COMPLETE)
-				IOCIrq = 1;
+				m_ioCIrq = 1;
 			if (intr & INTR_ON_DELAY)
-				DlyIrq = 1;
+				m_dlyIrq = 1;
 			if (intr & INTR_ON_ERROR)
-				ErrIrq = 1;
+				m_errIrq = 1;
 
 			Update(internal::Direction::WRITE);
 		}
 
-		bool Halted             = false;
-		bool Idle               = false;
-		bool SGIncld            = false;
-		bool DMAIntErr          = false;
-		bool DMASlvErr          = false;
-		bool DMADecErr          = false;
-		bool SGIntErr           = false;
-		bool SGSlvErr           = false;
-		bool SGDecErr           = false;
-		bool IOCIrq             = false;
-		bool DlyIrq             = false;
-		bool ErrIrq             = false;
-		uint8_t IRQThresholdSts = 0;
-		uint8_t IRQDelaySts     = 0;
+	protected:
+		void getStatus()
+		{
+			Update();
+			if (!m_done && m_idle)
+				m_done = true;
+		}
+
+	private:
+		bool m_halted             = false;
+		bool m_idle               = false;
+		bool m_sgIncld            = false;
+		bool m_dmaIntErr          = false;
+		bool m_dmaSlvErr          = false;
+		bool m_dmaDecErr          = false;
+		bool m_sgIntErr           = false;
+		bool m_sgSlvErr           = false;
+		bool m_sgDecErr           = false;
+		bool m_ioCIrq             = false;
+		bool m_dlyIrq             = false;
+		bool m_errIrq             = false;
+		uint8_t m_irqThresholdSts = 0;
+		uint8_t m_irqDelaySts     = 0;
 	};
 
-	struct MM2SControlRegister : public ControlRegister
+	class MM2SControlRegister : public ControlRegister
 	{
+	public:
 		MM2SControlRegister() :
 			ControlRegister("MM2S DMA Control Register")
 		{
 		}
 	};
 
-	struct MM2SStatusRegister : public StatusRegister
+	class MM2SStatusRegister : public StatusRegister
 	{
+	public:
 		MM2SStatusRegister() :
 			StatusRegister("MM2S DMA Status Register")
 		{
 		}
 	};
 
-	struct S2MMControlRegister : public ControlRegister
+	class S2MMControlRegister : public ControlRegister
 	{
+	public:
 		S2MMControlRegister() :
 			ControlRegister("S2MM DMA Control Register")
 		{
 		}
 	};
 
-	struct S2MMStatusRegister : public StatusRegister
+	class S2MMStatusRegister : public StatusRegister
 	{
+	public:
 		S2MMStatusRegister() :
 			StatusRegister("S2MM DMA Status Register")
 		{
