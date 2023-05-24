@@ -241,15 +241,16 @@ private:
 	}
 
 private:
-	struct InterruptEnableRegister : public internal::Register<uint8_t>
+	class InterruptEnableRegister : public internal::Register<uint8_t>
 	{
+	public:
 		InterruptEnableRegister() :
 			Register("Interrupt Enable Register"),
-			ap_done(false),
-			ap_ready(false)
+			m_ap_done(false),
+			m_ap_ready(false)
 		{
-			RegisterElement<bool>(&ap_done, "ap_done", 0);
-			RegisterElement<bool>(&ap_ready, "ap_ready", 1);
+			RegisterElement<bool>(&m_ap_done, "ap_done", 0);
+			RegisterElement<bool>(&m_ap_ready, "ap_ready", 1);
 		}
 
 		void EnableInterrupts(const APInterrupts& intr = AP_INTR_ALL)
@@ -264,34 +265,35 @@ private:
 
 		bool IsInterruptEnabled() const
 		{
-			return (ap_done || ap_ready);
+			return (m_ap_done || m_ap_ready);
 		}
 
 	private:
 		void setInterrupts(bool enable, const APInterrupts& intr)
 		{
 			if (intr & AP_INTR_DONE)
-				ap_done = enable;
+				m_ap_done = enable;
 			if (intr & AP_INTR_READY)
-				ap_ready = enable;
+				m_ap_ready = enable;
 
 			Update(internal::Direction::WRITE);
 		}
 
-	public:
-		bool ap_done;
-		bool ap_ready;
+	private:
+		bool m_ap_done;
+		bool m_ap_ready;
 	};
 
-	struct InterruptStatusRegister : public internal::Register<uint8_t>, public internal::HasInterrupt
+	class InterruptStatusRegister : public internal::Register<uint8_t>, public internal::HasInterrupt
 	{
+	public:
 		InterruptStatusRegister() :
 			Register("Interrupt Status Register"),
-			ap_done(false),
-			ap_ready(false)
+			m_ap_done(false),
+			m_ap_ready(false)
 		{
-			RegisterElement<bool>(&ap_done, "ap_done", 0);
-			RegisterElement<bool>(&ap_ready, "ap_ready", 1);
+			RegisterElement<bool>(&m_ap_done, "ap_done", 0);
+			RegisterElement<bool>(&m_ap_ready, "ap_ready", 1);
 		}
 
 		void ClearInterrupts()
@@ -304,8 +306,8 @@ private:
 		{
 			Update();
 			uint32_t intr = 0;
-			intr |= ap_done << (AP_INTR_DONE >> 1);
-			intr |= ap_ready << (AP_INTR_READY >> 1);
+			intr |= m_ap_done << (AP_INTR_DONE >> 1);
+			intr |= m_ap_ready << (AP_INTR_READY >> 1);
 
 			return intr;
 		}
@@ -313,15 +315,16 @@ private:
 		void ResetInterrupts(const APInterrupts& intr)
 		{
 			if (intr & AP_INTR_DONE)
-				ap_done = 1;
+				m_ap_done = 1;
 			if (intr & AP_INTR_READY)
-				ap_ready = 1;
+				m_ap_ready = 1;
 
 			Update(internal::Direction::WRITE);
 		}
 
-		bool ap_done;
-		bool ap_ready;
+	private:
+		bool m_ap_done;
+		bool m_ap_ready;
 	};
 
 private:

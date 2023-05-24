@@ -50,6 +50,8 @@
 // --------------------------------------------------------------------------------------------
 // - Write examples using AxiDMA and VDMA
 // --------------------------------------------------------------------------------------------
+// - Address of memory can differ between internal and external
+// --------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////
@@ -201,31 +203,38 @@ public:
 private:
 	using MemoryPair = std::pair<MemoryType, internal::MemoryManagerVec>;
 
-	struct XDMAInfo
+	class XDMAInfo
 	{
+		public:
 		XDMAInfo() = default;
 
 		XDMAInfo(const uint32_t& reg0x0, const uint32_t& reg0x4)
 		{
-			channelID = (reg0x0 >> 8) & 0xF;
-			version   = (reg0x0 >> 0) & 0xF;
-			streaming = (reg0x0 >> 15) & 0x1;
-			polling   = (reg0x4 >> 26) & 0x1;
+			m_channelID = (reg0x0 >> 8) & 0xF;
+			m_version   = (reg0x0 >> 0) & 0xF;
+			m_streaming = (reg0x0 >> 15) & 0x1;
+			m_polling   = (reg0x4 >> 26) & 0x1;
+		}
+
+		const bool& IsStreaming() const
+		{
+			return m_streaming;
 		}
 
 		friend std::ostream& operator<<(std::ostream& os, const XDMAInfo& info)
 		{
-			os << "Channel ID: " << static_cast<uint32_t>(info.channelID) << std::endl;
-			os << "Version: " << static_cast<uint32_t>(info.version) << std::endl;
-			os << "Streaming: " << (info.streaming ? "true" : "false") << std::endl;
-			os << "Polling: " << (info.polling ? "true" : "false");
+			os << "Channel ID: " << static_cast<uint32_t>(info.m_channelID) << std::endl;
+			os << "Version: " << static_cast<uint32_t>(info.m_version) << std::endl;
+			os << "Streaming: " << (info.m_streaming ? "true" : "false") << std::endl;
+			os << "Polling: " << (info.m_polling ? "true" : "false");
 			return os;
 		}
 
-		uint8_t channelID = 0;
-		uint8_t version   = 0;
-		bool streaming    = false;
-		bool polling      = false;
+		private:
+		uint8_t m_channelID = 0;
+		uint8_t m_version   = 0;
+		bool m_streaming    = false;
+		bool m_polling      = false;
 	};
 
 	CLAP(CLAPBackendPtr pBackend) :
@@ -864,7 +873,7 @@ private:
 
 	void startReadStream(void* pData, const uint64_t& sizeInByte)
 	{
-		if (!m_info.streaming)
+		if (!m_info.IsStreaming())
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
@@ -883,7 +892,7 @@ private:
 
 	void startWriteStream(const void* pData, const uint64_t& sizeInByte)
 	{
-		if (!m_info.streaming)
+		if (!m_info.IsStreaming())
 		{
 			std::stringstream ss;
 			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
