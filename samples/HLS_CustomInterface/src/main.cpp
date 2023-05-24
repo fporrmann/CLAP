@@ -32,7 +32,7 @@ int main()
 	try
 	{
 		// Create a CLAP object
-		clap::CLAPPtr pClap = clap::CLAP::Create<clap::PCIeBackend>();
+		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
 		// Add a DDR memory region
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 

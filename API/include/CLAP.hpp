@@ -92,8 +92,13 @@
 
 #include "internal/CLAPBackend.hpp"
 
+#include "internal/backends/BareMetalBackend.hpp"
+#include "internal/backends/PCIeBackend.hpp"
+#include "internal/backends/PetaLinuxBackend.hpp"
+
 namespace clap
 {
+namespace backends = internal::backends;
 namespace internal
 {
 class CLAPManaged
@@ -205,7 +210,7 @@ private:
 
 	class XDMAInfo
 	{
-		public:
+	public:
 		XDMAInfo() = default;
 
 		XDMAInfo(const uint32_t& reg0x0, const uint32_t& reg0x4)
@@ -230,14 +235,14 @@ private:
 			return os;
 		}
 
-		private:
+	private:
 		uint8_t m_channelID = 0;
 		uint8_t m_version   = 0;
 		bool m_streaming    = false;
 		bool m_polling      = false;
 	};
 
-	CLAP(CLAPBackendPtr pBackend) :
+	CLAP(internal::CLAPBackendPtr pBackend) :
 		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(std::move(pBackend)),
 		m_memories()
@@ -397,7 +402,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -416,7 +421,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -597,7 +602,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -616,7 +621,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -994,7 +999,7 @@ private:
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 private:
-	CLAPBackendPtr m_pBackend;
+	internal::CLAPBackendPtr m_pBackend;
 	std::map<MemoryType, internal::MemoryManagerVec> m_memories;
 	std::future<void> m_readFuture  = {};
 	std::future<void> m_writeFuture = {};

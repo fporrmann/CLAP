@@ -12,7 +12,7 @@ const uint64_t TEST_DATA_SIZE = 8;
 int main()
 {
 	// Create an XDMA object
-	clap::CLAPPtr pClap = clap::CLAP::Create<clap::PCIeBackend>();
+	clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
 	// Add a DDR memory region to the XDMA
 	pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 

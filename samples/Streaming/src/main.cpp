@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 		testDataSize = std::atoi(argv[1]);
 
 	// Create a CLAP object
-	clap::CLAPPtr pClap = clap::CLAP::Create<clap::PCIeBackend>();
+	clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
 
 	// Create host side buffer for the test data to be written to the input memory
 	clap::XDMABuffer<uint32_t> testData(testDataSize, 0);

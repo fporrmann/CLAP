@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include <IP_Cores/HLSCore.hpp>
 #include <CLAP.hpp>
+#include <IP_Cores/HLSCore.hpp>
 
 // The DDR is located at 0x000000000
 static const uint64_t DDR_BASE_ADDR = 0x000000000;
@@ -31,7 +31,7 @@ int main()
 	try
 	{
 		// Create an XDMA object
-		clap::CLAPPtr pClap = clap::CLAP::Create<clap::PCIeBackend>();
+		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
 		// Add a DDR memory region to the XDMA
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
@@ -49,7 +49,7 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		clap::Memory inBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
+		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
 		clap::Memory outBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
 
 		// Set the addresses of the input and output memory used in the HLS core.

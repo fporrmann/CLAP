@@ -43,11 +43,10 @@ using XDMABuffer = std::vector<T, clap::internal::AlignmentAllocator<T, XDMA_ALI
 
 using CLAPPtr = std::shared_ptr<class CLAP>;
 
-using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
-
 namespace internal
 {
 using CLAPBasePtr      = std::shared_ptr<class CLAPBase>;
+using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
 using CLAPManagedPtr   = std::shared_ptr<class CLAPManaged>;
 using MemoryManagerPtr = std::shared_ptr<class MemoryManager>;
 using MemoryManagerVec = std::vector<MemoryManagerPtr>;
