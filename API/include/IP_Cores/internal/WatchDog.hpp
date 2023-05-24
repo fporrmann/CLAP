@@ -35,7 +35,9 @@
 #include "UserInterrupt.hpp"
 
 #include "../../internal/Constants.hpp"
+#include "../../internal/Exceptions.hpp"
 #include "../../internal/Logger.hpp"
+
 
 #ifndef EMBEDDED_XILINX
 #include "../../internal/Timer.hpp"
@@ -49,8 +51,6 @@ namespace clap
 namespace internal
 {
 static std::exception_ptr g_pExcept = nullptr;
-
-DEFINE_EXCEPTION(WatchDogException)
 
 #ifndef EMBEDDED_XILINX
 static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)

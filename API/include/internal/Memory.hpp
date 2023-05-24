@@ -34,7 +34,7 @@
 #include <ostream>
 #include <sstream>
 
-#include "Utils.hpp"
+#include "Exceptions.hpp"
 
 namespace clap
 {
@@ -44,8 +44,6 @@ namespace clap
 	{
 		class MemoryManager;
 	}
-
-DEFINE_EXCEPTION(MemoryException)
 
 class Memory
 {

@@ -55,6 +55,7 @@
 
 #include "../../internal/Constants.hpp"
 #include "../../internal/Defines.hpp"
+#include "../../internal/Exceptions.hpp"
 #include "../../internal/Logger.hpp"
 #include "../../internal/RegisterInterface.hpp"
 #include "../../internal/Utils.hpp"
@@ -63,7 +64,6 @@ namespace clap
 {
 namespace internal
 {
-DEFINE_EXCEPTION(UserIntrruptException)
 
 class UserInterrupt
 {
