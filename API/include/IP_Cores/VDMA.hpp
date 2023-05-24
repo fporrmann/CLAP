@@ -365,23 +365,24 @@ private:
 	////////////////////////////////////////
 
 public:
-	struct ControlRegister : public internal::Register<uint32_t>
+	class ControlRegister : public internal::Register<uint32_t>
 	{
+	public:
 		ControlRegister(const std::string& name) :
 			Register(name)
 		{
-			RegisterElement<bool>(&RS, "RS", 0);
-			RegisterElement<bool>(&CircularPark, "CircularPark", 1);
-			RegisterElement<bool>(&Reset, "Reset", 2);
-			RegisterElement<bool>(&GenlockEn, "GenlockEn", 3);
-			RegisterElement<bool>(&FrameCntEn, "FrameCntEn", 4);
-			RegisterElement<bool>(&GenlockSrc, "GenlockSrc", 7);
-			RegisterElement<bool>(&FrmCntIrqEn, "FrmCntIrqEn", 12);
-			RegisterElement<bool>(&DlyCntIrqEn, "DlyCntIrqEn", 13);
-			RegisterElement<bool>(&ErrIrqEn, "ErrIrqEn", 14);
-			RegisterElement<bool>(&RepeatEn, "RepeatEn", 15);
-			RegisterElement<uint8_t>(&IRQFrameCount, "IRQFrameCount", 16, 23);
-			RegisterElement<uint8_t>(&IRQDelayCount, "IRQDelayCount", 24, 31);
+			RegisterElement<bool>(&m_rs, "RS", 0);
+			RegisterElement<bool>(&m_circularPark, "CircularPark", 1);
+			RegisterElement<bool>(&m_reset, "Reset", 2);
+			RegisterElement<bool>(&m_genlockEn, "GenlockEn", 3);
+			RegisterElement<bool>(&m_frameCntEn, "FrameCntEn", 4);
+			RegisterElement<bool>(&m_genlockSrc, "GenlockSrc", 7);
+			RegisterElement<bool>(&m_frmCntIrqEn, "FrmCntIrqEn", 12);
+			RegisterElement<bool>(&m_dlyCntIrqEn, "DlyCntIrqEn", 13);
+			RegisterElement<bool>(&m_errIrqEn, "ErrIrqEn", 14);
+			RegisterElement<bool>(&m_repeatEn, "RepeatEn", 15);
+			RegisterElement<uint8_t>(&m_irqFrameCount, "IRQFrameCount", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelayCount, "IRQDelayCount", 24, 31);
 		}
 
 		void EnableInterrupts(const VDMAInterrupts& intr = VDMA_INTR_ALL)
@@ -407,11 +408,11 @@ public:
 		void DoReset()
 		{
 			Update();
-			Reset = 1;
+			m_reset = 1;
 			Update(internal::Direction::WRITE);
 
 			// The Reset bit will be set to 0 once the reset has been completed
-			while (Reset)
+			while (m_reset)
 				Update();
 		}
 
@@ -421,7 +422,7 @@ public:
 			// Update the register
 			Update();
 			// Set/Unset the Run-Stop bit
-			RS = run;
+			m_rs = run;
 			// Write changes to the register
 			Update(internal::Direction::WRITE);
 		}
@@ -429,45 +430,47 @@ public:
 		void setInterrupts(bool enable, const VDMAInterrupts& intr)
 		{
 			if (intr & VDMA_INTR_ON_FRAME_COUNT)
-				FrmCntIrqEn = enable;
+				m_frmCntIrqEn = enable;
 			if (intr & VDMA_INTR_ON_DELAY)
-				DlyCntIrqEn = enable;
+				m_dlyCntIrqEn = enable;
 			if (intr & VDMA_INTR_ON_ERROR)
-				ErrIrqEn = enable;
+				m_errIrqEn = enable;
 
 			Update(internal::Direction::WRITE);
 		}
 
-	public:
-		bool RS               = false;
-		bool CircularPark     = false;
-		bool Reset            = false;
-		bool GenlockEn        = false;
-		bool FrameCntEn       = false;
-		bool GenlockSrc       = false;
-		bool FrmCntIrqEn      = false;
-		bool DlyCntIrqEn      = false;
-		bool ErrIrqEn         = false;
-		bool RepeatEn         = false;
-		uint8_t IRQFrameCount = 0;
-		uint8_t IRQDelayCount = 0;
+	private:
+		bool m_rs               = false;
+		bool m_circularPark     = false;
+		bool m_reset            = false;
+		bool m_genlockEn        = false;
+		bool m_frameCntEn       = false;
+		bool m_genlockSrc       = false;
+		bool m_frmCntIrqEn      = false;
+		bool m_dlyCntIrqEn      = false;
+		bool m_errIrqEn         = false;
+		bool m_repeatEn         = false;
+		uint8_t m_irqFrameCount = 0;
+		uint8_t m_irqDelayCount = 0;
 	};
 
-	struct StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
+	// TODO: Currently finish is only detected using interrupts, add a way to poll for it
+	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
 	{
+	public:
 		StatusRegister(const std::string& name) :
 			Register(name)
 		{
-			RegisterElement<bool>(&Halted, "Halted", 0);
-			RegisterElement<bool>(&VDMAIntErr, "VDMAIntErr", 4);
-			RegisterElement<bool>(&VDMASlvErr, "VDMASlvErr", 5);
-			RegisterElement<bool>(&VDMADecErr, "VDMADecErr", 6);
-			RegisterElement<bool>(&SOFEarlyErr, "SOFEarlyErr", 7);
-			RegisterElement<bool>(&FrmCntIrq, "FrmCntIrq", 12);
-			RegisterElement<bool>(&DlyCntIrq, "DlyCntIrq", 13);
-			RegisterElement<bool>(&ErrIrq, "ErrIrq", 14);
-			RegisterElement<uint8_t>(&IRQFrameCntSts, "IRQFrameCntSts", 16, 23);
-			RegisterElement<uint8_t>(&IRQDelayCntSts, "IRQDelayCntSts", 24, 31);
+			RegisterElement<bool>(&m_halted, "Halted", 0);
+			RegisterElement<bool>(&m_vdmaIntErr, "VDMAIntErr", 4);
+			RegisterElement<bool>(&m_vdmaSlvErr, "VDMASlvErr", 5);
+			RegisterElement<bool>(&m_vdmaDecErr, "VDMADecErr", 6);
+			RegisterElement<bool>(&m_sofEarlyErr, "SOFEarlyErr", 7);
+			RegisterElement<bool>(&m_frmCntIrq, "FrmCntIrq", 12);
+			RegisterElement<bool>(&m_dlyCntIrq, "DlyCntIrq", 13);
+			RegisterElement<bool>(&m_errIrq, "ErrIrq", 14);
+			RegisterElement<uint8_t>(&m_irqFrameCntSts, "IRQFrameCntSts", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelayCntSts, "IRQDelayCntSts", 24, 31);
 		}
 
 		void ClearInterrupts()
@@ -480,9 +483,9 @@ public:
 		{
 			Update();
 			uint32_t intr = 0;
-			intr |= FrmCntIrq << (VDMA_INTR_ON_FRAME_COUNT >> 1);
-			intr |= DlyCntIrq << (VDMA_INTR_ON_DELAY >> 1);
-			intr |= ErrIrq << (VDMA_INTR_ON_ERROR >> 1);
+			intr |= m_frmCntIrq << (VDMA_INTR_ON_FRAME_COUNT >> 1);
+			intr |= m_dlyCntIrq << (VDMA_INTR_ON_DELAY >> 1);
+			intr |= m_errIrq << (VDMA_INTR_ON_ERROR >> 1);
 
 			return intr;
 		}
@@ -490,145 +493,163 @@ public:
 		void ResetInterrupts(const VDMAInterrupts& intr)
 		{
 			if (intr & VDMA_INTR_ON_FRAME_COUNT)
-				FrmCntIrq = 1;
+				m_frmCntIrq = 1;
 			if (intr & VDMA_INTR_ON_DELAY)
-				DlyCntIrq = 1;
+				m_dlyCntIrq = 1;
 			if (intr & VDMA_INTR_ON_ERROR)
-				ErrIrq = 1;
+				m_errIrq = 1;
 
 			Update(internal::Direction::WRITE);
 		}
 
-		bool Halted            = false;
-		bool VDMAIntErr        = false;
-		bool VDMASlvErr        = false;
-		bool VDMADecErr        = false;
-		bool SOFEarlyErr       = false;
-		bool FrmCntIrq         = false;
-		bool DlyCntIrq         = false;
-		bool ErrIrq            = false;
-		uint8_t IRQFrameCntSts = 0;
-		uint8_t IRQDelayCntSts = 0;
+	private:
+		bool m_halted            = false;
+		bool m_vdmaIntErr        = false;
+		bool m_vdmaSlvErr        = false;
+		bool m_vdmaDecErr        = false;
+		bool m_sofEarlyErr       = false;
+		bool m_frmCntIrq         = false;
+		bool m_dlyCntIrq         = false;
+		bool m_errIrq            = false;
+		uint8_t m_irqFrameCntSts = 0;
+		uint8_t m_irqDelayCntSts = 0;
 	};
 
-	struct MM2SControlRegister : public ControlRegister
+	class MM2SControlRegister : public ControlRegister
 	{
+	public:
 		MM2SControlRegister() :
 			ControlRegister("MM2S Control Register")
 		{
 			// Reference to base class is require due to template inheritance
-			internal::Register<uint32_t>::RegisterElement<uint8_t>(&RdPntrNum, "RdPntrNum", 8, 11);
+			internal::Register<uint32_t>::RegisterElement<uint8_t>(&m_rdPntrNum, "RdPntrNum", 8, 11);
 		}
 
-		uint8_t RdPntrNum = 0;
+	private:
+		uint8_t m_rdPntrNum = 0;
 	};
 
-	struct MM2SStatusRegister : public StatusRegister
+	class MM2SStatusRegister : public StatusRegister
 	{
+	public:
 		MM2SStatusRegister() :
 			StatusRegister("MM2S Status Register")
 		{}
 	};
 
-	struct S2MMControlRegister : public ControlRegister
+	class S2MMControlRegister : public ControlRegister
 	{
+	public:
 		S2MMControlRegister() :
 			ControlRegister("S2MM Control Register")
 		{
-			internal::Register<uint32_t>::RegisterElement<uint8_t>(&WrPntrNum, "WrPntrNum", 8, 11);
+			internal::Register<uint32_t>::RegisterElement<uint8_t>(&m_wrPntrNum, "WrPntrNum", 8, 11);
 		}
 
-		uint8_t WrPntrNum = 0;
+	private:
+		uint8_t m_wrPntrNum = 0;
 	};
 
-	struct S2MMStatusRegister : public StatusRegister
+	class S2MMStatusRegister : public StatusRegister
 	{
+	public:
 		S2MMStatusRegister() :
 			StatusRegister("S2MM Status Register")
 		{
-			internal::Register<uint32_t>::RegisterElement<bool>(&EOLEarlyErr, "EOLEarlyErr", 8);
-			internal::Register<uint32_t>::RegisterElement<bool>(&SOFLateErr, "SOFLateErr", 11);
-			internal::Register<uint32_t>::RegisterElement<bool>(&EOLLateErr, "EOLLateErr", 15);
+			internal::Register<uint32_t>::RegisterElement<bool>(&m_eolEarlyErr, "EOLEarlyErr", 8);
+			internal::Register<uint32_t>::RegisterElement<bool>(&m_sofLateErr, "SOFLateErr", 11);
+			internal::Register<uint32_t>::RegisterElement<bool>(&m_eolLateErr, "EOLLateErr", 15);
 		}
 
-		bool EOLEarlyErr = false;
-		bool SOFLateErr  = false;
-		bool EOLLateErr  = false;
+	private:
+		bool m_eolEarlyErr = false;
+		bool m_sofLateErr  = false;
+		bool m_eolLateErr  = false;
 	};
 
-	struct S2MMIrqMask : public internal::Register<uint32_t>
+	class S2MMIrqMask : public internal::Register<uint32_t>
 	{
+	public:
 		S2MMIrqMask() :
 			Register("S2MM IRQ Mask")
 		{
-			RegisterElement<bool>(&IRQMaskSOFEarlyErr, "IRQMaskSOFEarlyErr", 0);
-			RegisterElement<bool>(&IRQMaskEOLEarlyErr, "IRQMaskEOLEarlyErr", 1);
-			RegisterElement<bool>(&IRQMaskSOFLateErr, "IRQMaskSOFLateErr", 2);
-			RegisterElement<bool>(&IRQMaskEOLLateErr, "IRQMaskEOLLateErr", 3);
+			RegisterElement<bool>(&m_irqMaskSOFEarlyErr, "IRQMaskSOFEarlyErr", 0);
+			RegisterElement<bool>(&m_irqMaskEOLEarlyErr, "IRQMaskEOLEarlyErr", 1);
+			RegisterElement<bool>(&m_irqMaskSOFLateErr, "IRQMaskSOFLateErr", 2);
+			RegisterElement<bool>(&m_irqMaskEOLLateErr, "IRQMaskEOLLateErr", 3);
 		}
 
-		bool IRQMaskSOFEarlyErr = false;
-		bool IRQMaskEOLEarlyErr = false;
-		bool IRQMaskSOFLateErr  = false;
-		bool IRQMaskEOLLateErr  = false;
+	private:
+		bool m_irqMaskSOFEarlyErr = false;
+		bool m_irqMaskEOLEarlyErr = false;
+		bool m_irqMaskSOFLateErr  = false;
+		bool m_irqMaskEOLLateErr  = false;
 	};
 
-	struct MM2SFrameDelayStrideRegister : public internal::Register<uint32_t>
+	class MM2SFrameDelayStrideRegister : public internal::Register<uint32_t>
 	{
+	public:
 		MM2SFrameDelayStrideRegister() :
 			Register("MM2S FrameDelay & Stride Register")
 		{
-			RegisterElement<uint16_t>(&Stride, "Stride", 0, 15);
-			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
+			RegisterElement<uint16_t>(&m_stride, "Stride", 0, 15);
+			RegisterElement<uint8_t>(&m_frameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride    = 0;
-		uint8_t FrameDelay = 0;
+	private:
+		uint16_t m_stride    = 0;
+		uint8_t m_frameDelay = 0;
 	};
 
-	struct SS2MFrameDelayStrideRegister : public internal::Register<uint32_t>
+	class SS2MFrameDelayStrideRegister : public internal::Register<uint32_t>
 	{
+	public:
 		SS2MFrameDelayStrideRegister() :
 			Register("SS2M FrameDelay & Stride Register")
 		{
-			RegisterElement<uint16_t>(&Stride, "Stride", 0, 15);
-			RegisterElement<uint8_t>(&FrameDelay, "FrameDelay", 24, 28);
+			RegisterElement<uint16_t>(&m_stride, "Stride", 0, 15);
+			RegisterElement<uint8_t>(&m_frameDelay, "FrameDelay", 24, 28);
 		}
 
-		uint16_t Stride    = 0;
-		uint8_t FrameDelay = 0;
+	private:
+		uint16_t m_stride    = 0;
+		uint8_t m_frameDelay = 0;
 	};
 
-	struct ParkPointerRegister : public internal::Register<uint32_t>
+	class ParkPointerRegister : public internal::Register<uint32_t>
 	{
+	public:
 		ParkPointerRegister() :
 			Register("Park Pointer Register")
 		{
-			RegisterElement<uint8_t>(&RdFrmPtrRef, "RdFrmPtrRef", 0, 4);
-			RegisterElement<uint8_t>(&WrFrmPtrRef, "WrFrmPtrRef", 8, 12);
-			RegisterElement<uint8_t>(&RdFramStore, "RdFramStore", 16, 20);
-			RegisterElement<uint8_t>(&WrFramStore, "WrFramStore", 24, 28);
+			RegisterElement<uint8_t>(&m_rdFrmPtrRef, "RdFrmPtrRef", 0, 4);
+			RegisterElement<uint8_t>(&m_wrFrmPtrRef, "WrFrmPtrRef", 8, 12);
+			RegisterElement<uint8_t>(&m_rdFramStore, "RdFramStore", 16, 20);
+			RegisterElement<uint8_t>(&m_wrFramStore, "WrFramStore", 24, 28);
 		}
 
-		uint8_t RdFrmPtrRef = 0;
-		uint8_t WrFrmPtrRef = 0;
-		uint8_t RdFramStore = 0;
-		uint8_t WrFramStore = 0;
+	private:
+		uint8_t m_rdFrmPtrRef = 0;
+		uint8_t m_wrFrmPtrRef = 0;
+		uint8_t m_rdFramStore = 0;
+		uint8_t m_wrFramStore = 0;
 	};
 
-	struct VDMAVersionRegister : public internal::Register<uint32_t>
+	class VDMAVersionRegister : public internal::Register<uint32_t>
 	{
+	public:
 		VDMAVersionRegister() :
 			Register("VDMA Version Register")
 		{
-			RegisterElement<uint16_t>(&XilinxInternal, "XilinxInternal", 0, 15);
-			RegisterElement<uint8_t>(&MinorVersion, "MinorVersion", 20, 27);
-			RegisterElement<uint8_t>(&MajorVersion, "MajorVersion", 28, 31);
+			RegisterElement<uint16_t>(&m_xilinxInternal, "XilinxInternal", 0, 15);
+			RegisterElement<uint8_t>(&m_minorVersion, "MinorVersion", 20, 27);
+			RegisterElement<uint8_t>(&m_majorVersion, "MajorVersion", 28, 31);
 		}
 
-		uint16_t XilinxInternal = 0;
-		uint8_t MinorVersion    = 0;
-		uint8_t MajorVersion    = 0;
+	private:
+		uint16_t m_xilinxInternal = 0;
+		uint8_t m_minorVersion    = 0;
+		uint8_t m_majorVersion    = 0;
 	};
 
 public:
