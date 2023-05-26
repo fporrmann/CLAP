@@ -86,12 +86,12 @@ public:
 	};
 
 public:
-	HLSCore(CLAPPtr pClap, const uint64_t& ctrlOffset, const std::string& name) :
-		RegisterControlBase(std::move(pClap), ctrlOffset),
+	HLSCore(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name) :
+		RegisterControlBase(pClap, ctrlOffset),
 		m_apCtrl(),
 		m_intrCtrl(),
 		m_intrStat(),
-		m_watchDog(name),
+		m_watchDog(name, pClap->MakeUserInterrupt()),
 		m_name(name)
 	{
 		registerReg<uint8_t>(m_apCtrl, ADDR_AP_CTRL);

@@ -34,7 +34,7 @@ DEFINE_EXCEPTION(CLAPException)
 
 namespace internal
 {
-DEFINE_EXCEPTION(UserIntrruptException)
+DEFINE_EXCEPTION(UserInterruptException)
 DEFINE_EXCEPTION(WatchDogException)
 } // namespace internal
 } // namespace clap

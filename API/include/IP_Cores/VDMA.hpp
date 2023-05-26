@@ -72,10 +72,10 @@ public:
 	};
 
 public:
-	VDMA(CLAPPtr pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(std::move(pClap), ctrlOffset),
-		m_watchDogMM2S("VDMA_MM2S"),
-		m_watchDogS2MM("VDMA_S2MM")
+	VDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
+		RegisterControlBase(pClap, ctrlOffset),
+		m_watchDogMM2S("VDMA_MM2S", pClap->MakeUserInterrupt()),
+		m_watchDogS2MM("VDMA_S2MM", pClap->MakeUserInterrupt())
 	{
 		registerReg<uint32_t>(m_mm2sCtrlReg, MM2S_VDMACR);
 		registerReg<uint32_t>(m_mm2sStatReg, MM2S_VDMASR);

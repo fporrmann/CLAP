@@ -32,12 +32,11 @@
 #include <string>
 #include <thread>
 
-#include "UserInterrupt.hpp"
-
 #include "../../internal/Constants.hpp"
 #include "../../internal/Exceptions.hpp"
 #include "../../internal/Logger.hpp"
-
+#include "../../internal/Types.hpp"
+#include "../../internal/UserInterruptBase.hpp"
 
 #ifndef EMBEDDED_XILINX
 #include "../../internal/Timer.hpp"
@@ -53,7 +52,7 @@ namespace internal
 static std::exception_ptr g_pExcept = nullptr;
 
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterrupt* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
+static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
 {
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
@@ -92,9 +91,9 @@ class WatchDog
 	DISABLE_COPY_ASSIGN_MOVE(WatchDog)
 
 public:
-	WatchDog(const std::string& name) :
+	WatchDog(const std::string& name, UserInterruptPtr pInterrupt) :
 		m_name(name),
-		m_interrupt()
+		m_pInterrupt(std::move(pInterrupt))
 #ifndef EMBEDDED_XILINX
 		,
 		m_waitThread(),
@@ -110,7 +109,7 @@ public:
 #ifdef _WIN32
 		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
-		m_interrupt.Init(devNum, interruptNum, pReg);
+		m_pInterrupt->Init(devNum, interruptNum, pReg);
 #endif
 	}
 
@@ -119,7 +118,7 @@ public:
 #ifdef _WIN32
 		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
-		m_interrupt.Unset();
+		m_pInterrupt->Unset();
 #endif
 	}
 
@@ -138,7 +137,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		if (m_threadRunning) return false;
 
-		if (!m_interrupt.IsSet() && m_pStatus == nullptr)
+		if (!m_pInterrupt->IsSet() && m_pStatus == nullptr)
 		{
 			std::stringstream ss("");
 			ss << CLASS_TAG("WatchDog") << "Error: Trying to start WatchDog thread with neither the interrupt nor the status register set.";
@@ -147,7 +146,7 @@ public:
 
 		g_pExcept = nullptr;
 		m_threadDone.store(false, std::memory_order_release);
-		m_waitThread    = std::thread(waitForFinishThread, &m_interrupt, m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone);
+		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone);
 		m_threadRunning = true;
 #endif
 
@@ -201,7 +200,7 @@ public:
 
 	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
 	{
-		m_interrupt.RegisterCallback(callback);
+		m_pInterrupt->RegisterCallback(callback);
 	}
 
 private:
@@ -221,7 +220,7 @@ private:
 
 private:
 	std::string m_name;
-	UserInterrupt m_interrupt;
+	UserInterruptPtr m_pInterrupt;
 #ifndef EMBEDDED_XILINX
 	std::thread m_waitThread;
 	std::condition_variable m_cv;

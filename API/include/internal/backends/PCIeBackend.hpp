@@ -36,6 +36,7 @@
 #include "../Defines.hpp"
 #include "../Logger.hpp"
 #include "../Timer.hpp"
+#include "../UserInterruptBase.hpp"
 #include "../Utils.hpp"
 
 namespace clap
@@ -44,6 +45,114 @@ namespace internal
 {
 namespace backends
 {
+class PCIeUserInterrupt : virtual public UserInterruptBase
+{
+	DISABLE_COPY_ASSIGN_MOVE(PCIeUserInterrupt)
+
+public:
+	PCIeUserInterrupt()
+#ifndef _WIN32
+		:
+		m_pollFd()
+#endif
+	{}
+
+	virtual void Init(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
+	{
+		if (!DEVICE_HANDLE_VALID(m_fd))
+			Unset();
+
+		m_devName = "/dev/xdma" + std::to_string(devNum) + "_events_" + std::to_string(interruptNum);
+		m_pReg    = pReg;
+
+		m_fd          = OPEN_DEVICE(m_devName.c_str(), READ_ONLY_FLAG);
+		int32_t errsv = errno;
+
+		if (!DEVICE_HANDLE_VALID(m_fd))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PCIeUserInterrupt") << "Unable to open device " << m_devName << "; errno: " << errsv;
+			throw UserInterruptException(ss.str());
+		}
+
+#ifndef _WIN32
+		m_pollFd.fd     = m_fd;
+		m_pollFd.events = POLLIN;
+#endif
+		m_interruptNum = interruptNum;
+	}
+
+	void Unset()
+	{
+		if (!DEVICE_HANDLE_VALID(m_fd)) return;
+
+		CLOSE_DEVICE(m_fd);
+		m_fd = INVALID_HANDLE;
+
+#ifndef _WIN32
+		m_pollFd.fd = -1;
+#endif
+		m_pReg = nullptr;
+	}
+
+	bool IsSet() const
+	{
+		return (DEVICE_HANDLE_VALID(m_fd));
+	}
+
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	{
+#ifdef _WIN32
+		LOG_ERROR << CLASS_TAG("PCIeUserInterrupt") << " Currently not implemented for Windows" << std::endl;
+		return false;
+#else
+		if (!IsSet())
+		{
+			std::stringstream ss("");
+			ss << CLASS_TAG("PCIeUserInterrupt") << "Error: Trying to wait for uninitialized user interrupt";
+			throw UserInterruptException(ss.str());
+		}
+
+		// Poll checks whether an interrupt was generated.
+		uint32_t rd = poll(&m_pollFd, 1, timeout);
+		if ((rd > 0) && (m_pollFd.revents & POLLIN))
+		{
+			uint32_t events;
+
+			if (m_pReg)
+				m_pReg->ClearInterrupts();
+
+			// Check how many interrupts were generated, and clear the interrupt so we can detect future interrupts.
+			int32_t rc    = pread(m_fd, &events, sizeof(events), 0);
+			int32_t errsv = errno;
+
+			if (rc < 0)
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("PCIeUserInterrupt") << m_devName << ", call to pread failed (rc: " << rc << ") errno: " << errsv;
+				throw UserInterruptException(ss.str());
+			}
+
+			for (auto& callback : m_callbacks)
+				callback(m_pReg->GetLastInterrupt());
+
+			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+			return true;
+		}
+		else
+			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+
+		return false;
+#endif // _WIN32
+	}
+
+private:
+	DeviceHandle m_fd = INVALID_HANDLE;
+#ifndef _WIN32
+	struct pollfd m_pollFd;
+#endif
+};
+
 class PCIeBackend : virtual public CLAPBackend
 {
 	DISABLE_COPY_ASSIGN_MOVE(PCIeBackend)
@@ -291,6 +400,11 @@ public:
 		}
 	}
 
+	UserInterruptPtr MakeUserInterrupt() const
+	{
+		return std::make_unique<PCIeUserInterrupt>();
+	}
+
 private:
 	std::string m_h2cDeviceName;
 	std::string m_c2hDeviceName;
@@ -303,6 +417,7 @@ private:
 	std::mutex m_writeMutex;
 	std::mutex m_ctrlMutex;
 };
+
 } // namespace backends
 } // namespace internal
 } // namespace clap

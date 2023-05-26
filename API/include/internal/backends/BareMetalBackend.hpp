@@ -32,6 +32,7 @@
 #include "../CLAPBackend.hpp"
 #include "../Constants.hpp"
 #include "../Logger.hpp"
+#include "../UserInterruptBase.hpp"
 #include "../Utils.hpp"
 
 namespace clap
@@ -40,6 +41,36 @@ namespace internal
 {
 namespace backends
 {
+class BareMetalUserInterrupt : virtual public UserInterruptBase
+{
+	DISABLE_COPY_ASSIGN_MOVE(BareMetalUserInterrupt)
+
+public:
+	BareMetalUserInterrupt() {}
+
+	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
+	{
+		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
+	}
+
+	void Unset()
+	{
+		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
+	}
+
+	bool IsSet() const
+	{
+		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
+		return false;
+	}
+
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	{
+		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
+		return false;
+	}
+};
+
 class BareMetalBackend : virtual public CLAPBackend
 {
 public:
@@ -127,6 +158,11 @@ public:
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
 	{
 		LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
+	}
+
+	UserInterruptPtr MakeUserInterrupt() const
+	{
+		return std::make_unique<BareMetalUserInterrupt>();
 	}
 };
 

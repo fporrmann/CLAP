@@ -49,6 +49,8 @@ using CLAPBasePtr      = std::shared_ptr<class CLAPBase>;
 using CLAPBackendPtr   = std::shared_ptr<class CLAPBackend>;
 using CLAPManagedPtr   = std::shared_ptr<class CLAPManaged>;
 using MemoryManagerPtr = std::shared_ptr<class MemoryManager>;
+using UserInterruptPtr = std::unique_ptr<class UserInterruptBase> ;
+
 using MemoryManagerVec = std::vector<MemoryManagerPtr>;
 } // namespace internal
 } // namespace clap

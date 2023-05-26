@@ -25,14 +25,15 @@
 
 #pragma once
 
+#ifdef _WIN32
+#include "backends/PCIeBackend.hpp"
+#else
 #ifndef EMBEDDED_XILINX
 #include "backends/PCIeBackend.hpp"
-#ifndef _WIN32
 #include "backends/PetaLinuxBackend.hpp"
-#endif // _WIN32
-#else
-#include "backends/BareMetalBackend.hpp"
 #endif // EMBEDDED_XILINX
+#include "backends/BareMetalBackend.hpp"
+#endif // _WIN32
 
 namespace clap
 {

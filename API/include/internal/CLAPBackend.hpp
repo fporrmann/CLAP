@@ -37,6 +37,8 @@
 
 #include "Defines.hpp"
 #include "Exceptions.hpp"
+#include "UserInterruptBase.hpp"
+#include "Types.hpp"
 
 namespace clap
 {
@@ -60,6 +62,8 @@ public:
 	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)        = 0;
 	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) = 0;
 	virtual void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt) = 0;
+
+	virtual UserInterruptPtr MakeUserInterrupt() const = 0;
 
 	virtual uint32_t GetDevNum() const
 	{

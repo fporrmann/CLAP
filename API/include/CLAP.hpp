@@ -276,6 +276,11 @@ public:
 	{
 	}
 
+	internal::UserInterruptPtr MakeUserInterrupt()
+	{
+		return m_pBackend->MakeUserInterrupt();
+	}
+
 	/// @brief Adds a memory region to the CLAP instance
 	/// @param type Type of memory
 	/// @param baseAddr Base address of the memory region
