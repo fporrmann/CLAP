@@ -27,9 +27,7 @@
 
 /////////////////////////
 // Include for mmap(), munmap()
-#ifndef _WIN32
 #include <sys/mman.h>
-#endif
 /////////////////////////
 
 #include <cstring>
@@ -55,29 +53,109 @@ class PetaLinuxUserInterrupt : virtual public UserInterruptBase
 	DISABLE_COPY_ASSIGN_MOVE(PetaLinuxUserInterrupt)
 
 public:
-	PetaLinuxUserInterrupt() {}
+	PetaLinuxUserInterrupt() :
+		m_pollFd()
+	{}
 
-	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
+	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
 	{
-		LOG_WARNING << CLASS_TAG("PetaLinuxUserInterrupt") << " Currently not implemented" << std::endl;
+		if (!DEVICE_HANDLE_VALID(m_fd))
+			Unset();
+
+		m_devName = "/dev/uio" + std::to_string(devNum);
+		m_pReg    = pReg;
+
+		m_fd          = OPEN_DEVICE(m_devName.c_str(), READ_WRITE_FLAG);
+		int32_t errsv = errno;
+
+		if (!DEVICE_HANDLE_VALID(m_fd))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Unable to open device " << m_devName << "; errno: " << errsv;
+			throw UserInterruptException(ss.str());
+		}
+
+		m_pollFd.fd     = m_fd;
+		m_pollFd.events = POLLIN;
+		m_interruptNum = interruptNum;
+
+		unmask();
 	}
 
 	void Unset()
 	{
-		LOG_WARNING << CLASS_TAG("PetaLinuxUserInterrupt") << " Currently not implemented" << std::endl;
+		if (!DEVICE_HANDLE_VALID(m_fd)) return;
+
+		CLOSE_DEVICE(m_fd);
+		m_fd = INVALID_HANDLE;
+
+		m_pollFd.fd = -1;
+		m_pReg = nullptr;
 	}
 
 	bool IsSet() const
 	{
-		LOG_WARNING << CLASS_TAG("PetaLinuxUserInterrupt") << " Currently not implemented" << std::endl;
-		return false;
+		return (DEVICE_HANDLE_VALID(m_fd));
 	}
 
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
 	{
-		LOG_WARNING << CLASS_TAG("PetaLinuxUserInterrupt") << " Currently not implemented" << std::endl;
+		if (!IsSet())
+		{
+			std::stringstream ss("");
+			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Error: Trying to wait for uninitialized user interrupt";
+			throw UserInterruptException(ss.str());
+		}
+
+		// Poll checks whether an interrupt was generated.
+		uint32_t rd = poll(&m_pollFd, 1, timeout);
+		if ((rd > 0) && (m_pollFd.revents & POLLIN))
+		{
+			uint32_t events;
+
+			if (m_pReg)
+				m_pReg->ClearInterrupts();
+
+			// Check how many interrupts were generated, and clear the interrupt so we can detect future interrupts.
+			int32_t rc    = ::read(m_fd, &events, sizeof(events));
+			int32_t errsv = errno;
+
+			if (rc < 0)
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("PetaLinuxUserInterrupt") << m_devName << ", call to read failed (rc: " << rc << ") errno: " << errsv;
+				throw UserInterruptException(ss.str());
+			}
+
+			for (auto& callback : m_callbacks)
+				callback(m_pReg->GetLastInterrupt());
+
+			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+			return true;
+		}
+		else
+			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+
 		return false;
 	}
+
+private:
+	void unmask()
+	{
+		const uint32_t unmask = 1;
+
+		ssize_t nb = write(m_fd, &unmask, sizeof(unmask));
+		if (nb != static_cast<ssize_t>(sizeof(unmask)))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Error: Unable to unmask interrupt on " << m_devName;
+			throw UserInterruptException(ss.str());
+		}
+	}
+
+private:
+	DeviceHandle m_fd = INVALID_HANDLE;
+	struct pollfd m_pollFd;
 };
 
 class PetaLinuxBackend : virtual public CLAPBackend
@@ -210,7 +288,7 @@ public:
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
 	{
-		LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
+		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const

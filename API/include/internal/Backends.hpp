@@ -37,5 +37,6 @@
 
 namespace clap
 {
+	// TODO: This also adds the Interrupt handler to the backend namespace, bad idea
 namespace backends = internal::backends;
 } // namespace clap

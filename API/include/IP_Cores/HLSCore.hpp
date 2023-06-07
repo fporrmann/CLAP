@@ -107,6 +107,7 @@ public:
 	{
 		m_apCtrl.Reset();
 
+		// TODO: If apCtrl start fails this needs to be stopped
 		if (!m_watchDog.Start())
 		{
 			LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
