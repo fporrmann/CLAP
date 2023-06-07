@@ -6,6 +6,8 @@ project("CLAP Examples")
 # Include all example projects in this directory
 file(GLOB EXAMPLES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/*)
 
+
+
 foreach(EXAMPLE ${EXAMPLES})
 	set(dir ${CMAKE_CURRENT_SOURCE_DIR}/${EXAMPLE})
 
