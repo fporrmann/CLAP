@@ -3,25 +3,25 @@
 #include <CLAP.hpp>
 #include <IP_Cores/HLSCore.hpp>
 
-// The DDR is located at 0x000000000
-static const uint64_t DDR_BASE_ADDR = 0x000000000;
-// The size of the DDR is 4GB
-static const uint64_t DDR_SIZE = 0x100000000;
+// The DDR is located at 0x20000000
+static const uint64_t DDR_BASE_ADDR = 0x20000000;
+// The size of the DDR is 512MB
+static const uint64_t DDR_SIZE = 0x20000000;
 
-// The HLS core control registers are located at 0x100100000
-static const uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
+// The HLS core control registers are located at 0x40000000
+static const uint64_t HLS_TEST_CORE_BASE_ADDR = 0x40000000;
 
 // The HLS core control register ofsets for the different paramters
 static const uint64_t TEST_CONTROL_ADDR_PDDRIN_DATA   = 0x10;
-static const uint64_t TEST_CONTROL_ADDR_PDDROUT_DATA  = 0x1c;
-static const uint64_t TEST_CONTROL_ADDR_ELEMENTS_DATA = 0x28;
+static const uint64_t TEST_CONTROL_ADDR_PDDROUT_DATA  = 0x18;
+static const uint64_t TEST_CONTROL_ADDR_ELEMENTS_DATA = 0x20;
 
 static const uint32_t TEST_DATA_SIZE = 8;
 
 int main()
 {
 	// Create host side buffer for the test data to be written to the input memory
-	clap::XDMABuffer<uint16_t> testData(TEST_DATA_SIZE, 0);
+	clap::XDMABuffer<uint32_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
 	clap::XDMABuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFFFFFFFF,
@@ -49,7 +49,7 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint16_t)));
+		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
 		clap::Memory outBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
 
 		// Set the addresses of the input and output memory used in the HLS core.
