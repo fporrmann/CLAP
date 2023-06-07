@@ -45,7 +45,7 @@ int main()
 	pClap->Read(buf, testDataRB);
 
 	std::cout << "Printing Memory Before Transfer:" << std::endl;
-	for (const uint32_t& d : testDataRB)
+	for (const uint8_t& d : testDataRB)
 		std::cout << std::hex << static_cast<int32_t>(d) << " " << std::flush;
 
 	std::cout << std::endl
@@ -59,7 +59,7 @@ int main()
 
 	// Print the result data
 	std::cout << "Printing Memory After Transfer:" << std::endl;
-	for (const uint32_t& d : testDataRB)
+	for (const uint8_t& d : testDataRB)
 		std::cout << std::hex << static_cast<int32_t>(d) << " " << std::flush;
 
 	std::cout << std::endl;
