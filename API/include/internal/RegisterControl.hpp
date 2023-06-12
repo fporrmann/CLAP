@@ -57,6 +57,8 @@ public:
 		m_registers()
 	{}
 
+	virtual ~RegisterControlBase() = default;
+
 	// Method used by the static update callback function to update
 	// the given register
 	template<typename T>

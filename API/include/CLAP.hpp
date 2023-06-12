@@ -105,7 +105,7 @@ class CLAPManaged
 protected:
 	CLAPManaged(internal::CLAPBasePtr pClap);
 
-	~CLAPManaged();
+	virtual ~CLAPManaged();
 
 	internal::CLAPBasePtr CLAP()
 	{
