@@ -199,7 +199,7 @@ public:
 		EnableInterrupts(DMAChannel::S2MM, eventNoS2MM, intr);
 	}
 
-	void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo, const DMAInterrupts& intr = INTR_ALL)
+	void EnableInterrupts(const DMAChannel& channel, [[maybe_unused]] const uint32_t& eventNo, const DMAInterrupts& intr = INTR_ALL)
 	{
 		if (channel == DMAChannel::MM2S)
 		{
@@ -335,11 +335,11 @@ public:
 		void DoReset()
 		{
 			Update();
-			Reset = 1;
+			m_reset = 1;
 			Update(internal::Direction::WRITE);
 
 			// The Reset bit will be set to 0 once the reset has been completed
-			while (Reset)
+			while (m_reset)
 				Update();
 		}
 
