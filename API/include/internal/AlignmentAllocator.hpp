@@ -30,7 +30,8 @@ namespace clap
 {
 namespace internal
 {
-#ifdef __arm__
+//#ifdef __arm__
+#if 0
 /// Copied from https://github.com/gcc-mirror/gcc/blob/master/gcc/config/rs6000/mm_malloc.h
 #include <stdlib.h>
 
