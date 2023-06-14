@@ -133,10 +133,14 @@ public:
 				throw UserInterruptException(ss.str());
 			}
 
-			for (auto& callback : m_callbacks)
-				callback(m_pReg->GetLastInterrupt());
+			uint32_t lastIntr = -1;
+			if (m_pReg)
+				lastIntr = m_pReg->GetLastInterrupt();
 
-			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+			for (auto& callback : m_callbacks)
+				callback(lastIntr);
+
+			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 			return true;
 		}
 		else
@@ -271,8 +275,8 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		// LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
@@ -348,8 +352,8 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		// LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt)

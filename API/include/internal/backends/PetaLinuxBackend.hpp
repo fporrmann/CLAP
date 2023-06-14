@@ -62,7 +62,7 @@ public:
 		if (!DEVICE_HANDLE_VALID(m_fd))
 			Unset();
 
-		m_devName = "/dev/uio" + std::to_string(devNum);
+		m_devName = "/dev/uio" + std::to_string(interruptNum);
 		m_pReg    = pReg;
 
 		m_fd          = OPEN_DEVICE(m_devName.c_str(), READ_WRITE_FLAG);
@@ -107,6 +107,7 @@ public:
 			throw UserInterruptException(ss.str());
 		}
 
+		unmask();
 		// Poll checks whether an interrupt was generated.
 		uint32_t rd = poll(&m_pollFd, 1, timeout);
 		if ((rd > 0) && (m_pollFd.revents & POLLIN))
@@ -127,8 +128,12 @@ public:
 				throw UserInterruptException(ss.str());
 			}
 
+			uint32_t lastIntr = -1;
+			if (m_pReg)
+				lastIntr = m_pReg->GetLastInterrupt();
+
 			for (auto& callback : m_callbacks)
-				callback(m_pReg->GetLastInterrupt());
+				callback(lastIntr);
 
 			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
@@ -178,7 +183,7 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -228,13 +233,13 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		// LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -282,8 +287,8 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-					<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		// LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
 	}
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
