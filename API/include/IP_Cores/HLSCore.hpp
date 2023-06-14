@@ -34,6 +34,7 @@
 
 #include <functional>
 #include <string>
+#include <cstdint>
 
 namespace clap
 {
