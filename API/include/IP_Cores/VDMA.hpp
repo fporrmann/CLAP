@@ -29,6 +29,8 @@
 #include "../internal/RegisterControl.hpp"
 #include "internal/WatchDog.hpp"
 
+#include "AxiInterruptController.hpp"
+
 #include <cstdint>
 
 namespace clap
@@ -222,6 +224,12 @@ public:
 	////////////////////////////////////////
 
 	////////////////////////////////////////
+
+	void UseInterruptController(AxiInterruptController& axiIntC)
+	{
+		m_watchDogMM2S.SetUserInterrupt(axiIntC.MakeUserInterrupt());
+		m_watchDogS2MM.SetUserInterrupt(axiIntC.MakeUserInterrupt());
+	}
 
 	void EnableInterrupts(const uint32_t& eventNoMM2S, const uint32_t& eventNoS2MM, const VDMAInterrupts& intr = VDMA_INTR_ALL)
 	{
