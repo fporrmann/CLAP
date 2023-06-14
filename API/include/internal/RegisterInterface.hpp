@@ -357,7 +357,7 @@ public:
 		}
 
 		// Add strings for all registered elements to the map
-		for (const RegIntfPtr pElem : m_regElems)
+		for (const RegIntfPtr& pElem : m_regElems)
 			map[pElem->GetStartBit()] = pElem->ToString(maxLength);
 
 		// Build up the register address map header string
