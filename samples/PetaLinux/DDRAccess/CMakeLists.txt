@@ -29,7 +29,7 @@ include_directories(${CLAP_INCLUDE_DIRS})
 
 # Specify the name of the executable created by this CMake project
 add_executable(${PROJECT_NAME} ${src})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CLAP_LIBS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CLAP_LIBS} -static-libgcc -static-libstdc++)
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BIN_NAME}")
 
 if(MSVC)
