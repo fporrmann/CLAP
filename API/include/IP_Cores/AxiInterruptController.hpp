@@ -70,10 +70,19 @@ public:
 		std::mutex mtx;
 		std::unique_lock<std::mutex> lck(mtx);
 
-		if (timeout == WAIT_INFINITE)
-			m_cv.wait(lck);
-		else
-			m_cv.wait_for(lck, std::chrono::milliseconds(timeout));
+		// The interruptOccured flag is used to make sure that the interrupt has not already occured
+		if (!m_interruptOccured)
+		{
+			if (timeout == WAIT_INFINITE)
+				m_cv.wait(lck);
+			else
+			{
+				if (m_cv.wait_for(lck, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
+					return false;
+			}
+		}
+
+		m_interruptOccured = false;
 
 		uint32_t lastIntr = -1;
 		if (m_pReg)
@@ -82,7 +91,7 @@ public:
 		for (auto& callback : m_callbacks)
 			callback(lastIntr);
 
-		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 
 		return true;
 	}
@@ -92,12 +101,15 @@ public:
 		if (m_pReg)
 			m_pReg->ClearInterrupts();
 
+		m_interruptOccured = true;
 		m_cv.notify_all();
+		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
 	}
 
 private:
 	AxiInterruptController* m_pAxiIntC;
 	std::condition_variable m_cv = {};
+	bool m_interruptOccured      = false;
 };
 } // namespace internal
 
@@ -212,6 +224,8 @@ public:
 
 		uint32_t intrs = m_intrStatusReg.GetInterrupts();
 		uint32_t idx   = 0;
+
+		LOG_DEBUG << CLASS_TAG("AxiInterruptController") << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
 
 		try
 		{
