@@ -51,8 +51,11 @@ namespace internal
 {
 static std::exception_ptr g_pExcept = nullptr;
 
+// TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
+//       Find a better way, i.e., a way to interrupt the call to poll (ppoll or epoll might be a solution)
+
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone)
+static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone, const bool& dontTerminate)
 {
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
@@ -62,12 +65,13 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 		if (pUserIntr->IsSet())
 		{
 			LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
-			pUserIntr->WaitForInterrupt(WAIT_INFINITE);
+			while (!pThreadDone->load(std::memory_order_acquire) && (!pUserIntr->WaitForInterrupt(1000) || dontTerminate))
+				;
 		}
 		else if (pStatus)
 		{
 			LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
-			while (!pStatus->PollDone())
+			while (!pThreadDone->load(std::memory_order_acquire) && (!pStatus->PollDone() || dontTerminate))
 				std::this_thread::sleep_for(std::chrono::microseconds(1));
 		}
 	}
@@ -104,6 +108,12 @@ public:
 	{
 	}
 
+	// TODO: Maybe clone configurations for the existing UserInterrupt object
+	void SetUserInterrupt(UserInterruptPtr pInterrupt)
+	{
+		m_pInterrupt = std::move(pInterrupt);
+	}
+
 	void InitInterrupt([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
 	{
 #ifdef _WIN32
@@ -132,7 +142,7 @@ public:
 		m_pStatus = nullptr;
 	}
 
-	bool Start()
+	bool Start(const bool& dontTerminate = false)
 	{
 #ifndef EMBEDDED_XILINX
 		if (m_threadRunning) return false;
@@ -146,11 +156,24 @@ public:
 
 		g_pExcept = nullptr;
 		m_threadDone.store(false, std::memory_order_release);
-		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone);
+		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone, dontTerminate);
 		m_threadRunning = true;
 #endif
 
 		return true;
+	}
+
+	void Stop()
+	{
+#ifndef EMBEDDED_XILINX
+		if (!m_threadRunning) return;
+
+		m_threadDone.store(true, std::memory_order_release);
+		m_cv.notify_one();
+		m_waitThread.join();
+		m_threadRunning = false;
+		checkException();
+#endif
 	}
 
 	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
