@@ -83,7 +83,7 @@ int main()
 		// interrupts are connected, the ordering of the concat used to combine the signals determines
 		// the mapping of the cores to the interrupt events.
 		// If the interrupt is not configure, polling is used to determine when the core is finished.
-		hlsTest.EnableInterrupts(0);
+		hlsTest.EnableInterrupts(1);
 
 		// Start the HLS core
 		hlsTest.Start();
@@ -97,19 +97,19 @@ int main()
 
 		// Readback the result data from the DDR memory.
 		pClap->Read(outBuf, testDataRB.data());
+
+		// Print the result data
+		std::cout << "Printing Output Memory After HLS Execution:" << std::endl;
+		for (const uint32_t& d : testDataRB)
+			std::cout << std::hex << d << std::dec << " " << std::flush;
+
+		std::cout << std::endl;
 	}
 	catch (std::exception& e)
 	{
 		std::cerr << "Exception: " << e.what() << std::endl;
 		return -1;
 	}
-
-	// Print the result data
-	std::cout << "Printing Output Memory After HLS Execution:" << std::endl;
-	for (const uint32_t& d : testDataRB)
-		std::cout << std::hex << d << std::dec << " " << std::flush;
-
-	std::cout << std::endl;
 
 	return 0;
 }
