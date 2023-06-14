@@ -83,8 +83,8 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 
 	pTimer->Stop();
 
-	pCv->notify_one();
 	pThreadDone->store(true, std::memory_order_release);
+	pCv->notify_all();
 
 	LOG_DEBUG << "[" << name << "] Finished" << std::endl;
 }
@@ -169,7 +169,7 @@ public:
 		if (!m_threadRunning) return;
 
 		m_threadDone.store(true, std::memory_order_release);
-		m_cv.notify_one();
+		m_cv.notify_all();
 		m_waitThread.join();
 		m_threadRunning = false;
 		checkException();
@@ -197,7 +197,7 @@ public:
 		std::unique_lock<std::mutex> lck(mtx);
 
 		if (timeoutMS == WAIT_INFINITE)
-			m_cv.wait_for(lck, 1ms, [this] { return m_threadDone.load(std::memory_order_acquire); });
+			m_cv.wait(lck, [this] { return m_threadDone.load(std::memory_order_acquire); });
 		else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
 			return false;
 
