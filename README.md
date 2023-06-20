@@ -100,3 +100,14 @@ When not using CMake, add CLAP/API/include to the include search path of your en
 ### Use the API
 
 At the moment please refer to the [DDRAccess example](samples/DDRAccess/src/main.cpp).
+
+
+
+## PetaLinux (WiP)
+
+### Allow users to access the UIO devices
+
+```bash
+echo "SUBSYSTEM==\"uio\", GROUP=\"users\", MODE=\"0666\"" | sudo tee /etc/udev/rules.d/uio.rules
+sudo udevadm trigger
+```
