@@ -85,21 +85,6 @@ public:
 		return m_backendName;
 	}
 
-	DeviceHandle OpenDevice(const std::string& name, FlagType flags = DEFAULT_OPEN_FLAGS) const
-	{
-		DeviceHandle fd = OPEN_DEVICE(name.c_str(), flags);
-		int32_t err     = errno;
-
-		if (!DEVICE_HANDLE_VALID(fd))
-		{
-			std::stringstream ss;
-			ss << CLASS_TAG("") << "Unable to open device " << name << "; errno: " << err;
-			throw CLAPException(ss.str());
-		}
-
-		return fd;
-	}
-
 protected:
 	bool m_valid              = false;
 	std::string m_nameRead    = "";

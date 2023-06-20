@@ -34,6 +34,7 @@
 #include "../CLAPBackend.hpp"
 #include "../Constants.hpp"
 #include "../Defines.hpp"
+#include "../FileOps.hpp"
 #include "../Logger.hpp"
 #include "../Timer.hpp"
 #include "../UserInterruptBase.hpp"
@@ -59,7 +60,7 @@ public:
 
 	virtual void Init(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
 	{
-		if (!DEVICE_HANDLE_VALID(m_fd))
+		if (DEVICE_HANDLE_VALID(m_fd))
 			Unset();
 
 		m_devName = "/dev/xdma" + std::to_string(devNum) + "_events_" + std::to_string(interruptNum);
