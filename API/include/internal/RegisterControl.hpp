@@ -42,6 +42,24 @@ enum class DMAChannel
 	S2MM
 };
 
+std::ostream& operator<<(std::ostream& os, const DMAChannel& channel)
+{
+	switch (channel)
+	{
+	case DMAChannel::MM2S:
+		os << "MM2S";
+		break;
+	case DMAChannel::S2MM:
+		os << "S2MM";
+		break;
+	default:
+		os << "Unknown";
+		break;
+	}
+
+	return os;
+}
+
 namespace clap
 {
 namespace internal
