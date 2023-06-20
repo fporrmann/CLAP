@@ -182,6 +182,7 @@ public:
 
 		if (!initUIO())
 		{
+			LOG_INFO << CLASS_TAG("PetaLinuxBackend") << "UIO not available, falling back to /dev/mem" << std::endl;
 			m_nameRead  = m_devMem;
 			m_nameWrite = m_devMem;
 			m_fd        = OpenDevice(m_devMem);
@@ -274,11 +275,13 @@ public:
 private:
 	bool initUIO()
 	{
-		if(m_uioManager.Init())
+		if (m_uioManager.Init())
 		{
 			m_mode      = Mode::UIO;
 			m_nameRead  = "/dev/uio";
 			m_nameWrite = "/dev/uio";
+			m_valid     = true;
+			return true;
 		}
 
 		return false;
