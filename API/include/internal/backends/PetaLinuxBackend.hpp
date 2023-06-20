@@ -31,14 +31,17 @@
 /////////////////////////
 
 #include <cstring>
+#include <fstream>
 #include <mutex>
 #include <string>
 
 #include "../CLAPBackend.hpp"
 #include "../Constants.hpp"
 #include "../Defines.hpp"
+#include "../FileOps.hpp"
 #include "../Logger.hpp"
 #include "../Timer.hpp"
+#include "../Uio.hpp"
 #include "../UserInterruptBase.hpp"
 #include "../Utils.hpp"
 
@@ -59,7 +62,7 @@ public:
 
 	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
 	{
-		if (!DEVICE_HANDLE_VALID(m_fd))
+		if (DEVICE_HANDLE_VALID(m_fd))
 			Unset();
 
 		m_devName = "/dev/uio" + std::to_string(interruptNum);
@@ -77,20 +80,17 @@ public:
 
 		m_pollFd.fd     = m_fd;
 		m_pollFd.events = POLLIN;
-		m_interruptNum = interruptNum;
+		m_interruptNum  = interruptNum;
 
 		unmask();
 	}
 
 	void Unset()
 	{
-		if (!DEVICE_HANDLE_VALID(m_fd)) return;
-
-		CLOSE_DEVICE(m_fd);
-		m_fd = INVALID_HANDLE;
+		CloseDevice(m_fd);
 
 		m_pollFd.fd = -1;
-		m_pReg = nullptr;
+		m_pReg      = nullptr;
 	}
 
 	bool IsSet() const
@@ -167,18 +167,26 @@ class PetaLinuxBackend : virtual public CLAPBackend
 {
 	DISABLE_COPY_ASSIGN_MOVE(PetaLinuxBackend)
 
+	enum class Mode
+	{
+		DevMem,
+		UIO
+	};
+
 public:
 	PetaLinuxBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0) :
-		m_memDev("/dev/mem"),
 		m_readMutex(),
 		m_writeMutex()
 	{
-		m_nameRead    = m_memDev;
-		m_nameWrite   = m_memDev;
 		m_backendName = "PetaLinux";
 
-		m_fd    = OpenDevice(m_memDev);
-		m_valid = (m_fd >= 0);
+		if (!initUIO())
+		{
+			m_nameRead  = m_devMem;
+			m_nameWrite = m_devMem;
+			m_fd        = OpenDevice(m_devMem);
+			m_valid     = (m_fd >= 0);
+		}
 	}
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
@@ -194,42 +202,22 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		// Split the address into a rough base address and the specific offset
-		// this is required to prevent alignment problems when performing the mapping with mmap
-		uint64_t addrBase   = addr & 0xFFFFFFFFFFFF0000;
-		uint64_t addrOffset = addr & 0xFFFF;
-
-		uint64_t count     = 0;
-		off_t offset       = addr;
-		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
+		uint64_t count = 0;
 
 		Timer timer;
-
 		timer.Start();
 
-		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
-
-		while (count < sizeInByte)
-		{
-			uint64_t bytes = sizeInByte - count;
-
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			std::memcpy(pByteData + count, (void*)(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), bytes);
-
-			count += bytes;
-			offset += bytes;
-		}
-
-		munmap(pMapBase, 0x10000 + sizeInByte);
+		if (m_mode == Mode::DevMem)
+			count = readDevMem(addr, pData, sizeInByte);
+		else
+			count = readUIO(addr, pData, sizeInByte);
 
 		timer.Stop();
 
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG("PetaLinuxBackend") << m_nameRead << ", failed to read 0x" << std::hex << sizeInByte << " byte from addr 0x" << addr << " (read: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
 
@@ -250,40 +238,22 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		uint64_t addrBase   = addr & 0xFFFFFFFFFFFF0000;
-		uint64_t addrOffset = addr & 0xFFFF;
-
-		uint64_t count           = 0;
-		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
-		off_t offset             = addr;
+		uint64_t count = 0;
 
 		Timer timer;
-
 		timer.Start();
 
-		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
-
-		while (count < sizeInByte)
-		{
-			uint64_t bytes = sizeInByte - count;
-
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			memcpy((void*)(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), pByteData + count, bytes);
-
-			count += bytes;
-			offset += bytes;
-		}
-
-		munmap(pMapBase, 0x10000 + sizeInByte);
+		if (m_mode == Mode::DevMem)
+			count = writeDevMem(addr, pData, sizeInByte);
+		else
+			count = writeUIO(addr, pData, sizeInByte);
 
 		timer.Stop();
 
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_memDev << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG("PetaLinuxBackend") << m_nameWrite << ", failed to write 0x" << std::hex << sizeInByte << " byte to addr 0x" << addr << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
 
@@ -302,10 +272,111 @@ public:
 	}
 
 private:
-	std::string m_memDev;
-	int32_t m_fd = -1;
+	bool initUIO()
+	{
+		if(m_uioManager.Init())
+		{
+			m_mode      = Mode::UIO;
+			m_nameRead  = "/dev/uio";
+			m_nameWrite = "/dev/uio";
+		}
+
+		return false;
+	}
+
+	uint64_t readUIO(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
+			throw CLAPException(ss.str());
+		}
+
+		return dev.Read(addr, pData, sizeInByte);
+	}
+
+	uint64_t writeUIO(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
+			throw CLAPException(ss.str());
+		}
+
+		return dev.Write(addr, pData, sizeInByte);
+	}
+
+	uint64_t readDevMem(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
+	{
+		// Split the address into a rough base address and the specific offset
+		// this is required to prevent alignment problems when performing the mapping with mmap
+		uint64_t addrBase   = addr & 0xFFFFFFFFFFFF0000;
+		uint64_t addrOffset = addr & 0xFFFF;
+
+		uint64_t count     = 0;
+		off_t offset       = addr;
+		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
+
+		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
+
+		while (count < sizeInByte)
+		{
+			uint64_t bytes = sizeInByte - count;
+
+			if (bytes > RW_MAX_SIZE)
+				bytes = RW_MAX_SIZE;
+
+			std::memcpy(pByteData + count, reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), bytes);
+
+			count += bytes;
+			offset += bytes;
+		}
+
+		munmap(pMapBase, 0x10000 + sizeInByte);
+
+		return count;
+	}
+
+	uint64_t writeDevMem(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
+	{
+		uint64_t addrBase   = addr & 0xFFFFFFFFFFFF0000;
+		uint64_t addrOffset = addr & 0xFFFF;
+
+		uint64_t count           = 0;
+		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
+		off_t offset             = addr;
+
+		void* pMapBase = mmap(NULL, 0x10000 + sizeInByte, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, addrBase);
+
+		while (count < sizeInByte)
+		{
+			uint64_t bytes = sizeInByte - count;
+
+			if (bytes > RW_MAX_SIZE)
+				bytes = RW_MAX_SIZE;
+
+			std::memcpy(reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(pMapBase) + addrOffset + count), pByteData + count, bytes);
+
+			count += bytes;
+			offset += bytes;
+		}
+
+		munmap(pMapBase, 0x10000 + sizeInByte);
+
+		return count;
+	}
+
+private:
+	const std::string m_devMem = "/dev/mem";
+	int32_t m_fd               = -1;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
+	Mode m_mode                       = Mode::DevMem;
+	UioManager<uint32_t> m_uioManager = {};
 };
 
 } // namespace backends
