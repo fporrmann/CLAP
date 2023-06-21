@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: Logger.hpp
  *  Copyright (c) 2023 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,12 +21,13 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
 
 #include <iostream>
+#include <mutex>
 #include <sstream>
 
 namespace clap
@@ -43,11 +44,13 @@ enum class Verbosity
 	VB_NONE    = 255
 };
 
+// Partially based on: https://stackoverflow.com/a/57554337
+
+// Required for std::endl
+using EndlType = std::ostream&(std::ostream&);
+
 class Logger
 {
-	// Required for std::endl
-	using EndlType = std::ostream&(std::ostream&);
-
 public:
 	Logger(const Verbosity& lvl, const Verbosity& verbosity = Verbosity::VB_INFO, std::ostream& outStream = std::cout) :
 		m_lvl(lvl),
@@ -60,27 +63,90 @@ public:
 		m_verbosity = v;
 	}
 
-	// Required for std::endl
+	// Required for pure std::endl calls (e.g. Logger << std::endl)
 	Logger& operator<<(EndlType endl)
 	{
-		if (m_lvl >= m_verbosity)
-			m_outStream << endl;
+		log(endl);
 		return *this;
 	}
 
 	template<typename T>
-	Logger& operator<<(const T& data)
+	void log(T& message)
 	{
+		std::lock_guard<std::mutex> lock(s_logMutex);
+
 		if (m_lvl >= m_verbosity)
-			m_outStream << data;
-		return *this;
+			m_outStream << message.str();
+
+		message.flush();
+	}
+
+	// Specialization for std::endl
+	void log(EndlType endl)
+	{
+		std::lock_guard<std::mutex> lock(s_logMutex);
+
+		if (m_lvl >= m_verbosity)
+			m_outStream << endl;
 	}
 
 private:
 	Verbosity m_lvl;
 	Verbosity m_verbosity;
 	std::ostream& m_outStream;
+	static std::mutex s_logMutex;
 };
+
+std::mutex Logger::s_logMutex;
+
+class LoggerBuffer
+{
+public:
+	LoggerBuffer(const LoggerBuffer&)            = delete;
+	LoggerBuffer& operator=(const LoggerBuffer&) = delete;
+	LoggerBuffer& operator=(LoggerBuffer&&)      = delete;
+
+	LoggerBuffer(Logger* pLogger) :
+		m_stream(),
+		m_pLogger(pLogger)
+	{}
+
+	LoggerBuffer(LoggerBuffer&& buf) :
+		m_stream(std::move(buf.m_stream)),
+		m_pLogger(buf.m_pLogger)
+	{}
+
+	template<typename T>
+	LoggerBuffer& operator<<(T&& message)
+	{
+		m_stream << std::forward<T>(message);
+		return *this;
+	}
+
+	LoggerBuffer& operator<<(EndlType&& endl)
+	{
+		m_stream << std::forward<EndlType>(endl);
+		return *this;
+	}
+
+	~LoggerBuffer()
+	{
+		if (m_pLogger)
+			m_pLogger->log(m_stream);
+	}
+
+private:
+	std::stringstream m_stream;
+	Logger* m_pLogger;
+};
+
+template<typename T>
+LoggerBuffer operator<<(Logger& logger, T&& message)
+{
+	LoggerBuffer buf(&logger);
+	buf << std::forward<T>(message);
+	return buf;
+}
 
 #ifdef DISABLE_LOGGING
 static Logger g_none(Verbosity::VB_DEBUG, Verbosity::VB_NONE);
