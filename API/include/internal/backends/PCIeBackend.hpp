@@ -218,10 +218,10 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
+		if (!IS_ALIGNED(pData, ALIGNMENT))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
+			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << ALIGNMENT << " bytes.";
 			throw CLAPException(ss.str());
 		}
 
@@ -296,10 +296,10 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		if (!IS_ALIGNED(pData, XDMA_ALIGNMENT))
+		if (!IS_ALIGNED(pData, ALIGNMENT))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << XDMA_ALIGNMENT << " bytes.";
+			ss << CLASS_TAG("PCIeBackend") << "pData is not aligned to " << ALIGNMENT << " bytes.";
 			throw CLAPException(ss.str());
 		}
 

@@ -34,11 +34,11 @@
 namespace clap
 {
 #ifdef EMBEDDED_XILINX
-using XDMABuffer = std::vector<uint8_t>;
+using CLAPBuffer = std::vector<uint8_t>;
 #else
 #include "AlignmentAllocator.hpp"
 template<class T>
-using XDMABuffer = std::vector<T, clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>;
+using CLAPBuffer = std::vector<T, clap::internal::AlignmentAllocator<T, ALIGNMENT>>;
 #endif
 
 using CLAPPtr = std::shared_ptr<class CLAP>;

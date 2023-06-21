@@ -33,7 +33,7 @@
 //   - Would require some edits to the memory manager
 //   - Would require that the DDR address is below 4GB
 // --------------------------------------------------------------------------------------------
-// - Try to force the use of aligned memory, e.g., by using the XXDMABuffer type, alternative force vector types to be aligned with the clapAlignmentAllocator
+// - Try to force the use of aligned memory, e.g., by using the CLAPBuffer type, alternative force vector types to be aligned with the clapAlignmentAllocator
 //   - Maybe prevent passing for custom memory addresses alltogether
 // --------------------------------------------------------------------------------------------
 // - Replace boolean flags with enums for better readability
@@ -421,7 +421,7 @@ public:
 	/// @param buffer XDMA buffer to read into
 	/// @param sizeInByte Size of the XDMA buffer in bytes
 	template<typename T>
-	void Read(const Memory& mem, XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	void Read(const Memory& mem, CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 		if (size > mem.GetSize())
@@ -447,7 +447,7 @@ public:
 	/// @param buffer XDMA buffer to read into
 	/// @param sizeInByte Size of the XDMA buffer in bytes
 	template<typename T>
-	void Read(const uint64_t& addr, XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
+	void Read(const uint64_t& addr, CLAPBuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
@@ -464,7 +464,7 @@ public:
 	/// @param addr Address to read from
 	/// @param buffer XDMA buffer to read into
 	template<typename T>
-	void Read(const uint64_t& addr, XDMABuffer<T>& buffer)
+	void Read(const uint64_t& addr, CLAPBuffer<T>& buffer)
 	{
 		Read(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
@@ -475,9 +475,9 @@ public:
 	/// @param sizeInByte Size of the data buffer in bytes
 	/// @return XDMA buffer containing the read data
 	template<typename T>
-	XDMABuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint32_t& sizeInByte)
+	CLAPBuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint32_t& sizeInByte)
 	{
-		XDMABuffer<T> buffer = XDMABuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
+		CLAPBuffer<T> buffer = CLAPBuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
 		Read<T>(addr, buffer, sizeInByte);
 		return buffer;
 	}
@@ -491,7 +491,7 @@ public:
 	{
 		const uint32_t size = static_cast<uint32_t>(sizeof(T));
 
-		XDMABuffer<uint8_t> data = Read<uint8_t>(addr, size);
+		CLAPBuffer<uint8_t> data = Read<uint8_t>(addr, size);
 		T res;
 		std::memcpy(&res, data.data(), size);
 		return res;
@@ -505,7 +505,7 @@ public:
 	void Read(const uint64_t& addr, T& buffer)
 	{
 		const uint32_t size      = static_cast<uint32_t>(sizeof(T));
-		XDMABuffer<uint8_t> data = Read<uint8_t>(addr, size);
+		CLAPBuffer<uint8_t> data = Read<uint8_t>(addr, size);
 		std::memcpy(&buffer, data.data(), size);
 	}
 
@@ -514,7 +514,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
-	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
 	void Read(const uint64_t& addr, std::vector<T, A>& data)
 	{
 		std::size_t size = sizeof(T);
@@ -621,7 +621,7 @@ public:
 	/// @param buffer XDMA Buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
-	void Write(const Memory& mem, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	void Write(const Memory& mem, const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
 		if (size > mem.GetSize())
@@ -647,7 +647,7 @@ public:
 	/// @param buffer XDMA Buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
-	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer, const uint64_t& sizeInByte)
+	void Write(const uint64_t& addr, const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
@@ -664,7 +664,7 @@ public:
 	/// @param addr Address to write to
 	/// @param buffer XDMA Buffer containing the data to write
 	template<typename T>
-	void Write(const uint64_t& addr, const XDMABuffer<T>& buffer)
+	void Write(const uint64_t& addr, const CLAPBuffer<T>& buffer)
 	{
 		Write(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
@@ -676,8 +676,8 @@ public:
 	template<typename T>
 	void Write(const uint64_t& addr, const T& data)
 	{
-		// Create a temporary XDMABuffer containing the data, in order to properly align the data
-		const XDMABuffer<T> tmp = XDMABuffer<T>(1, data);
+		// Create a temporary CLAPBuffer containing the data, in order to properly align the data
+		const CLAPBuffer<T> tmp = CLAPBuffer<T>(1, data);
 		Write<T>(addr, tmp);
 	}
 
@@ -686,7 +686,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
 	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
 		Write(addr, data.data(), data.size() * sizeof(T));
@@ -774,7 +774,7 @@ public:
 	/// @param buffer XDMA buffer to read into
 	/// @param sizeInByte Number of bytes to read
 	template<typename T>
-	void StartReadStream(XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
+	void StartReadStream(CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
 		startReadStream(buffer.data(), size);
@@ -785,7 +785,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
-	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
 	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -797,7 +797,7 @@ public:
 	/// @param buffer XDMA buffer containing the data to write
 	/// @param sizeInByte Number of bytes to write
 	template<typename T>
-	void StartWriteStream(const XDMABuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
+	void StartWriteStream(const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
 		startWriteStream(buffer.data(), size);
@@ -808,7 +808,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	template<class T, class A = clap::internal::AlignmentAllocator<T, XDMA_ALIGNMENT>>
+	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
 	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -944,7 +944,7 @@ private:
 
 		while (curSize < size)
 		{
-			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
+			uint64_t writeSize = std::min(size - curSize, static_cast<uint64_t>(ALIGNMENT));
 			Write(internal::XDMA_STREAM_OFFSET, reinterpret_cast<const uint8_t*>(pData) + curSize, writeSize);
 			curSize += writeSize;
 		}
@@ -967,7 +967,7 @@ private:
 
 		while (curSize < size)
 		{
-			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(XDMA_ALIGNMENT));
+			uint64_t readSize = std::min(size - curSize, static_cast<uint64_t>(ALIGNMENT));
 			Read(internal::XDMA_STREAM_OFFSET, reinterpret_cast<uint8_t*>(pData) + curSize, readSize);
 			curSize += readSize;
 		}

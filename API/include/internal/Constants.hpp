@@ -31,7 +31,7 @@
 
 namespace clap
 {
-static const std::size_t XDMA_ALIGNMENT = 4096;
+static const std::size_t ALIGNMENT = 4096;
 static const uint64_t USE_VECTOR_SIZE   = 0; // Flag to automatically calculate the byte size based on the vector size and type
 static const int32_t WAIT_INFINITE      = -1;
 static const uint8_t SAME_AS_START_BIT  = 0xFF;

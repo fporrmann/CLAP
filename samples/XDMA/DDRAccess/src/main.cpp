@@ -17,12 +17,12 @@ int main()
 	pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 	// Create host side buffer for the test data to be written to the input memory
-	clap::XDMABuffer<uint8_t> testData(TEST_DATA_SIZE, 0);
+	clap::CLAPBuffer<uint8_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
-	clap::XDMABuffer<uint8_t> testDataRB(TEST_DATA_SIZE, 0);
+	clap::CLAPBuffer<uint8_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFF,
 	// this way it is easy to observe if the process worked or not
-	clap::XDMABuffer<uint8_t> ff(TEST_DATA_SIZE, 0xFF);
+	clap::CLAPBuffer<uint8_t> ff(TEST_DATA_SIZE, 0xFF);
 
 	testData[0] = 0xDE;
 	testData[1] = 0xAD;

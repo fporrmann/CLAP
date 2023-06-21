@@ -21,12 +21,12 @@ static const uint32_t TEST_DATA_SIZE = 8;
 int main()
 {
 	// Create host side buffer for the test data to be written to the input memory
-	clap::XDMABuffer<uint32_t> testData(TEST_DATA_SIZE, 0);
+	clap::CLAPBuffer<uint32_t> testData(TEST_DATA_SIZE, 0);
 	// Create host side buffer for the data read from the destination memory
-	clap::XDMABuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
+	clap::CLAPBuffer<uint32_t> testDataRB(TEST_DATA_SIZE, 0);
 	// Create host side buffer to set the destination memory to 0xFFFFFFFF,
 	// this way it is easy to observe if the process worked or not
-	clap::XDMABuffer<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
+	clap::CLAPBuffer<uint32_t> ff(TEST_DATA_SIZE, 0xFFFFFFFF);
 
 	try
 	{
@@ -83,7 +83,7 @@ int main()
 		// interrupts are connected, the ordering of the concat used to combine the signals determines
 		// the mapping of the cores to the interrupt events.
 		// If the interrupt is not configure, polling is used to determine when the core is finished.
-		hlsTest.EnableInterrupts(1);
+		hlsTest.EnableInterrupts(2);
 
 		// Start the HLS core
 		hlsTest.Start();

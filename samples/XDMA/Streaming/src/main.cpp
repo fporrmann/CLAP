@@ -15,9 +15,9 @@ int main(int argc, char** argv)
 	clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
 
 	// Create host side buffer for the test data to be written to the input memory
-	clap::XDMABuffer<uint32_t> testData(testDataSize, 0);
+	clap::CLAPBuffer<uint32_t> testData(testDataSize, 0);
 	// Create host side buffer for the data read from the destination memory
-	clap::XDMABuffer<uint32_t> testDataRB(testDataSize, 0);
+	clap::CLAPBuffer<uint32_t> testDataRB(testDataSize, 0);
 
 	// Initialize the test data with increasing values
 	std::iota(testData.begin(), testData.end(), 0);

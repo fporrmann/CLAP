@@ -21,12 +21,12 @@ int main(int argc, char** argv)
 		testDataSize = std::atoi(argv[1]);
 
 	// Create host side buffer for the test data to be written to the input memory
-	clap::XDMABuffer<uint32_t> testData(testDataSize, 0);
+	clap::CLAPBuffer<uint32_t> testData(testDataSize, 0);
 	// Create host side buffer for the data read from the destination memory
-	clap::XDMABuffer<uint32_t> testDataRB(testDataSize, 0);
+	clap::CLAPBuffer<uint32_t> testDataRB(testDataSize, 0);
 	// Create host side buffer to set the destination memory to 0xFFFFFFFF,
 	// this way it is easy to observe if the process worked or not
-	clap::XDMABuffer<uint32_t> ff(testDataSize, 0xFFFFFFFF);
+	clap::CLAPBuffer<uint32_t> ff(testDataSize, 0xFFFFFFFF);
 
 	try
 	{
