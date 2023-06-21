@@ -64,7 +64,7 @@ public:
 		return false;
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
 		return false;
@@ -157,7 +157,13 @@ public:
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
 	{
-		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
+		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
+	}
+
+	Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName)
+	{
+		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadUIOProperty is currently not implemented by the BareMetal backend." << std::endl;
+		return MakeUnexpected();
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const

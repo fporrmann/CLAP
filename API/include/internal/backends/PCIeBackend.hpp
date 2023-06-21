@@ -101,7 +101,7 @@ public:
 		return (DEVICE_HANDLE_VALID(m_fd));
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 #ifdef _WIN32
 		LOG_ERROR << CLASS_TAG("PCIeUserInterrupt") << " Currently not implemented for Windows" << std::endl;
@@ -138,8 +138,11 @@ public:
 			if (m_pReg)
 				lastIntr = m_pReg->GetLastInterrupt();
 
-			for (auto& callback : m_callbacks)
-				callback(lastIntr);
+			if (runCallbacks)
+			{
+				for (auto& callback : m_callbacks)
+					callback(lastIntr);
+			}
 
 			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 			return true;
@@ -403,6 +406,12 @@ public:
 			ss << CLASS_TAG("PCIeBackend") << m_ctrlDeviceName << ", failed to read 0x" << std::hex << bytes << " byte to offset 0x" << offset << " (rc: 0x" << rc << ") errno: " << std::dec << errsv << " (" << strerror(errsv) << ")";
 			throw CLAPException(ss.str());
 		}
+	}
+
+	Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName)
+	{
+		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "ReadUIOProperty is currently not implemented by the PCIe backend." << std::endl;
+		return MakeUnexpected();
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const

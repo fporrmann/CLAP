@@ -43,6 +43,8 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <future>
+#include <mutex>
 #endif
 
 namespace clap
@@ -51,29 +53,49 @@ namespace internal
 {
 static std::exception_ptr g_pExcept = nullptr;
 
+#ifndef EMBEDDED_XILINX
+// TODO: Rename to indicate that this also controls whether the thread should be terminated
+// TODO: Also replace the bool with an enum
+using WatchDogFinishCallback = std::function<bool(void)>;
+#endif
+
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
 //       Find a better way, i.e., a way to interrupt the call to poll (ppoll or epoll might be a solution)
 
 #ifndef EMBEDDED_XILINX
-static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, std::condition_variable* pCv, [[maybe_unused]] const std::string& name, std::atomic<bool>* pThreadDone, const bool& dontTerminate)
+static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, [[maybe_unused]] std::condition_variable* pCv, [[maybe_unused]] const std::string& name,
+								std::atomic<bool>* pThreadDone, [[maybe_unused]] const bool& dontTerminate, [[maybe_unused]] const WatchDogFinishCallback& callback)
 {
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
 
+	bool end = !dontTerminate;
+
+	if (pUserIntr->IsSet())
+		LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
+	else
+		LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
+
 	try
 	{
-		if (pUserIntr->IsSet())
+		do
 		{
-			LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
-			while (!pThreadDone->load(std::memory_order_acquire) && (!pUserIntr->WaitForInterrupt(1000) || dontTerminate))
-				;
-		}
-		else if (pStatus)
-		{
-			LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
-			while (!pThreadDone->load(std::memory_order_acquire) && (!pStatus->PollDone() || dontTerminate))
-				std::this_thread::sleep_for(std::chrono::microseconds(1));
-		}
+			if (pUserIntr->IsSet())
+			{
+				while (!pThreadDone->load(std::memory_order_acquire) && !pUserIntr->WaitForInterrupt(1000))
+					;
+			}
+			else if (pStatus)
+			{
+				while (!pThreadDone->load(std::memory_order_acquire) && !pStatus->PollDone())
+					std::this_thread::sleep_for(std::chrono::microseconds(1));
+			}
+
+			const bool forceTerminate = pThreadDone->load(std::memory_order_acquire);
+			if (!forceTerminate && callback)
+				end = callback();
+
+		} while (!pThreadDone->load(std::memory_order_acquire) && dontTerminate && !end);
 	}
 	catch (...)
 	{
@@ -100,12 +122,18 @@ public:
 		m_pInterrupt(std::move(pInterrupt))
 #ifndef EMBEDDED_XILINX
 		,
+		m_mtx(),
 		m_waitThread(),
 		m_cv(),
 		m_threadDone(false),
 		m_timer()
 #endif
 	{
+	}
+
+	~WatchDog()
+	{
+		Stop();
 	}
 
 	// TODO: Maybe clone configurations for the existing UserInterrupt object
@@ -145,6 +173,10 @@ public:
 	bool Start(const bool& dontTerminate = false)
 	{
 #ifndef EMBEDDED_XILINX
+		// Check if the thread has finished but was not joined
+		if (m_threadDone.load(std::memory_order_acquire))
+			joinThread();
+
 		if (m_threadRunning) return false;
 
 		if (!m_pInterrupt->IsSet() && m_pStatus == nullptr)
@@ -156,7 +188,7 @@ public:
 
 		g_pExcept = nullptr;
 		m_threadDone.store(false, std::memory_order_release);
-		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone, dontTerminate);
+		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone, dontTerminate, m_callback);
 		m_threadRunning = true;
 #endif
 
@@ -170,8 +202,7 @@ public:
 
 		m_threadDone.store(true, std::memory_order_release);
 		m_cv.notify_all();
-		m_waitThread.join();
-		m_threadRunning = false;
+		joinThread();
 		checkException();
 #endif
 	}
@@ -183,12 +214,12 @@ public:
 
 		LOG_DEBUG << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
 
-		if (!m_threadRunning) return false;
+		if (!m_threadRunning)
+			return true;
 
 		if (m_threadDone.load(std::memory_order_acquire))
 		{
-			m_waitThread.join();
-			m_threadRunning = false;
+			joinThread();
 			checkException();
 			return true;
 		}
@@ -201,8 +232,7 @@ public:
 		else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
 			return false;
 
-		m_waitThread.join();
-		m_threadRunning = false;
+		joinThread();
 		checkException();
 #else
 		while (!m_pStatus->PollDone())
@@ -226,6 +256,13 @@ public:
 		m_pInterrupt->RegisterCallback(callback);
 	}
 
+	void SetFinishCallback(WatchDogFinishCallback callback)
+	{
+#ifndef EMBEDDED_XILINX
+		m_callback = callback;
+#endif
+	}
+
 private:
 	void checkException()
 	{
@@ -241,15 +278,30 @@ private:
 		}
 	}
 
+	void joinThread()
+	{
+#ifndef EMBEDDED_XILINX
+		std::lock_guard<std::mutex> lck(m_mtx);
+		if (!m_threadRunning) return;
+
+		if (m_waitThread.joinable())
+			m_waitThread.join();
+
+		m_threadRunning = false;
+#endif
+	}
+
 private:
 	std::string m_name;
 	UserInterruptPtr m_pInterrupt;
 #ifndef EMBEDDED_XILINX
+	std::mutex m_mtx;
 	std::thread m_waitThread;
 	std::condition_variable m_cv;
 	bool m_threadRunning = false;
 	std::atomic<bool> m_threadDone;
 	Timer m_timer;
+	WatchDogFinishCallback m_callback = nullptr;
 #endif
 	HasStatus* m_pStatus = nullptr;
 };

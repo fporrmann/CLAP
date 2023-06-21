@@ -98,7 +98,7 @@ public:
 		return (DEVICE_HANDLE_VALID(m_fd));
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 		if (!IsSet())
 		{
@@ -132,8 +132,11 @@ public:
 			if (m_pReg)
 				lastIntr = m_pReg->GetLastInterrupt();
 
-			for (auto& callback : m_callbacks)
-				callback(lastIntr);
+			if (runCallbacks)
+			{
+				for (auto& callback : m_callbacks)
+					callback(lastIntr);
+			}
 
 			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
@@ -371,6 +374,19 @@ private:
 		munmap(pMapBase, 0x10000 + sizeInByte);
 
 		return count;
+	}
+
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName)
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
+			throw CLAPException(ss.str());
+		}
+
+		return dev.ReadBinaryProperty<uint32_t>(propName);
 	}
 
 private:

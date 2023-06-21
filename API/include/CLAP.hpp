@@ -86,6 +86,7 @@
 #include "internal/CLAPBackend.hpp"
 #include "internal/Constants.hpp"
 #include "internal/Exceptions.hpp"
+#include "internal/Expected.hpp"
 #include "internal/Memory.hpp"
 #include "internal/Types.hpp"
 #include "internal/Utils.hpp"
@@ -149,6 +150,8 @@ public:
 	virtual void Write16(const uint64_t& addr, const uint16_t& data) = 0;
 	virtual void Write32(const uint64_t& addr, const uint32_t& data) = 0;
 	virtual void Write64(const uint64_t& addr, const uint64_t& data) = 0;
+
+	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) = 0;
 
 	uint32_t GetDevNum() const
 	{
@@ -751,6 +754,15 @@ public:
 	void Write64(const Memory& mem, const uint64_t& data)
 	{
 		write<uint64_t>(mem, data);
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	///                      UIO Property Methods                            ///
+	////////////////////////////////////////////////////////////////////////////
+
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName)
+	{
+		return m_pBackend->ReadUIOProperty(addr, propName);
 	}
 
 	////////////////////////////////////////////////////////////////////////////

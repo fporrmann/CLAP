@@ -295,7 +295,7 @@ public:
 		return count;
 	}
 
-	T ReadProperty(const std::string& name)
+	T ReadHexStringProperty(const std::string& name) const
 	{
 		std::ifstream file(m_devTreePropPath + name, std::ios::binary);
 		if (!file.is_open()) return -1;
@@ -308,10 +308,10 @@ public:
 	}
 
 	template<typename U>
-	U ReadDevTreeProperty(const std::string& property) const
+	U ReadBinaryProperty(const std::string& property) const
 	{
 		std::vector<uint8_t> propValues = readProperty(property);
-		U propValue;
+		U propValue = 0;
 
 		if (propValues.empty()) return propValue;
 
@@ -325,7 +325,7 @@ public:
 	}
 
 	template<typename U>
-	std::vector<U> ReadDevTreePropertyVec(const std::string& property) const
+	std::vector<U> ReadBinaryPropertyVec(const std::string& property) const
 	{
 		std::vector<uint8_t> propValues = readProperty(property);
 		std::vector<U> resValues;

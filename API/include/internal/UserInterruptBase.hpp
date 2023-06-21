@@ -82,7 +82,7 @@ public:
 
 	virtual bool IsSet() const = 0;
 
-	virtual bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE) = 0;
+	virtual bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true) = 0;
 
 	void RegisterCallback([[maybe_unused]] const std::function<void(uint32_t)>& callback)
 	{

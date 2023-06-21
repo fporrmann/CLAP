@@ -65,7 +65,7 @@ public:
 		return true;
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 		std::mutex mtx;
 		std::unique_lock<std::mutex> lck(mtx);
@@ -88,8 +88,11 @@ public:
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
-		for (auto& callback : m_callbacks)
-			callback(lastIntr);
+		if (runCallbacks)
+		{
+			for (auto& callback : m_callbacks)
+				callback(lastIntr);
+		}
 
 		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 
