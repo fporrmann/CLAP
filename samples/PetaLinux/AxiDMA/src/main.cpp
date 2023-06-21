@@ -1,4 +1,5 @@
 #include <iostream>
+#include <numeric>
 
 #include <CLAP.hpp>
 #include <IP_Cores/AxiDMA.hpp>
@@ -41,6 +42,12 @@ int main(int argc, char** argv)
 		std::cout << "Input Buffer : " << inBuf << std::endl;
 		std::cout << "Output Buffer: " << outBuf << std::endl;
 
+		// Initialize the test data with increasing values
+		std::iota(testData.begin(), testData.end(), 0);
+
+		// Write the test data to the input buffer
+		pClap->Write(inBuf, testData);
+
 		clap::AxiDMA<uint32_t> axiDMA(pClap, AXI_DMA_BASE_ADDR);
 		// Trigger a reset in the AxiDMA
 		axiDMA.Reset();
@@ -71,10 +78,24 @@ int main(int argc, char** argv)
 
 		// Stop the AxiDMA engine
 		axiDMA.Stop();
-		axiInterruptController.Stop();
 
 		// Readback the result data from the DDR memory.
-		pClap->Read(outBuf, testDataRB.data());
+		pClap->Read(outBuf, testDataRB);
+
+		// Validate the result data
+		bool success = true;
+		for (uint32_t i = 0; i < testDataSize; i++)
+		{
+			if (testDataRB[i] != testData[i])
+				success = false;
+		}
+
+		if (success)
+			std::cout << "Test successful" << std::endl;
+		else
+			std::cout << "Test failed" << std::endl;
+
+		axiInterruptController.Stop();
 	}
 	catch (std::exception& e)
 	{
