@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Allocate memory for the data on the devices DDR
-		clap::Memory inBuf  = pClap->AllocMemoryDDR(testDataSize, static_cast<uint64_t>(sizeof(uint32_t)));
-		clap::Memory outBuf = pClap->AllocMemoryDDR(testDataSize, static_cast<uint64_t>(sizeof(uint32_t)));
+		clap::Memory inBuf  = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
+		clap::Memory outBuf = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
 
 		std::cout << "Input Buffer : " << inBuf << std::endl;
 		std::cout << "Output Buffer: " << outBuf << std::endl;
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 		axiDMA.Reset();
 
 		clap::AxiInterruptController axiInterruptController(pClap, AXI_INTERRUPT_CONTROLLER_BASE_ADDR);
-		axiInterruptController.Start(0);
+		axiInterruptController.Start(1);
 
 		axiDMA.UseInterruptController(axiInterruptController);
 

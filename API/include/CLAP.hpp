@@ -48,6 +48,8 @@
 // --------------------------------------------------------------------------------------------
 // - Generalize some logging calls, e.g., Read/Write runtime in backend
 // --------------------------------------------------------------------------------------------
+// - Make logging thread safe -- Problem is the streaming operator, as each << call is a separate call
+// --------------------------------------------------------------------------------------------
 // - Write examples using AxiDMA and VDMA
 // --------------------------------------------------------------------------------------------
 // - Address of memory can differ between internal and external
@@ -337,7 +339,7 @@ public:
 	/// @param sizeOfElement Size of one element in bytes
 	/// @param memIdx Index of the memory region to allocate from
 	/// @return Allocated memory block
-	Memory AllocMemory(const MemoryType& type, const uint64_t& elements, const uint64_t& sizeOfElement, const int32_t& memIdx = -1)
+	Memory AllocMemory(const MemoryType& type, const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(type, elements * sizeOfElement, memIdx);
 	}
@@ -347,7 +349,7 @@ public:
 	/// @param sizeOfElement Size of one element in bytes
 	/// @param memIdx Index of the memory region to allocate from
 	/// @return Allocated DDR memory block
-	Memory AllocMemoryDDR(const uint64_t& elements, const uint64_t& sizeOfElement, const int32_t& memIdx = -1)
+	Memory AllocMemoryDDR(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::DDR, elements, sizeOfElement, memIdx);
 	}
@@ -357,7 +359,7 @@ public:
 	/// @param sizeOfElement Size of one element in bytes
 	/// @param memIdx Index of the memory region to allocate from
 	/// @return Allocated BRAM memory block
-	Memory AllocMemoryBRAM(const uint64_t& elements, const uint64_t& sizeOfElement, const int32_t& memIdx = -1)
+	Memory AllocMemoryBRAM(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::BRAM, elements, sizeOfElement, memIdx);
 	}

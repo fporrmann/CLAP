@@ -49,8 +49,8 @@ int main()
 		testData[7] = 0xABCD;
 
 		// Allocate memory for the data on the devices DDR
-		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
-		clap::Memory outBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, static_cast<uint64_t>(sizeof(uint32_t)));
+		clap::Memory inBuf  = pClap->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
+		clap::Memory outBuf = pClap->AllocMemoryDDR(TEST_DATA_SIZE, sizeof(uint32_t));
 
 		// Set the addresses of the input and output memory used in the HLS core.
 		hlsTest.SetDataAddr(TEST_CONTROL_ADDR_PDDRIN_DATA, inBuf);
