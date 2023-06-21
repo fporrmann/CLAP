@@ -590,20 +590,3 @@ private:
 
 } // namespace internal
 } // namespace clap
-
-/*
-int main()
-{
-	UioManager uioMgr;
-
-	const UioDev dmaDev = uioMgr.FindUioDevByAddr(0x40010000);
-
-	std::cout << dmaDev << std::endl;
-
-	uint32_t addrWidth = dmaDev.ReadDevTreeProperty<uint32_t>("xlnx,sg-length-width");
-
-	std::cout << "Address width: " << addrWidth << std::endl;
-
-	return 0;
-}
-*/
