@@ -32,6 +32,7 @@
 #include "AxiInterruptController.hpp"
 
 #include <cstdint>
+#include <queue>
 
 namespace clap
 {
@@ -62,6 +63,13 @@ class AxiDMA : public internal::RegisterControlBase
 		S2MM_LENGTH       = 0x58
 	};
 
+	struct TransferChunk
+	{
+		const DMAChannel channel;
+		const T addr;
+		const uint32_t length;
+	};
+
 public:
 	enum DMAInterrupts
 	{
@@ -86,9 +94,42 @@ public:
 
 		m_watchDogMM2S.SetStatusRegister(&m_mm2sStatReg);
 		m_watchDogS2MM.SetStatusRegister(&m_s2mmStatReg);
+
+		m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
+		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
+
+		DetectBufferLengthRegWidth();
 	}
 
 	////////////////////////////////////////
+
+	bool OnMM2SFinished()
+	{
+		LOG_DEBUG << CLASS_TAG("AxiDMA") << "MM2S Chunk finished" << std::endl;
+
+		// Check if there are more chunks to transfer
+		if (!m_mm2sChunks.empty())
+		{
+			startMM2STransfer();
+			return false;
+		}
+
+		return true;
+	}
+
+	bool OnS2MMFinished()
+	{
+		LOG_DEBUG << CLASS_TAG("AxiDMA") << "S2MM Chunk finished" << std::endl;
+
+		// Check if there are more chunks to transfer
+		if (!m_s2mmChunks.empty())
+		{
+			startS2MMTransfer();
+			return false;
+		}
+
+		return true;
+	}
 
 	// Starts both channels
 	void Start(const T& srcAddr, const uint32_t& srcLength, const T& dstAddr, const uint32_t& dstLength)
@@ -115,38 +156,52 @@ public:
 
 		if (channel == DMAChannel::MM2S)
 		{
-			if (!m_watchDogMM2S.Start())
+			uint32_t remainingLength = length;
+			T currentAddr            = addr;
+
+			do
+			{
+				uint32_t currentLength = std::min(remainingLength, m_maxTransferLength);
+
+				m_mm2sChunks.push({ channel, currentAddr, currentLength });
+
+				currentAddr += currentLength;
+				remainingLength -= currentLength;
+
+			} while (remainingLength > 0);
+
+			if (!m_watchDogMM2S.Start(true))
 			{
 				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for MM2S already running!" << std::endl;
 				return;
 			}
 
-			m_mm2sStatReg.Reset();
-
-			// Set the RunStop bit
-			m_mm2sCtrlReg.Start();
-			// Set the source address
-			setMM2SSrcAddr(addr);
-			// Set the amount of bytes to transfer
-			setMM2SByteLength(length);
+			startMM2STransfer();
 		}
 
 		if (channel == DMAChannel::S2MM)
 		{
-			if (!m_watchDogS2MM.Start())
+			uint32_t remainingLength = length;
+			T currentAddr            = addr;
+
+			do
+			{
+				uint32_t currentLength = std::min(remainingLength, m_maxTransferLength);
+
+				m_s2mmChunks.push({ channel, currentAddr, currentLength });
+
+				currentAddr += currentLength;
+				remainingLength -= currentLength;
+
+			} while (remainingLength > 0);
+
+			if (!m_watchDogS2MM.Start(true))
 			{
 				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for S2MM already running!" << std::endl;
 				return;
 			}
 
-			m_s2mmStatReg.Reset();
-
-			// Set the RunStop bit
-			m_s2mmCtrlReg.Start();
-			// Set the destination address
-			setS2MMDestAddr(addr);
-			// Set the amount of bytes to transfer
-			setS2MMByteLength(length);
+			startS2MMTransfer();
 		}
 	}
 
@@ -170,9 +225,20 @@ public:
 	bool WaitForFinish(const DMAChannel& channel, const int32_t& timeoutMS = WAIT_INFINITE)
 	{
 		if (channel == DMAChannel::MM2S)
-			return m_watchDogMM2S.WaitForFinish(timeoutMS);
+		{
+			if (!m_watchDogMM2S.WaitForFinish(timeoutMS))
+				return false;
+
+			return true;
+
+		}
 		else
-			return m_watchDogS2MM.WaitForFinish(timeoutMS);
+		{
+			if (!m_watchDogS2MM.WaitForFinish(timeoutMS))
+				return false;
+
+			return true;
+		}
 	}
 
 	////////////////////////////////////////
@@ -249,6 +315,27 @@ public:
 
 	////////////////////////////////////////
 
+	void DetectBufferLengthRegWidth()
+	{
+		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,sg-length-width");
+		if (res)
+		{
+			m_bufLenRegWidth = static_cast<uint32_t>(res.Value());
+			updateMaxTransferLength();
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << std::endl;
+		}
+	}
+
+	void SetBufferLengthRegWidth(const uint32_t& width)
+	{
+		m_bufLenRegWidth = width;
+		updateMaxTransferLength();
+	}
+
+	////////////////////////////////////////
+
+	////////////////////////////////////////
+
 	T GetMM2SSrcAddr()
 	{
 		return readRegister<T>(MM2S_SA);
@@ -278,6 +365,50 @@ public:
 private:
 	////////////////////////////////////////
 
+	void startMM2STransfer()
+	{
+		if (m_mm2sChunks.empty())
+		{
+			LOG_ERROR << CLASS_TAG("AxiDMA") << "No MM2S chunks available!" << std::endl;
+			return;
+		}
+
+		const TransferChunk chunk = m_mm2sChunks.front();
+		m_mm2sChunks.pop();
+
+		m_mm2sStatReg.Reset();
+
+		// Set the RunStop bit
+		m_mm2sCtrlReg.Start();
+		// Set the source address
+		setMM2SSrcAddr(chunk.addr);
+		// Set the amount of bytes to transfer
+		setMM2SByteLength(chunk.length);
+	}
+
+	void startS2MMTransfer()
+	{
+		if (m_s2mmChunks.empty())
+		{
+			LOG_ERROR << CLASS_TAG("AxiDMA") << "No S2MM chunks available!" << std::endl;
+			return;
+		}
+
+		const TransferChunk chunk = m_s2mmChunks.front();
+		m_s2mmChunks.pop();
+
+		m_s2mmStatReg.Reset();
+
+		// Set the RunStop bit
+		m_s2mmCtrlReg.Start();
+		// Set the destination address
+		setS2MMDestAddr(chunk.addr);
+		// Set the amount of bytes to transfer
+		setS2MMByteLength(chunk.length);
+	}
+
+	////////////////////////////////////////
+
 	void setMM2SSrcAddr(const T& addr)
 	{
 		writeRegister<T>(MM2S_SA, addr);
@@ -300,6 +431,14 @@ private:
 	void setS2MMByteLength(const uint32_t& length)
 	{
 		writeRegister<uint32_t>(S2MM_LENGTH, length);
+	}
+
+	////////////////////////////////////////
+
+	void updateMaxTransferLength()
+	{
+		// TODO: the -4 might need to be adjusted to match the address width or another property
+		m_maxTransferLength = (1 << m_bufLenRegWidth) - 4;
 	}
 
 	////////////////////////////////////////
@@ -509,5 +648,11 @@ public:
 private:
 	internal::WatchDog m_watchDogMM2S;
 	internal::WatchDog m_watchDogS2MM;
+
+	uint32_t m_bufLenRegWidth    = 14;     // Default AXI DMA width of the buffer length register is 14 bits
+	uint32_t m_maxTransferLength = 0x3FFC; // Default AXI DMA max transfer length is 16K
+
+	std::queue<TransferChunk> m_mm2sChunks = {};
+	std::queue<TransferChunk> m_s2mmChunks = {};
 };
 } // namespace clap
