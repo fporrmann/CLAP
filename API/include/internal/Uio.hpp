@@ -339,10 +339,10 @@ public:
 		std::copy(propValues.begin(), propValues.end(), reinterpret_cast<uint8_t*>(resValues.data()));
 
 		// Convert each property value from big endian to little endian
-		for (U& propValue : propValues)
-			propValue = ntohl(propValue);
+		for (U& val : resValues)
+			val = ntohl(val);
 
-		return propValues;
+		return resValues;
 	}
 
 	const std::string& GetName() const
