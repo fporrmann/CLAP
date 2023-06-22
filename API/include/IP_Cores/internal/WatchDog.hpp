@@ -43,7 +43,6 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
-#include <future>
 #include <mutex>
 #endif
 
@@ -82,7 +81,7 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 		{
 			if (pUserIntr->IsSet())
 			{
-				while (!pThreadDone->load(std::memory_order_acquire) && !pUserIntr->WaitForInterrupt(1000))
+				while (!pThreadDone->load(std::memory_order_acquire) && !pUserIntr->WaitForInterrupt(100))
 					;
 			}
 			else if (pStatus)
