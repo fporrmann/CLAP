@@ -98,8 +98,8 @@ public:
 		m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
 		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
 
-		DetectBufferLengthRegWidth();
-		DetectDataWidth();
+		detectBufferLengthRegWidth();
+		detectDataWidth();
 	}
 
 	////////////////////////////////////////
@@ -316,29 +316,6 @@ public:
 
 	////////////////////////////////////////
 
-	void DetectBufferLengthRegWidth()
-	{
-		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,sg-length-width");
-		if (res)
-		{
-			m_bufLenRegWidth = static_cast<uint32_t>(res.Value());
-			updateMaxTransferLength();
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << " bit" << std::endl;
-		}
-	}
-
-	void DetectDataWidth()
-	{
-		const std::string addr = utils::Hex2Str(m_ctrlOffset);
-		Expected<uint64_t>
-			res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
-		if (res)
-		{
-			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
-		}
-	}
-
 	/// @brief Sets the buffer length register width
 	/// @param width The buffer length register width in bits
 	void SetBufferLengthRegWidth(const uint32_t& width)
@@ -478,6 +455,29 @@ private:
 	}
 
 	////////////////////////////////////////
+
+	void detectBufferLengthRegWidth()
+	{
+		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,sg-length-width");
+		if (res)
+		{
+			m_bufLenRegWidth = static_cast<uint32_t>(res.Value());
+			updateMaxTransferLength();
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << " bit" << std::endl;
+		}
+	}
+
+	void detectDataWidth()
+	{
+		const std::string addr = utils::Hex2Str(m_ctrlOffset);
+		Expected<uint64_t>
+			res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
+		if (res)
+		{
+			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
+		}
+	}
 
 	void updateMaxTransferLength()
 	{
