@@ -443,7 +443,6 @@ private:
 
 	////////////////////////////////////////
 
-public:
 	class ControlRegister : public internal::Register<uint32_t>
 	{
 	public:
@@ -639,13 +638,12 @@ public:
 		}
 	};
 
-public:
+private:
 	MM2SControlRegister m_mm2sCtrlReg = MM2SControlRegister();
 	MM2SStatusRegister m_mm2sStatReg  = MM2SStatusRegister();
 	S2MMControlRegister m_s2mmCtrlReg = S2MMControlRegister();
 	S2MMStatusRegister m_s2mmStatReg  = S2MMStatusRegister();
 
-private:
 	internal::WatchDog m_watchDogMM2S;
 	internal::WatchDog m_watchDogS2MM;
 
