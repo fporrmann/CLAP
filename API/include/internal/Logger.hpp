@@ -46,8 +46,8 @@ enum class Verbosity
 
 // Partially based on: https://stackoverflow.com/a/57554337
 
-// Required for std::endl
-using EndlType = std::ostream&(std::ostream&);
+// Required for ostream manipulators (e.g. std::endl or std::flush)
+using ManipType = std::ostream&(std::ostream&);
 
 class Logger
 {
@@ -63,10 +63,10 @@ public:
 		m_verbosity = v;
 	}
 
-	// Required for pure std::endl calls (e.g. Logger << std::endl)
-	Logger& operator<<(EndlType endl)
+	// Required for pure std::endl / std::flush calls (e.g. Logger << std::endl)
+	Logger& operator<<(ManipType manip)
 	{
-		log(endl);
+		log(manip);
 		return *this;
 	}
 
@@ -81,13 +81,13 @@ public:
 		message.flush();
 	}
 
-	// Specialization for std::endl
-	void log(EndlType endl)
+	// Specialization for ostream manipulators (e.g. std::endl or std::flush)
+	void log(ManipType manip)
 	{
 		std::lock_guard<std::mutex> lock(s_logMutex);
 
 		if (m_lvl >= m_verbosity)
-			m_outStream << endl;
+			m_outStream << manip;
 	}
 
 private:
@@ -123,9 +123,9 @@ public:
 		return *this;
 	}
 
-	LoggerBuffer& operator<<(EndlType&& endl)
+	LoggerBuffer& operator<<(ManipType manip)
 	{
-		m_stream << std::forward<EndlType>(endl);
+		m_stream << manip;
 		return *this;
 	}
 
