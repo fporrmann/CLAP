@@ -99,6 +99,7 @@ public:
 		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
 
 		DetectBufferLengthRegWidth();
+		DetectDataWidth();
 	}
 
 	////////////////////////////////////////
@@ -322,14 +323,43 @@ public:
 		{
 			m_bufLenRegWidth = static_cast<uint32_t>(res.Value());
 			updateMaxTransferLength();
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << std::endl;
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << " bit" << std::endl;
 		}
 	}
 
+	void DetectDataWidth()
+	{
+		const std::string addr = utils::Hex2Str(m_ctrlOffset);
+		Expected<uint64_t>
+			res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
+		if (res)
+		{
+			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
+		}
+	}
+
+	/// @brief Sets the buffer length register width
+	/// @param width The buffer length register width in bits
 	void SetBufferLengthRegWidth(const uint32_t& width)
 	{
 		m_bufLenRegWidth = width;
 		updateMaxTransferLength();
+	}
+
+	/// @brief Sets the data width of the Axi DMA in bytes
+	/// @param width The data width in bytes
+	void SetDataWidth(const uint32_t& width)
+	{
+		m_dataWidth = width;
+		updateMaxTransferLength();
+	}
+
+	/// @brief Sets the data width of the Axi DMA in bits
+	/// @param width The data width in bits
+	void SetDataWidthBits(const uint32_t& width)
+	{
+		SetDataWidth(width / 8);
 	}
 
 	////////////////////////////////////////
@@ -358,6 +388,20 @@ public:
 	uint32_t GetS2MMByteLength()
 	{
 		return readRegister<uint32_t>(S2MM_LENGTH);
+	}
+
+	////////////////////////////////////////
+
+	////////////////////////////////////////
+
+	double GetMM2SRuntime() const
+	{
+		return m_watchDogMM2S.GetRuntime();
+	}
+
+	double GetS2MMRuntime() const
+	{
+		return m_watchDogS2MM.GetRuntime();
 	}
 
 	////////////////////////////////////////
@@ -438,7 +482,7 @@ private:
 	void updateMaxTransferLength()
 	{
 		// TODO: the -4 might need to be adjusted to match the address width or another property
-		m_maxTransferLength = (1 << m_bufLenRegWidth) - 4;
+		m_maxTransferLength = (1 << m_bufLenRegWidth) - m_dataWidth;
 	}
 
 	////////////////////////////////////////
@@ -649,6 +693,8 @@ private:
 
 	uint32_t m_bufLenRegWidth    = 14;     // Default AXI DMA width of the buffer length register is 14 bits
 	uint32_t m_maxTransferLength = 0x3FFC; // Default AXI DMA max transfer length is 16K
+
+	uint32_t m_dataWidth = 4; // Default AXI DMA data width is 32 bits
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};

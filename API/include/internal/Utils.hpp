@@ -191,5 +191,12 @@ static inline std::string SizeWithSuffix(const int64_t &val)
 	return SizeWithSuffix(static_cast<double>(val));
 }
 
+static inline std::string Hex2Str(const uint64_t& val)
+{
+	std::stringstream ss;
+	ss << std::hex << val;
+	return ss.str();
+}
+
 } // namespace utils
 } // namespace clap
