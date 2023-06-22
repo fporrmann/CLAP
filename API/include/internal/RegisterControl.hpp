@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: RegisterControl.hpp
  *  Copyright (c) 2023 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -46,15 +46,15 @@ std::ostream& operator<<(std::ostream& os, const DMAChannel& channel)
 {
 	switch (channel)
 	{
-	case DMAChannel::MM2S:
-		os << "MM2S";
-		break;
-	case DMAChannel::S2MM:
-		os << "S2MM";
-		break;
-	default:
-		os << "Unknown";
-		break;
+		case DMAChannel::MM2S:
+			os << "MM2S";
+			break;
+		case DMAChannel::S2MM:
+			os << "S2MM";
+			break;
+		default:
+			os << "Unknown";
+			break;
 	}
 
 	return os;
@@ -69,11 +69,14 @@ class RegisterControlBase : public CLAPManaged
 	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
 
 public:
-	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset) :
+	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset, const bool& autoDetectIntr = true) :
 		CLAPManaged(std::move(pClap)),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
-	{}
+	{
+		if (autoDetectIntr)
+			detectInterruptID();
+	}
 
 	virtual ~RegisterControlBase() = default;
 
@@ -178,6 +181,31 @@ protected:
 		}
 	}
 
+	void detectInterruptID()
+	{
+		Expected<uint32_t> res = CLAP()->GetUIOID(m_ctrlOffset);
+		if (res)
+		{
+			m_detectedInterruptID = static_cast<int32_t>(res.Value());
+			LOG_INFO << CLASS_TAG("") << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+		}
+	}
+
+	std::vector<uint32_t> detectInterruptIDs() const
+	{
+		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
+
+		// If the property is not found, return an empty vector
+		if (!res)
+			return std::vector<uint32_t>();
+
+		std::vector<uint32_t> ret;
+		for (const uint64_t& val : res.Value())
+			ret.push_back(static_cast<uint32_t>(val));
+
+		return ret;
+	}
+
 	uint32_t getDevNum()
 	{
 		return CLAP()->GetDevNum();
@@ -186,6 +214,7 @@ protected:
 protected:
 	uint64_t m_ctrlOffset;
 	std::vector<RegisterIntf*> m_registers;
+	int32_t m_detectedInterruptID = -1;
 };
 } // namespace internal
 } // namespace clap

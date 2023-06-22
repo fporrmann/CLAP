@@ -81,7 +81,7 @@ public:
 
 public:
 	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset),
+		RegisterControlBase(pClap, ctrlOffset, false),
 		m_watchDogMM2S("AxiDMA_MM2S", pClap->MakeUserInterrupt()),
 		m_watchDogS2MM("AxiDMA_S2MM", pClap->MakeUserInterrupt())
 	{
@@ -97,6 +97,16 @@ public:
 
 		m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
 		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
+
+		// Try to detect the interrupts
+		std::vector<uint32_t> intrs = detectInterruptIDs();
+
+		if(!intrs.empty() && intrs.size() >= 4)
+		{
+			m_mm2sIntrDetected = intrs[0];
+			m_s2mmIntrDetected = intrs[2];
+			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
+		}
 
 		detectBufferLengthRegWidth();
 		detectDataWidth();
@@ -280,14 +290,22 @@ public:
 	{
 		if (channel == DMAChannel::MM2S)
 		{
+			uint32_t intrID = eventNo;
+			if(m_mm2sIntrDetected != -1)
+				intrID = static_cast<uint32_t>(m_mm2sIntrDetected);
+
 			m_mm2sCtrlReg.Update();
-			m_watchDogMM2S.InitInterrupt(getDevNum(), eventNo, &m_mm2sStatReg);
+			m_watchDogMM2S.InitInterrupt(getDevNum(), intrID, &m_mm2sStatReg);
 			m_mm2sCtrlReg.EnableInterrupts(intr);
 		}
 		else
 		{
+			uint32_t intrID = eventNo;
+			if (m_s2mmIntrDetected != -1)
+				intrID = static_cast<uint32_t>(m_s2mmIntrDetected);
+
 			m_s2mmCtrlReg.Update();
-			m_watchDogS2MM.InitInterrupt(getDevNum(), eventNo, &m_s2mmStatReg);
+			m_watchDogS2MM.InitInterrupt(getDevNum(), intrID, &m_s2mmStatReg);
 			m_s2mmCtrlReg.EnableInterrupts(intr);
 		}
 	}
@@ -698,5 +716,8 @@ private:
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};
+
+	int32_t m_mm2sIntrDetected = -1;
+	int32_t m_s2mmIntrDetected = -1;
 };
 } // namespace clap
