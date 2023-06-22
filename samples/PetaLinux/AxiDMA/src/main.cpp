@@ -67,11 +67,11 @@ int main(int argc, char** argv)
 
 			// Wait until the MM2S channel finishes (an interrupt occures on complete)
 			if (axiDMA.WaitForFinish(DMAChannel::MM2S))
-				std::cout << "Channel: MM2S finished successfully" << std::endl;
+				std::cout << "Channel: MM2S finished successfully - Runtime: " << axiDMA.GetMM2SRuntime() << " ms" << std::endl;
 
 			// Wait until the S2MM channel finishes (an interrupt occures on complete)
 			if (axiDMA.WaitForFinish(DMAChannel::S2MM))
-				std::cout << "Channel: S2MM finished successfully" << std::endl;
+				std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMA.GetS2MMRuntime() << " ms" << std::endl;
 
 			std::cout << " ---------------------- " << std::endl << std::endl;
 		}
