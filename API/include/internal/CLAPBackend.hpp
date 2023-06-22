@@ -60,10 +60,24 @@ public:
 
 	virtual ~CLAPBackend() {}
 
-	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)              = 0;
-	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)       = 0;
-	virtual void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt)       = 0;
-	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) = 0;
+	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)        = 0;
+	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) = 0;
+	virtual void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt) = 0;
+
+	virtual Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	{
+		return MakeUnexpected();
+	}
+
+	virtual Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	{
+		return MakeUnexpected();
+	}
+
+	virtual Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const
+	{
+		return MakeUnexpected();
+	}
 
 	virtual UserInterruptPtr MakeUserInterrupt() const = 0;
 

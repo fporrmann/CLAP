@@ -33,8 +33,8 @@
 //   - Would require some edits to the memory manager
 //   - Would require that the DDR address is below 4GB
 // --------------------------------------------------------------------------------------------
-// - Try to force the use of aligned memory, e.g., by using the CLAPBuffer type, alternative force vector types to be aligned with the clapAlignmentAllocator
-//   - Maybe prevent passing for custom memory addresses alltogether
+// - Try to force the use of aligned memory, e.g., by using the CLAPBuffer type, alternative force vector types to be aligned with the AlignmentAllocator
+//   - Maybe prevent passing for custom memory addresses altogether
 // --------------------------------------------------------------------------------------------
 // - Replace boolean flags with enums for better readability
 // --------------------------------------------------------------------------------------------
@@ -47,8 +47,6 @@
 // - Suppress log messages when polling for completion
 // --------------------------------------------------------------------------------------------
 // - Generalize some logging calls, e.g., Read/Write runtime in backend
-// --------------------------------------------------------------------------------------------
-// - Make logging thread safe -- Problem is the streaming operator, as each << call is a separate call
 // --------------------------------------------------------------------------------------------
 // - Write examples using AxiDMA and VDMA
 // --------------------------------------------------------------------------------------------
@@ -116,6 +114,12 @@ protected:
 		return m_pClap;
 	}
 
+	const internal::CLAPBasePtr& CLAP() const
+	{
+		checkCLAPValid();
+		return m_pClap;
+	}
+
 private:
 	void markCLAPInvalid()
 	{
@@ -151,7 +155,9 @@ public:
 	virtual void Write32(const uint64_t& addr, const uint32_t& data) = 0;
 	virtual void Write64(const uint64_t& addr, const uint64_t& data) = 0;
 
-	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) = 0;
+	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const                 = 0;
+	virtual Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const = 0;
+	virtual Expected<int32_t> GetUIOID(const uint64_t& addr) const                                                      = 0;
 
 	uint32_t GetDevNum() const
 	{
@@ -760,9 +766,19 @@ public:
 	///                      UIO Property Methods                            ///
 	////////////////////////////////////////////////////////////////////////////
 
-	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName)
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
 	{
 		return m_pBackend->ReadUIOProperty(addr, propName);
+	}
+
+	Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const
+	{
+		return m_pBackend->ReadUIOPropertyVec(addr, propName);
+	}
+
+	Expected<int32_t> GetUIOID(const uint64_t& addr) const
+	{
+		return m_pBackend->GetUIOID(addr);
 	}
 
 	////////////////////////////////////////////////////////////////////////////

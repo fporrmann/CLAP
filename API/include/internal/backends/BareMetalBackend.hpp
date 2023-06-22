@@ -160,12 +160,6 @@ public:
 		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
 	}
 
-	Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName)
-	{
-		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadUIOProperty is currently not implemented by the BareMetal backend." << std::endl;
-		return MakeUnexpected();
-	}
-
 	UserInterruptPtr MakeUserInterrupt() const
 	{
 		return std::make_unique<BareMetalUserInterrupt>();

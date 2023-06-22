@@ -408,12 +408,6 @@ public:
 		}
 	}
 
-	Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName)
-	{
-		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "ReadUIOProperty is currently not implemented by the PCIe backend." << std::endl;
-		return MakeUnexpected();
-	}
-
 	UserInterruptPtr MakeUserInterrupt() const
 	{
 		return std::make_unique<PCIeUserInterrupt>();

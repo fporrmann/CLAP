@@ -376,17 +376,35 @@ private:
 		return count;
 	}
 
-	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName)
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
 	{
 		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
-		if (!dev)
-		{
-			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
-			throw CLAPException(ss.str());
-		}
+		if (!dev) return MakeUnexpected();
 
 		return dev.ReadBinaryProperty<uint32_t>(propName);
+	}
+
+	Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev) return MakeUnexpected();
+
+		std::vector<uint32_t> res = dev.ReadBinaryPropertyVec<uint32_t>(propName);
+		
+		std::vector<uint64_t> res64;
+		res64.reserve(res.size());
+		for (const auto& r : res)
+			res64.push_back(r);
+
+		return res64;
+	}
+
+	Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev) return MakeUnexpected();
+
+		return dev.GetId();
 	}
 
 private:
