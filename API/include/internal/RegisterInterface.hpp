@@ -163,7 +163,7 @@ public:
 	void UpdateValue(const uint32_t& val)
 	{
 		checkDataPointer();
-		*m_pValue = (val & m_shiftVal) >> m_startBit;
+		*m_pValue = static_cast<T>((val & m_shiftVal) >> m_startBit);
 	}
 
 	BT GetValue() const

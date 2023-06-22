@@ -30,6 +30,7 @@
 #include "../internal/UserInterruptBase.hpp"
 #include "internal/WatchDog.hpp"
 
+#include <array>
 #include <condition_variable>
 #include <cstdint>
 #include <functional>
@@ -84,7 +85,7 @@ public:
 
 		m_interruptOccured = false;
 
-		uint32_t lastIntr = -1;
+		uint32_t lastIntr = static_cast<uint32_t>(-1);
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
@@ -290,7 +291,7 @@ private:
 			Register(name)
 		{
 			for (std::size_t i = 0; i < m_bits.size(); i++)
-				RegisterElement<bool>(&m_bits[i], "Bit-" + std::to_string(i), i);
+				RegisterElement<bool>(&m_bits[i], "Bit-" + std::to_string(i), static_cast<uint8_t>(i));
 		}
 
 		void Reset(const uint32_t& rstVal = 0x0)
