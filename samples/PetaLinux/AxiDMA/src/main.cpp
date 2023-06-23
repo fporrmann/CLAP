@@ -52,12 +52,15 @@ int main(int argc, char** argv)
 		// Trigger a reset in the AxiDMA
 		axiDMA.Reset();
 
+		axiDMA.AutoDetectInterruptID();
+
 		clap::AxiInterruptController axiInterruptController(pClap, AXI_INTERRUPT_CONTROLLER_BASE_ADDR);
-		axiInterruptController.Start(1);
+		axiInterruptController.AutoDetectInterruptID();
+		axiInterruptController.Start();
 
 		axiDMA.UseInterruptController(axiInterruptController);
 
-		axiDMA.EnableInterrupts(0, 1);
+		axiDMA.EnableInterrupts();
 
 		// clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
 
