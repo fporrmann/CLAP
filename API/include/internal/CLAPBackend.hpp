@@ -69,6 +69,11 @@ public:
 		return MakeUnexpected();
 	}
 
+	virtual Expected<std::string> ReadUIOStringProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	{
+		return MakeUnexpected();
+	}
+
 	virtual Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
 	{
 		return MakeUnexpected();

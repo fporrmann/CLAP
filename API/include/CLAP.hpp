@@ -156,6 +156,7 @@ public:
 	virtual void Write64(const uint64_t& addr, const uint64_t& data) = 0;
 
 	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const                 = 0;
+	virtual Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const        = 0;
 	virtual Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const = 0;
 	virtual Expected<int32_t> GetUIOID(const uint64_t& addr) const                                                      = 0;
 
@@ -769,6 +770,11 @@ public:
 	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
 	{
 		return m_pBackend->ReadUIOProperty(addr, propName);
+	}
+
+	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const
+	{
+		return m_pBackend->ReadUIOStringProperty(addr, propName);
 	}
 
 	Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const

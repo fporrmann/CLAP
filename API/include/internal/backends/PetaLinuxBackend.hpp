@@ -384,6 +384,18 @@ private:
 		return dev.ReadBinaryProperty<uint32_t>(propName);
 	}
 
+	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const
+	{
+		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev)
+		{
+			LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
+			return MakeUnexpected();
+		}
+
+		return dev.ReadStringProperty(propName);
+	}
+
 	// TODO: Check if the properties are always 32-bit values or if they are 64-bit values on 64-bit systems
 	Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
 	{

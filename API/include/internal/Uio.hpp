@@ -295,6 +295,26 @@ public:
 		return count;
 	}
 
+	std::string ReadStringProperty(const std::string& name) const
+	{
+		std::ifstream file(m_devTreePropPath + name);
+		if (!file.is_open())
+		{
+			LOG_ERROR << CLASS_TAG("UioDev") << "Could not open property \"" << name << "\" - path=" << m_devTreePropPath + name << std::endl;
+			return "";
+		}
+
+		std::string value;
+		std::getline(file, value);
+		file.close();
+
+		// Remove trailing null character (\0) if present
+		if(value.back() == '\0')
+			value.pop_back();
+
+		return value;
+	}
+
 	T ReadHexStringProperty(const std::string& name) const
 	{
 		std::ifstream file(m_devTreePropPath + name, std::ios::binary);
@@ -311,7 +331,7 @@ public:
 	U ReadBinaryProperty(const std::string& property) const
 	{
 		std::vector<uint8_t> propValues = readProperty(property);
-		U propValue = 0;
+		U propValue                     = 0;
 
 		if (propValues.empty()) return propValue;
 
