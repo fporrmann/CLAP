@@ -99,11 +99,97 @@ When not using CMake, add CLAP/API/include to the include search path of your en
 
 ### Use the API
 
-At the moment please refer to the [DDRAccess example](samples/DDRAccess/src/main.cpp).
+At the moment please refer to the [DDRAccess example](samples/XDMA/DDRAccess/src/main.cpp).
 
 
 
 ## PetaLinux (WiP)
+
+### Add the UIO driver to the kernel
+
+1. Open the kernel configuration
+```bash
+petalinux-config -c kernel
+```
+2. Enable the UIO driver
+```bash
+Device Drivers -> Userspace I/O drivers -> Userspace platform driver with generic irq and dynamic memory
+```
+3. Save the configuration and exit
+4. Open the PetaLinux configuration
+```bash
+petalinux-config
+```
+5. Modify the boot arguments to include the UIO driver
+```bash
+DTG-settings -> Kernel bootargs -> Add extra boot args
+```
+6. Add the following
+```bash
+uio_pdrv_genirq.of_id=generic-uio
+```
+6. Save the configuration and exit
+7. Build PetaLinux, using `petalinux-build`
+
+### Setup IP core in the device tree to use the UIO driver
+
+1. Find the IP cores object name in the device tree, the object name usually is the same as the unique name of the IP block in Vivado. An `AXI DMA` core for example by default is called `axi_dma_ID`, where `ID` is the instance id of the block, starting at zero. In the device tree the start of the `AXI DMA` object would look similar to this `axi_dma_0: dma@40010000 {`, with `axi_dma_0` being the object name and `dma@40010000` being the name and address.
+```bash
+cat components/plnx_workspace/device-tree/device-tree/pl.dtsi
+```
+2. Open the user overlay dtsi file:
+```bash
+nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi 
+```
+3. After `};` add the following (replace <OBJ_NAME> with the object name from step 1, e.g., `axi_dma_0`):
+```c
+&<OBJ_NAME> {
+    compatible = "generic-uio";
+};
+```
+4. Build PetaLinux, e.g., using `petalinux-build` or if the project has already been build and only changes to the device tree have been made using `petalinux-build -c kernel`
+5. After booting the new kernel a UIO device should be listed under `/dev/` with the name `uioX`, where `X` is the number of the device, starting at zero.
+
+### Using an IP core with multiple interrupt lines in combination with the UIO driver
+
+By default the UIO driver only supports a single interrupt line. To use an IP core with multiple interrupt lines either the driver needs to be modified or the IP core needs to be interconnected with an `AXI Interrupt Controller`. The latter is the easier approach and is described here.
+
+1. In the Vivado block design add an `AXI Interrupt Controller` to the design
+2. Connect the `clk` and `reset` signales of the `AXI Interrupt Controller` to the `clk` and `reset` signales of the IP core
+3. Change the `Interrupt Output Connection` of the `AXI Interrupt Controller` to `Single`
+4. Add a `Concat` IP core to the design
+5. Set the `Number of Ports` of the `Concat` IP core to the number of interrupt lines of the IP core
+6. Connect the interrupt lines of the IP core to the input ports of the `Concat` IP core
+7. Connect the output port of the `Concat` IP core to the `Interrupt Request (intr)` port of the `AXI Interrupt Controller`
+8. Connect the `Interrupt (irq)` port of the `AXI Interrupt Controller` to the `IRQ_F2P` port of the PS
+
+Next, generate an new bitstream, export the hardware and update the hardware description of the PetaLinux project using:
+
+```bash
+petalinux-config --get-hw-description=<PATH_TO_VIVADO_PROJECT>
+```
+
+Afterward, the device tree needs to be updated to reflect the changes made to the hardware description, it is especially important to configure the `AXI Interrupt Controller` to use the UIO driver. This can be done by following the steps described in the section [Setup IP core in the device tree to use the UIO driver](#setup-ip-core-in-the-device-tree-to-use-the-uio-driver).
+
+For an example of how to use an `AXI DMA` together with an `AXI Interrupt Controller` please refer to the [PetaLinux AxiDMA Example](samples/PetaLinux/AxiDMA/src/main.cpp).
+
+### Modifications required when trying to use UIO together with an IP core whose interrupt line is connected to an AXI Interrupt Controller
+
+In setups where an `AXI Interrupt Controller` acts as an intermediary between the IP core and the PS by default no UIO device will be created for the IP core. It is currently not entirely clear why this happens, but by removing the `interrupt-parent` property from the device tree object of the IP core this problem can be circumvented.
+
+1. Open the device tree overlay
+```bash
+nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi 
+```
+2. Change the override for the IP core to the following (replace <OBJ_NAME> with the name of the object, e.g., `axi_dma_0`):
+```c
+&<OBJ_NAME> {
+    compatible = "generic-uio";
+    /delete-property/ interrupt-parent;
+};
+```
+4. Build PetaLinux, e.g., using `petalinux-build` or if the project has already been build and only changes to the device tree have been made using `petalinux-build -c kernel`
+
 
 ### Allow users to access the UIO devices
 
