@@ -70,6 +70,9 @@ class AxiDMA : public internal::RegisterControlBase
 		const uint32_t length;
 	};
 
+	static inline const std::string MM2S_INTR_NAME = "mm2s_introut";
+	static inline const std::string S2MM_INTR_NAME = "s2mm_introut";
+
 public:
 	enum DMAInterrupts
 	{
@@ -80,23 +83,33 @@ public:
 	};
 
 public:
-	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
+	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& mm2sPresent = true, const bool& s2mmPresent = true) :
 		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDogMM2S("AxiDMA_MM2S", pClap->MakeUserInterrupt()),
-		m_watchDogS2MM("AxiDMA_S2MM", pClap->MakeUserInterrupt())
+		m_watchDogS2MM("AxiDMA_S2MM", pClap->MakeUserInterrupt()),
+		m_mm2sPresent(mm2sPresent),
+		m_s2mmPresent(s2mmPresent)
 	{
-		registerReg<uint32_t>(m_mm2sCtrlReg, MM2S_DMACR);
-		registerReg<uint32_t>(m_mm2sStatReg, MM2S_DMASR);
-		registerReg<uint32_t>(m_s2mmCtrlReg, S2MM_DMACR);
-		registerReg<uint32_t>(m_s2mmStatReg, S2MM_DMASR);
+		if (!m_mm2sPresent && !m_s2mmPresent)
+			throw std::runtime_error("AxiDMA: At least one channel must be present");
 
-		UpdateAllRegisters();
+		if (m_mm2sPresent)
+		{
+			registerReg<uint32_t>(m_mm2sCtrlReg, MM2S_DMACR);
+			registerReg<uint32_t>(m_mm2sStatReg, MM2S_DMASR);
 
-		m_watchDogMM2S.SetStatusRegister(&m_mm2sStatReg);
-		m_watchDogS2MM.SetStatusRegister(&m_s2mmStatReg);
+			m_watchDogMM2S.SetStatusRegister(&m_mm2sStatReg);
+			m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
+		}
 
-		m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
-		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
+		if (m_s2mmPresent)
+		{
+			registerReg<uint32_t>(m_s2mmCtrlReg, S2MM_DMACR);
+			registerReg<uint32_t>(m_s2mmStatReg, S2MM_DMASR);
+
+			m_watchDogS2MM.SetStatusRegister(&m_s2mmStatReg);
+			m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
+		}
 
 		detectBufferLengthRegWidth();
 		detectDataWidth();
@@ -145,6 +158,17 @@ public:
 			  static_cast<T>(dstMem.GetBaseAddr()), static_cast<uint32_t>(dstMem.GetSize()));
 	}
 
+	void Start(const Memory& mem)
+	{
+		if(m_mm2sPresent && m_s2mmPresent)
+			LOG_ERROR << CLASS_TAG("AxiDMA") << "Channel unspecific start with single memory object is not supported when both channels are present, please use the dual memory method" << std::endl;
+
+		if(m_mm2sPresent)
+			Start(DMAChannel::MM2S, mem);
+		if(m_s2mmPresent)
+			Start(DMAChannel::S2MM, mem);
+	}
+
 	void Start(const DMAChannel& channel, const Memory& mem)
 	{
 		Start(channel, static_cast<T>(mem.GetBaseAddr()), static_cast<uint32_t>(mem.GetSize()));
@@ -155,7 +179,7 @@ public:
 	{
 		LOG_DEBUG << CLASS_TAG("AxiDMA") << "Starting DMA transfer on channel " << channel << " with address 0x" << std::hex << addr << std::dec << " and length " << length << " byte" << std::endl;
 
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			uint32_t remainingLength = length;
 			T currentAddr            = addr;
@@ -180,7 +204,7 @@ public:
 			startMM2STransfer();
 		}
 
-		if (channel == DMAChannel::S2MM)
+		if (channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			uint32_t remainingLength = length;
 			T currentAddr            = addr;
@@ -217,28 +241,41 @@ public:
 	void Stop(const DMAChannel& channel)
 	{
 		// Unset the RunStop bit
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 			m_mm2sCtrlReg.Stop();
-		else
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
 			m_s2mmCtrlReg.Stop();
+	}
+
+	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
+	{
+		if (!WaitForFinish(DMAChannel::MM2S, timeoutMS))
+			return false;
+
+		if (!WaitForFinish(DMAChannel::S2MM, timeoutMS))
+			return false;
+
+		return true;
 	}
 
 	bool WaitForFinish(const DMAChannel& channel, const int32_t& timeoutMS = WAIT_INFINITE)
 	{
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			if (!m_watchDogMM2S.WaitForFinish(timeoutMS))
 				return false;
 
 			return true;
 		}
-		else
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			if (!m_watchDogS2MM.WaitForFinish(timeoutMS))
 				return false;
 
 			return true;
 		}
+
+		return true;
 	}
 
 	////////////////////////////////////////
@@ -253,9 +290,9 @@ public:
 
 	void Reset(const DMAChannel& channel)
 	{
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 			m_mm2sCtrlReg.DoReset();
-		else
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
 			m_s2mmCtrlReg.DoReset();
 	}
 
@@ -269,15 +306,15 @@ public:
 		m_watchDogS2MM.SetUserInterrupt(axiIntC.MakeUserInterrupt());
 	}
 
-	void EnableInterrupts(const uint32_t& eventNoMM2S = -1, const uint32_t& eventNoS2MM = -1, const DMAInterrupts& intr = INTR_ALL)
+	void EnableInterrupts(const uint32_t& eventNoMM2S = USE_AUTO_DETECT, const uint32_t& eventNoS2MM = USE_AUTO_DETECT, const DMAInterrupts& intr = INTR_ALL)
 	{
 		EnableInterrupts(DMAChannel::MM2S, eventNoMM2S, intr);
 		EnableInterrupts(DMAChannel::S2MM, eventNoS2MM, intr);
 	}
 
-	void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo = -1, const DMAInterrupts& intr = INTR_ALL)
+	void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo = USE_AUTO_DETECT, const DMAInterrupts& intr = INTR_ALL)
 	{
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			uint32_t intrID = eventNo;
 			if (m_mm2sIntrDetected != -1)
@@ -293,7 +330,7 @@ public:
 			m_watchDogMM2S.InitInterrupt(getDevNum(), intrID, &m_mm2sStatReg);
 			m_mm2sCtrlReg.EnableInterrupts(intr);
 		}
-		else
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			uint32_t intrID = eventNo;
 			if (m_s2mmIntrDetected != -1)
@@ -319,12 +356,12 @@ public:
 
 	void DisableInterrupts(const DMAChannel& channel, const DMAInterrupts& intr = INTR_ALL)
 	{
-		if (channel == DMAChannel::MM2S)
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			m_watchDogMM2S.UnsetInterrupt();
 			m_mm2sCtrlReg.DisableInterrupts(intr);
 		}
-		else
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			m_watchDogS2MM.UnsetInterrupt();
 			m_s2mmCtrlReg.DisableInterrupts(intr);
@@ -403,7 +440,6 @@ public:
 	////////////////////////////////////////
 
 protected:
-	// TODO: Check how this should be done when only one channel is used
 	void detectInterruptID()
 	{
 		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
@@ -411,11 +447,35 @@ protected:
 		if (res)
 		{
 			const std::vector<uint64_t>& intrs = res.Value();
-			if (!intrs.empty() && intrs.size() >= 4)
+			if (intrs.empty()) return;
+
+			// Both channels are active
+			if (intrs.size() >= 4)
 			{
 				m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 				m_s2mmIntrDetected = static_cast<uint32_t>(intrs[2]);
 				LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
+			}
+			else if (intrs.size() >= 2)
+			{
+				// Only one channel is active, check which one
+				Expected<std::string> intrName = CLAP()->ReadUIOStringProperty(m_ctrlOffset, "interrupt-names");
+				if (!intrName) return;
+
+				const std::string intrNameStr = intrName.Value();
+
+				if (intrName.Value() == MM2S_INTR_NAME)
+				{
+					m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
+					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: MM2S=" << m_mm2sIntrDetected << std::endl;	
+				}
+				else if (intrName.Value() == S2MM_INTR_NAME)
+				{
+					m_s2mmIntrDetected = static_cast<uint32_t>(intrs[0]);
+					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
+				}
+				else
+					LOG_ERROR << CLASS_TAG("AxiDMA") << "Unable to detect interrupt ID for channel: \"" << intrName.Value() << "\"" << std::endl;
 			}
 		}
 	}
@@ -506,9 +566,9 @@ private:
 
 	void detectDataWidth()
 	{
-		const std::string addr = utils::Hex2Str(m_ctrlOffset);
-		Expected<uint64_t>
-			res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
+		const std::string addr = utils::Hex2Str(m_ctrlOffset + (m_mm2sPresent ? REGISTER_MAP::MM2S_DMACR : REGISTER_MAP::S2MM_DMACR));
+
+		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
 		if (res)
 		{
 			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
@@ -518,7 +578,6 @@ private:
 
 	void updateMaxTransferLength()
 	{
-		// TODO: the -4 might need to be adjusted to match the address width or another property
 		m_maxTransferLength = (1 << m_bufLenRegWidth) - m_dataWidth;
 	}
 
@@ -735,6 +794,9 @@ private:
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};
+
+	bool m_mm2sPresent = false;
+	bool m_s2mmPresent = false;
 
 	int32_t m_mm2sIntrDetected = -1;
 	int32_t m_s2mmIntrDetected = -1;

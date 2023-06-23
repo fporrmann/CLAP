@@ -192,7 +192,7 @@ public:
 	///                - for XDMA this is the concat index of the interrupt line
 	///                - for PetaLinux this is the ID of the UIO device associated with the core
 	/// @return true if the controller was started successfully, false otherwise
-	bool Start(const uint32_t& eventNo)
+	bool Start(const uint32_t& eventNo = USE_AUTO_DETECT)
 	{
 		if (m_running) return true;
 
