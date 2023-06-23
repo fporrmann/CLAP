@@ -193,7 +193,7 @@ public:
 		m_devTreePropPath(path + UIO_OF_NODE_PATH),
 		m_id(id)
 	{
-		if (m_id == static_cast<uint32_t>(-1) || m_name.empty() || m_path.empty())
+		if (m_id == MINUS_ONE || m_name.empty() || m_path.empty())
 		{
 			m_valid = false;
 			return;

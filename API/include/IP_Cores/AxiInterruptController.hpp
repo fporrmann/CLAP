@@ -87,7 +87,7 @@ public:
 
 		m_interruptOccured = false;
 
-		uint32_t lastIntr = static_cast<uint32_t>(-1);
+		uint32_t lastIntr = MINUS_ONE;
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 

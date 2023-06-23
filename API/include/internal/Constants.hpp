@@ -46,6 +46,8 @@ static const std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT / 8;
 static const uint64_t XDMA_CTRL_BASE = 0x0;
 static const uint64_t XDMA_CTRL_SIZE = 0x100;
 
+static const uint32_t MINUS_ONE = 0xFFFFFFFF;
+
 /*
  * man 2 write:
  * On Linux, write() (and similar system calls) will transfer at most
