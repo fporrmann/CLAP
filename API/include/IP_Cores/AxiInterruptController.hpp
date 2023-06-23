@@ -191,15 +191,14 @@ public:
 	/// @param eventNo The event number to use for the interrupt
 	///                - for XDMA this is the concat index of the interrupt line
 	///                - for PetaLinux this is the ID of the UIO device associated with the core
-	/// @param ignoreDetectedIntrID If true, the interrupt ID detected by the driver is ignored and the eventNo is used instead
 	/// @return true if the controller was started successfully, false otherwise
-	bool Start(const uint32_t& eventNo, const bool ignoreDetectedIntrID = false)
+	bool Start(const uint32_t& eventNo)
 	{
 		if (m_running) return true;
 
 		uint32_t intrID = eventNo;
 
-		if(!ignoreDetectedIntrID && m_detectedInterruptID != -1)
+		if(m_detectedInterruptID != -1)
 			intrID = static_cast<uint32_t>(m_detectedInterruptID);
 
 		m_watchDog.InitInterrupt(getDevNum(), intrID);

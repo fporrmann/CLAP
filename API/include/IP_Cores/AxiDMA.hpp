@@ -81,7 +81,7 @@ public:
 
 public:
 	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset, false),
+		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDogMM2S("AxiDMA_MM2S", pClap->MakeUserInterrupt()),
 		m_watchDogS2MM("AxiDMA_S2MM", pClap->MakeUserInterrupt())
 	{
@@ -97,16 +97,6 @@ public:
 
 		m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
 		m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
-
-		// Try to detect the interrupts
-		std::vector<uint32_t> intrs = detectInterruptIDs();
-
-		if(!intrs.empty() && intrs.size() >= 4)
-		{
-			m_mm2sIntrDetected = intrs[0];
-			m_s2mmIntrDetected = intrs[2];
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
-		}
 
 		detectBufferLengthRegWidth();
 		detectDataWidth();
@@ -241,7 +231,6 @@ public:
 				return false;
 
 			return true;
-
 		}
 		else
 		{
@@ -280,19 +269,25 @@ public:
 		m_watchDogS2MM.SetUserInterrupt(axiIntC.MakeUserInterrupt());
 	}
 
-	void EnableInterrupts(const uint32_t& eventNoMM2S, const uint32_t& eventNoS2MM, const DMAInterrupts& intr = INTR_ALL)
+	void EnableInterrupts(const uint32_t& eventNoMM2S = -1, const uint32_t& eventNoS2MM = -1, const DMAInterrupts& intr = INTR_ALL)
 	{
 		EnableInterrupts(DMAChannel::MM2S, eventNoMM2S, intr);
 		EnableInterrupts(DMAChannel::S2MM, eventNoS2MM, intr);
 	}
 
-	void EnableInterrupts(const DMAChannel& channel, [[maybe_unused]] const uint32_t& eventNo, const DMAInterrupts& intr = INTR_ALL)
+	void EnableInterrupts(const DMAChannel& channel, const uint32_t& eventNo = -1, const DMAInterrupts& intr = INTR_ALL)
 	{
 		if (channel == DMAChannel::MM2S)
 		{
 			uint32_t intrID = eventNo;
-			if(m_mm2sIntrDetected != -1)
+			if (m_mm2sIntrDetected != -1)
 				intrID = static_cast<uint32_t>(m_mm2sIntrDetected);
+
+			if (intrID == internal::MINUS_ONE)
+			{
+				LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for MM2S channel - Unable to setup interrupts for channel MM2S" << std::endl;
+				return;
+			}
 
 			m_mm2sCtrlReg.Update();
 			m_watchDogMM2S.InitInterrupt(getDevNum(), intrID, &m_mm2sStatReg);
@@ -303,6 +298,12 @@ public:
 			uint32_t intrID = eventNo;
 			if (m_s2mmIntrDetected != -1)
 				intrID = static_cast<uint32_t>(m_s2mmIntrDetected);
+
+			if (intrID == internal::MINUS_ONE)
+			{
+				LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for S2MM channel - Unable to setup interrupts for channel S2MM" << std::endl;
+				return;
+			}
 
 			m_s2mmCtrlReg.Update();
 			m_watchDogS2MM.InitInterrupt(getDevNum(), intrID, &m_s2mmStatReg);
@@ -400,6 +401,24 @@ public:
 	}
 
 	////////////////////////////////////////
+
+protected:
+	// TODO: Check how this should be done when only one channel is used
+	void detectInterruptID()
+	{
+		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
+
+		if (res)
+		{
+			const std::vector<uint64_t>& intrs = res.Value();
+			if (!intrs.empty() && intrs.size() >= 4)
+			{
+				m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
+				m_s2mmIntrDetected = static_cast<uint32_t>(intrs[2]);
+				LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
+			}
+		}
+	}
 
 private:
 	////////////////////////////////////////

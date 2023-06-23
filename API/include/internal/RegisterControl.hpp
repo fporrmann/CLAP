@@ -69,19 +69,16 @@ class RegisterControlBase : public CLAPManaged
 	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
 
 public:
-	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset, const bool& autoDetectIntr = true) :
+	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset) :
 		CLAPManaged(std::move(pClap)),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
 	{
-		if (autoDetectIntr)
-			detectInterruptID();
 	}
 
 	virtual ~RegisterControlBase() = default;
 
-	// Method used by the static update callback function to update
-	// the given register
+	// Method used by the static update callback function to update the given register
 	template<typename T>
 	void UpdateRegister(Register<T>* pReg, const uint64_t& offset, const Direction& dir)
 	{
@@ -96,6 +93,12 @@ public:
 	{
 		for (RegisterIntf* pReg : m_registers)
 			pReg->Update(Direction::READ);
+	}
+
+	/// @brief Tries to automatically detect the interrupt ID of the IP core, currently only available for PetaLinux
+	void AutoDetectInterruptID()
+	{
+		detectInterruptID();
 	}
 
 	// Callback function, called by the register when the Update() method is called
@@ -181,7 +184,7 @@ protected:
 		}
 	}
 
-	void detectInterruptID()
+	virtual void detectInterruptID()
 	{
 		Expected<uint32_t> res = CLAP()->GetUIOID(m_ctrlOffset);
 		if (res)
@@ -191,21 +194,8 @@ protected:
 		}
 	}
 
-	std::vector<uint32_t> detectInterruptIDs() const
-	{
-		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
-
-		// If the property is not found, return an empty vector
-		if (!res)
-			return std::vector<uint32_t>();
-
-		std::vector<uint32_t> ret;
-		for (const uint64_t& val : res.Value())
-			ret.push_back(static_cast<uint32_t>(val));
-
-		return ret;
-	}
-
+	/// @brief Returns the id of the device, for XDMA devices this is an idx starting at 0 for the first device, for all other backends this is 0
+	/// @return The id of the device
 	uint32_t getDevNum()
 	{
 		return CLAP()->GetDevNum();
