@@ -131,6 +131,29 @@ uio_pdrv_genirq.of_id=generic-uio
 6. Save the configuration and exit
 7. Build PetaLinux, using `petalinux-build`
 
+### Split of some memory from the kernel to use as exclusive memory for the FPGA design
+
+1. Open the device tree overlay
+```bash
+nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi 
+```
+2. Add the following after `/ {` and before `};`
+```c
+    // Restrict the memory available to the kernel to the first 512MB
+    memory {
+        device_type = "memory";
+        reg = <0x00000000 0x20000000>;
+    };
+
+    // Create a new memory region (shm) for the FPGA design, starting at address 0x20000000 with a size of 512MB.
+    // The name of the region is shm0 and it can be accessed using the UIO driver.
+    shm: shm0@20000000 {
+        compatible = "generic-uio";
+        reg = <0x20000000 0x20000000>;
+    };
+```
+3. Build PetaLinux, e.g., using `petalinux-build` or if the project has already been build and only changes to the device tree have been made using `petalinux-build -c kernel`
+
 ### Setup IP core in the device tree to use the UIO driver
 
 1. Find the IP cores object name in the device tree, the object name usually is the same as the unique name of the IP block in Vivado. An `AXI DMA` core for example by default is called `axi_dma_ID`, where `ID` is the instance id of the block, starting at zero. In the device tree the start of the `AXI DMA` object would look similar to this `axi_dma_0: dma@40010000 {`, with `axi_dma_0` being the object name and `dma@40010000` being the name and address.
@@ -189,7 +212,6 @@ nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi
 };
 ```
 4. Build PetaLinux, e.g., using `petalinux-build` or if the project has already been build and only changes to the device tree have been made using `petalinux-build -c kernel`
-
 
 ### Allow users to access the UIO devices
 
