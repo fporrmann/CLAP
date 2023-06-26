@@ -141,7 +141,7 @@ private:
 
 	union
 	{
-		T m_value;
+		T m_value = T();
 	};
 	bool m_success;
 };
