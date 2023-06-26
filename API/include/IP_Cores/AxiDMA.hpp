@@ -473,10 +473,7 @@ protected:
 				if (intrName.Value() == MM2S_INTR_NAME)
 				{
 					if (intrParent && devID)
-					{
-						std::cout << "devID: " << devID.Value() << std::endl;
 						m_mm2sIntrDetected = devID.Value();
-					}
 					else
 						m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: MM2S=" << m_mm2sIntrDetected << std::endl;	
@@ -484,10 +481,7 @@ protected:
 				else if (intrName.Value() == S2MM_INTR_NAME)
 				{
 					if (intrParent && devID)
-					{
-						std::cout << "devID: " << devID.Value() << std::endl;
 						m_s2mmIntrDetected = devID.Value();
-					}
 					else
 						m_s2mmIntrDetected = static_cast<uint32_t>(intrs[0]);
 					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
