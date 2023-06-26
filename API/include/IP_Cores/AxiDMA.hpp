@@ -443,6 +443,7 @@ protected:
 	void detectInterruptID()
 	{
 		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
+		Expected<uint32_t> intrParent = CLAP()->ReadUIOProperty(m_ctrlOffset, "interrupt-parent");
 
 		if (res)
 		{
@@ -452,6 +453,9 @@ protected:
 			// Both channels are active
 			if (intrs.size() >= 4)
 			{
+				if(intrParent)
+					LOG_WARNING << CLASS_TAG("AxiDMA") << "Interrupt parent is set while both channels are active - This might cause problems" << std::endl;
+
 				m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 				m_s2mmIntrDetected = static_cast<uint32_t>(intrs[2]);
 				LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
@@ -462,16 +466,30 @@ protected:
 				Expected<std::string> intrName = CLAP()->ReadUIOStringProperty(m_ctrlOffset, "interrupt-names");
 				if (!intrName) return;
 
+				Expected<uint32_t> devID = CLAP()->GetUIOID(m_ctrlOffset);
+
 				const std::string intrNameStr = intrName.Value();
 
 				if (intrName.Value() == MM2S_INTR_NAME)
 				{
-					m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
+					if (intrParent && devID)
+					{
+						std::cout << "devID: " << devID.Value() << std::endl;
+						m_mm2sIntrDetected = devID.Value();
+					}
+					else
+						m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: MM2S=" << m_mm2sIntrDetected << std::endl;	
 				}
 				else if (intrName.Value() == S2MM_INTR_NAME)
 				{
-					m_s2mmIntrDetected = static_cast<uint32_t>(intrs[0]);
+					if (intrParent && devID)
+					{
+						std::cout << "devID: " << devID.Value() << std::endl;
+						m_s2mmIntrDetected = devID.Value();
+					}
+					else
+						m_s2mmIntrDetected = static_cast<uint32_t>(intrs[0]);
 					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
 				}
 				else
