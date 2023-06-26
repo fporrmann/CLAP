@@ -402,11 +402,13 @@ private:
 		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
 
-		std::vector<uint32_t> res = dev.ReadBinaryPropertyVec<uint32_t>(propName);
-		
+		Expected<std::vector<uint32_t>> res = dev.ReadBinaryPropertyVec<uint32_t>(propName);
+
+		if(!res) return MakeUnexpected();
+
 		std::vector<uint64_t> res64;
-		res64.reserve(res.size());
-		for (const auto& r : res)
+		res64.reserve(res.Value().size());
+		for (const auto& r : res.Value())
 			res64.push_back(r);
 
 		return res64;

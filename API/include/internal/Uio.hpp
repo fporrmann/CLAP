@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "Exceptions.hpp"
+#include "Expected.hpp"
 #include "FileOps.hpp"
 #include "Logger.hpp"
 
@@ -295,13 +296,13 @@ public:
 		return count;
 	}
 
-	std::string ReadStringProperty(const std::string& name) const
+	Expected<std::string> ReadStringProperty(const std::string& name) const
 	{
 		std::ifstream file(m_devTreePropPath + name);
 		if (!file.is_open())
 		{
 			LOG_ERROR << CLASS_TAG("UioDev") << "Could not open property \"" << name << "\" - path=" << m_devTreePropPath + name << std::endl;
-			return "";
+			return MakeUnexpected();
 		}
 
 		std::string value;
@@ -309,16 +310,16 @@ public:
 		file.close();
 
 		// Remove trailing null character (\0) if present
-		if(value.back() == '\0')
+		if (value.back() == '\0')
 			value.pop_back();
 
 		return value;
 	}
 
-	T ReadHexStringProperty(const std::string& name) const
+	Expected<T> ReadHexStringProperty(const std::string& name) const
 	{
 		std::ifstream file(m_devTreePropPath + name, std::ios::binary);
-		if (!file.is_open()) return -1;
+		if (!file.is_open()) return MakeUnexpected();
 
 		T value;
 		file >> std::hex >> value;
@@ -328,12 +329,12 @@ public:
 	}
 
 	template<typename U>
-	U ReadBinaryProperty(const std::string& property) const
+	Expected<U> ReadBinaryProperty(const std::string& property) const
 	{
 		std::vector<uint8_t> propValues = readProperty(property);
 		U propValue                     = 0;
 
-		if (propValues.empty()) return propValue;
+		if (propValues.empty()) return MakeUnexpected();
 
 		// Copy the bytes from the property vector to the result vector
 		std::copy(propValues.begin(), propValues.end(), reinterpret_cast<uint8_t*>(&propValue));
@@ -345,12 +346,12 @@ public:
 	}
 
 	template<typename U>
-	std::vector<U> ReadBinaryPropertyVec(const std::string& property) const
+	Expected<std::vector<U>> ReadBinaryPropertyVec(const std::string& property) const
 	{
 		std::vector<uint8_t> propValues = readProperty(property);
 		std::vector<U> resValues;
 
-		if (propValues.empty()) return resValues;
+		if (propValues.empty()) return MakeUnexpected();
 
 		// Resize the result vector to the number of elements
 		resValues.resize(DIV_ROUND_UP(propValues.size(), sizeof(U)));
@@ -457,7 +458,7 @@ private:
 		// Check if the file is open
 		if (!propFile.is_open())
 		{
-			LOG_ERROR << CLASS_TAG("") << "Could not open the property file \"" << propertyPath << "\"" << std::endl;
+			// LOG_ERROR << CLASS_TAG("") << "Could not open the property file \"" << propertyPath << "\"" << std::endl;
 			return propValue;
 		}
 
