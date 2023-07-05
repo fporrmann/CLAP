@@ -56,10 +56,10 @@ int main(int argc, char** argv)
 		axiDMA2.Reset();
 
 		clap::AxiInterruptController axiInterruptController(pClap, AXI_INTERRUPT_CONTROLLER_BASE_ADDR);
-		if(!axiInterruptController.AutoDetectInterruptID())
-			axiInterruptController.EnableInterrupt(0);
-
-		axiInterruptController.Start();
+		if(axiInterruptController.AutoDetectInterruptID())
+			axiInterruptController.Start();
+		else
+			axiInterruptController.Start(0);
 
 		axiDMA1.UseInterruptController(axiInterruptController);
 		axiDMA2.UseInterruptController(axiInterruptController);
