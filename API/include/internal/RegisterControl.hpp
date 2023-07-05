@@ -96,9 +96,9 @@ public:
 	}
 
 	/// @brief Tries to automatically detect the interrupt ID of the IP core, currently only available for PetaLinux
-	void AutoDetectInterruptID()
+	bool AutoDetectInterruptID()
 	{
-		detectInterruptID();
+		return detectInterruptID();
 	}
 
 	// Callback function, called by the register when the Update() method is called
@@ -184,14 +184,17 @@ protected:
 		}
 	}
 
-	virtual void detectInterruptID()
+	virtual bool detectInterruptID()
 	{
 		Expected<uint32_t> res = CLAP()->GetUIOID(m_ctrlOffset);
 		if (res)
 		{
 			m_detectedInterruptID = static_cast<int32_t>(res.Value());
 			LOG_INFO << CLASS_TAG("") << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+			return true;
 		}
+
+		return false;
 	}
 
 	/// @brief Returns the id of the device, for XDMA devices this is an idx starting at 0 for the first device, for all other backends this is 0

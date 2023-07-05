@@ -300,6 +300,7 @@ public:
 
 	////////////////////////////////////////
 
+	// TODO: Add support for different interrupt controllers for each channel
 	void UseInterruptController(AxiInterruptController& axiIntC)
 	{
 		m_watchDogMM2S.SetUserInterrupt(axiIntC.MakeUserInterrupt());
@@ -440,7 +441,7 @@ public:
 	////////////////////////////////////////
 
 protected:
-	void detectInterruptID()
+	bool detectInterruptID()
 	{
 		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
 		Expected<uint32_t> intrParent = CLAP()->ReadUIOProperty(m_ctrlOffset, "interrupt-parent");
@@ -448,7 +449,7 @@ protected:
 		if (res)
 		{
 			const std::vector<uint64_t>& intrs = res.Value();
-			if (intrs.empty()) return;
+			if (intrs.empty()) return false;
 
 			// Both channels are active
 			if (intrs.size() >= 4)
@@ -459,12 +460,13 @@ protected:
 				m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 				m_s2mmIntrDetected = static_cast<uint32_t>(intrs[2]);
 				LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
+				return true;
 			}
 			else if (intrs.size() >= 2)
 			{
 				// Only one channel is active, check which one
 				Expected<std::string> intrName = CLAP()->ReadUIOStringProperty(m_ctrlOffset, "interrupt-names");
-				if (!intrName) return;
+				if (!intrName) return false;
 
 				Expected<uint32_t> devID = CLAP()->GetUIOID(m_ctrlOffset);
 
@@ -487,9 +489,16 @@ protected:
 					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
 				}
 				else
+				{
 					LOG_ERROR << CLASS_TAG("AxiDMA") << "Unable to detect interrupt ID for channel: \"" << intrName.Value() << "\"" << std::endl;
+					return false;
+				}
+
+				return true;
 			}
 		}
+
+		return false;
 	}
 
 private:
