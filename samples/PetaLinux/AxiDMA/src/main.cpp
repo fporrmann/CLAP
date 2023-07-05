@@ -52,15 +52,20 @@ int main(int argc, char** argv)
 		// Trigger a reset in the AxiDMA
 		axiDMA.Reset();
 
-		axiDMA.AutoDetectInterruptID();
-
 		clap::AxiInterruptController axiInterruptController(pClap, AXI_INTERRUPT_CONTROLLER_BASE_ADDR);
-		axiInterruptController.AutoDetectInterruptID();
+
+		if (!axiInterruptController.AutoDetectInterruptID())
+			axiInterruptController.EnableInterrupt(1);
+
 		axiInterruptController.Start();
 
+		// Setup Interrupts
 		axiDMA.UseInterruptController(axiInterruptController);
 
-		axiDMA.EnableInterrupts();
+		if (axiDMA.AutoDetectInterruptID())
+			axiDMA.EnableInterrupts();
+		else
+			axiDMA.EnableInterrupts(0, 1);
 
 		// clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
 
@@ -76,7 +81,8 @@ int main(int argc, char** argv)
 			if (axiDMA.WaitForFinish(DMAChannel::S2MM))
 				std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMA.GetS2MMRuntime() << " ms" << std::endl;
 
-			std::cout << " ---------------------- " << std::endl << std::endl;
+			std::cout << " ---------------------- " << std::endl
+					  << std::endl;
 		}
 
 		// Stop the AxiDMA engine

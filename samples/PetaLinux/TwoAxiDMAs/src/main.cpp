@@ -55,19 +55,24 @@ int main(int argc, char** argv)
 		axiDMA1.Reset();
 		axiDMA2.Reset();
 
-		axiDMA1.AutoDetectInterruptID();
-		axiDMA2.AutoDetectInterruptID();
-
 		clap::AxiInterruptController axiInterruptController(pClap, AXI_INTERRUPT_CONTROLLER_BASE_ADDR);
-		axiInterruptController.AutoDetectInterruptID();
+		if(!axiInterruptController.AutoDetectInterruptID())
+			axiInterruptController.EnableInterrupt(0);
 
 		axiInterruptController.Start();
 
 		axiDMA1.UseInterruptController(axiInterruptController);
 		axiDMA2.UseInterruptController(axiInterruptController);
 
-		axiDMA1.EnableInterrupts();
-		axiDMA2.EnableInterrupts();
+		if(axiDMA1.AutoDetectInterruptID())
+			axiDMA1.EnableInterrupts();
+		else
+			axiDMA1.EnableInterrupts(1);
+
+		if(axiDMA2.AutoDetectInterruptID())
+			axiDMA2.EnableInterrupts();
+		else
+			axiDMA2.EnableInterrupts(0);
 
 		// clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
 
