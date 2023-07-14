@@ -94,10 +94,8 @@ private:
 	Verbosity m_lvl;
 	Verbosity m_verbosity;
 	std::ostream& m_outStream;
-	static std::mutex s_logMutex;
+	static inline std::mutex s_logMutex;
 };
-
-std::mutex Logger::s_logMutex;
 
 class LoggerBuffer
 {
