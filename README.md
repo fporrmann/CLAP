@@ -3,7 +3,6 @@
 A simple, header-only C++ API for the Xilinx XDMA IP-Core.<br>
 NOTE: Currently only linux is supported.
 
-
 ## Requirements
 
 	CMake >= 3.10.0
@@ -71,6 +70,10 @@ ls -la /dev/xdma*
 echo "xdma" | sudo tee /etc/modules
 echo "options xdma poll_mode=1" | sudo tee /etc/modprobe.d/xdma_options.conf 
 ```
+
+## Architecture
+
+![Architecture](doc/CLAP_Overview.svg)
 
 ## Usage
 
