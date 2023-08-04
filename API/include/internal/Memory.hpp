@@ -194,7 +194,7 @@ public:
 		return Memory(addr, size);
 	}
 
-	void FreeMemory(Memory& buffer)
+	bool FreeMemory(Memory& buffer)
 	{
 #ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -203,7 +203,7 @@ public:
 		// Search for the given address in the list of used memory regions
 		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [buffer](const MemList::value_type& p) { return p.first == buffer.m_baseAddr; });
 		// Check if the given address was found
-		if (it == m_usedMemory.end()) return;
+		if (it == m_usedMemory.end()) return false;
 
 		m_spaceLeft += it->second;
 		m_freeMemory.push_back(std::make_pair(it->first, it->second));
@@ -213,6 +213,8 @@ public:
 
 		if (m_freeMemory.size() > COALESCE_THRESHOLD)
 			coalesce();
+
+		return true;
 	}
 
 	uint64_t GetAvailableSpace() const

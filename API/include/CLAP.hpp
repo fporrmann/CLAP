@@ -392,6 +392,53 @@ public:
 		return AllocMemory(MemoryType::BRAM, byteSize, memIdx);
 	}
 
+	/// @brief Frees the specified memory block
+	/// @param mem Memory block to free
+	void FreeMemory(Memory& mem)
+	{
+		for(auto& [type, memories] : m_memories)
+		{
+			for (auto& memManager : memories)
+			{
+				if (memManager->FreeMemory(mem))
+					return;
+			}
+		}
+	}
+
+	/// @brief Resets the specified memory region
+	/// @param type Type of memory
+	/// @param memIdx Index of the memory region to reset
+	void ResetMemory(const MemoryType& type, const int32_t& memIdx = -1)
+	{
+		if (memIdx == -1)
+		{
+			for (auto& memManager : m_memories[type])
+				memManager->Reset();
+		}
+		else
+		{
+			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("CLAP") << "Specified memory region " << std::dec << memIdx << " does not exist.";
+				throw CLAPException(ss.str());
+			}
+
+			m_memories[type][memIdx]->Reset();
+		}
+	}
+
+	/// @brief Resets all memory regions
+	void ResetMemory()
+	{
+		for (auto& [type, memories] : m_memories)
+		{
+			for (auto& memManager : memories)
+				memManager->Reset();
+		}
+	}
+
 	////////////////////////////////////////////////////////////////////////////
 	///                      Read Methods                                    ///
 	////////////////////////////////////////////////////////////////////////////
