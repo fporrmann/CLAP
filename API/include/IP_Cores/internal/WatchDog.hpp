@@ -55,6 +55,7 @@ static std::exception_ptr g_pExcept = nullptr;
 #ifndef EMBEDDED_XILINX
 // TODO: Rename to indicate that this also controls whether the thread should be terminated
 // TODO: Also replace the bool with an enum
+// TODO: Make sleep time for polling configurable and add a function to set it
 using WatchDogFinishCallback = std::function<bool(void)>;
 #endif
 
@@ -87,7 +88,7 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 			else if (pStatus)
 			{
 				while (!pThreadDone->load(std::memory_order_acquire) && !pStatus->PollDone())
-					std::this_thread::sleep_for(std::chrono::microseconds(1));
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 			}
 
 			const bool forceTerminate = pThreadDone->load(std::memory_order_acquire);
