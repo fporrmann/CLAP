@@ -142,7 +142,7 @@ public:
 
 	void deallocate(pointer ptr, size_type)
 	{
-		alignedFree(ptr);
+		alignedFree(static_cast<void*>(ptr));
 	}
 
 	size_type max_size() const noexcept
