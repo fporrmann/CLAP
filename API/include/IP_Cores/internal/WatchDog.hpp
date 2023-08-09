@@ -51,7 +51,7 @@ namespace clap
 namespace internal
 {
 static std::exception_ptr g_pExcept = nullptr;
-static int64_t g_pollSleepTimeMS = 1;
+static int64_t g_pollSleepTimeMS = 10;
 
 #ifndef EMBEDDED_XILINX
 // TODO: Rename to indicate that this also controls whether the thread should be terminated
@@ -307,7 +307,7 @@ private:
 };
 } // namespace internal
 
-	static inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 1)
+	static inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
 	{
 		internal::g_pollSleepTimeMS = timeMS;
 	}
