@@ -225,8 +225,7 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		// LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		logTransferTime(addr, sizeInByte, timer, true);
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
@@ -261,8 +260,7 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		// LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-		// 			<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+		logTransferTime(addr, sizeInByte, timer, false);
 	}
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)

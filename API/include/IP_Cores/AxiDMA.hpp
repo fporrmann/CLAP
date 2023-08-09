@@ -381,6 +381,8 @@ public:
 		updateMaxTransferLength();
 	}
 
+	// TODO: This should support multiple channels
+
 	/// @brief Sets the data width of the Axi DMA in bytes
 	/// @param width The data width in bytes
 	void SetDataWidth(const uint32_t& width)

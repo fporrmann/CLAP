@@ -74,6 +74,9 @@ public:
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
 	{
+		// Register the control address as a polling address, causing it to be ignored when printing transfer times
+		// this is done to prevent log flooding when the control register is polled
+		CLAP()->AddPollAddress(ctrlOffset);
 	}
 
 	virtual ~RegisterControlBase() = default;
@@ -124,6 +127,8 @@ protected:
 			ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 			throw std::runtime_error(ss.str());
 		}
+
+		CLAP()->AddPollAddress(m_ctrlOffset + offset);
 
 		reg.SetupCallBackBasedUpdate(this, offset, UpdateCallBack<T>);
 		m_registers.push_back(&reg);

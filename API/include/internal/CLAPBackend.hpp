@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -38,6 +39,7 @@
 #include "Defines.hpp"
 #include "Exceptions.hpp"
 #include "Expected.hpp"
+#include "Timer.hpp"
 #include "Types.hpp"
 #include "UserInterruptBase.hpp"
 
@@ -106,12 +108,50 @@ public:
 		return m_backendName;
 	}
 
+	void AddPollAddr(const uint64_t& addr)
+	{
+		m_pollAddrs.push_back(addr);
+	}
+
+	void RemovePollAddr(const uint64_t& addr)
+	{
+		for (auto it = m_pollAddrs.begin(); it != m_pollAddrs.end(); it++)
+		{
+			if (*it == addr)
+			{
+				m_pollAddrs.erase(it);
+				break;
+			}
+		}
+	}
+
+protected:
+	void logTransferTime(const uint64_t& addr, const uint64_t& sizeInByte, const Timer& timer, const bool& reading)
+	{
+		// Only log if the address is not in the poll list
+		if (std::find(m_pollAddrs.begin(), m_pollAddrs.end(), addr) == m_pollAddrs.end())
+		{
+			if (reading)
+			{
+				LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+			}
+			else
+			{
+				LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+			}
+		}
+	}
+
 protected:
 	bool m_valid              = false;
 	std::string m_nameRead    = "";
 	std::string m_nameWrite   = "";
 	std::string m_nameCtrl    = "";
 	std::string m_backendName = "CLAP";
+
+	std::vector<uint64_t> m_pollAddrs = {};
 };
 } // namespace internal
 } // namespace clap
