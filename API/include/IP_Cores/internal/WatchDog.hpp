@@ -51,7 +51,7 @@ namespace clap
 namespace internal
 {
 static std::exception_ptr g_pExcept = nullptr;
-static int64_t g_pollSleepTimeMS = 10;
+static int64_t g_pollSleepTimeMS    = 10;
 
 #ifndef EMBEDDED_XILINX
 // TODO: Rename to indicate that this also controls whether the thread should be terminated
@@ -148,6 +148,11 @@ public:
 		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_pInterrupt->Init(devNum, interruptNum, pReg);
+		// Check for existing interrupts and clear them
+		LOG_DEBUG << CLASS_TAG("WatchDog") << "Clearing existing interrupts ..." << std::endl;
+		while (m_pInterrupt->WaitForInterrupt(1))
+			;
+
 #endif
 	}
 
@@ -307,9 +312,9 @@ private:
 };
 } // namespace internal
 
-	static inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
-	{
-		internal::g_pollSleepTimeMS = timeMS;
-	}
+static inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
+{
+	internal::g_pollSleepTimeMS = timeMS;
+}
 
 } // namespace clap
