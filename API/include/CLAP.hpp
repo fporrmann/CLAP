@@ -82,6 +82,7 @@
 #include "internal/Exceptions.hpp"
 #include "internal/Expected.hpp"
 #include "internal/Memory.hpp"
+#include "internal/SoloRunWarden.hpp"
 #include "internal/Types.hpp"
 #include "internal/Utils.hpp"
 
@@ -257,6 +258,7 @@ private:
 		m_mutex()
 #endif
 	{
+		internal::SoloRunWarden::GetInstance();
 		m_memories.insert(MemoryPair(MemoryType::DDR, internal::MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, internal::MemoryManagerVec()));
 
@@ -399,7 +401,7 @@ public:
 	/// @param mem Memory block to free
 	void FreeMemory(Memory& mem)
 	{
-		for(auto& [type, memories] : m_memories)
+		for (auto& [type, memories] : m_memories)
 		{
 			for (auto& memManager : memories)
 			{
