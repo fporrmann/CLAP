@@ -44,10 +44,6 @@
 // --------------------------------------------------------------------------------------------
 // - Detect if the control address of an IP Core is within the range of a memory block / other IP Core
 // --------------------------------------------------------------------------------------------
-// - Suppress log messages when polling for completion
-// --------------------------------------------------------------------------------------------
-// - Generalize some logging calls, e.g., Read/Write runtime in backend
-// --------------------------------------------------------------------------------------------
 // - Write examples using AxiDMA and VDMA
 // --------------------------------------------------------------------------------------------
 // - Address of memory can differ between internal and external
