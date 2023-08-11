@@ -300,11 +300,18 @@ public:
 
 	////////////////////////////////////////
 
-	// TODO: Add support for different interrupt controllers for each channel
 	void UseInterruptController(AxiInterruptController& axiIntC)
 	{
-		m_watchDogMM2S.SetUserInterrupt(axiIntC.MakeUserInterrupt());
-		m_watchDogS2MM.SetUserInterrupt(axiIntC.MakeUserInterrupt());
+		UseInterruptController(DMAChannel::MM2S, axiIntC);
+		UseInterruptController(DMAChannel::S2MM, axiIntC);
+	}
+
+	void UseInterruptController(const DMAChannel& channel, AxiInterruptController& axiIntC)
+	{
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
+			m_watchDogMM2S.SetUserInterrupt(axiIntC.MakeUserInterrupt());
+		else if(channel == DMAChannel::S2MM && m_s2mmPresent)
+			m_watchDogS2MM.SetUserInterrupt(axiIntC.MakeUserInterrupt());
 	}
 
 	void EnableInterrupts(const uint32_t& eventNoMM2S = USE_AUTO_DETECT, const uint32_t& eventNoS2MM = USE_AUTO_DETECT, const DMAInterrupts& intr = INTR_ALL)
