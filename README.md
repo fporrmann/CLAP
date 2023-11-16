@@ -1,14 +1,34 @@
 # CLAP
 
-A simple, header-only C++ API for the Xilinx XDMA IP-Core.<br>
-NOTE: Currently only linux is supported.
+## Overview
+
+CLAP is a C++ API aiming to simplify the usage of IP Cores in Xilinx FPGAs: 
+- C++ 17, header-only
+- Unified API to access IP Cores via PCIe (Xilinx XDMA), PetaLinux or Bare Metal
+- Contains quickly learned interfaces to Xilinx DMA, VDMA, GPIO or user created HLS cores (AP_intf)
+- It makes the time-consuming familiarization with Linux driver development superfluous. Write easy-to-debug code running in user-space without caring on low-level device access!
+
+
+![Architecture](doc/CLAP_Overview.drawio.svg)
+
+
+NOTE: This is work in progress. Current limitations:
+- XDMA: Only Linux is supported
+- Bare Metal is under development
+
 
 ## Requirements
 
 	CMake >= 3.10.0
 	g++ >= 9 or comparable compiler supporting C++17
 
-### XDMA Driver
+
+
+### XDMA Driver [optional]
+<details>
+<summary> Detailed description </summary>
+
+You only need this, if you are using a PCIe attached FPGA board.
 
 Either use the latest version from the [official git](https://github.com/Xilinx/dma_ip_drivers) or the version (v2020.2.0) included here.
 
@@ -56,7 +76,7 @@ echo "SUBSYSTEM==\"xdma\", GROUP=\"users\", MODE=\"0666\"" | sudo tee /etc/udev/
 sudo udevadm trigger
 ```
 
-**Check the permissions**
+**Check permissions**
 
 The following command should output several xdma0_xxxx devices, e.g., xdma0_c2h_0 and xdma0_h2c_0, the number of devices and which are available depends on the configuration of the XDMA endpoint. If no devices are displayed make sure the FPGA is plugged in and has been programmed.
 
@@ -71,11 +91,11 @@ echo "xdma" | sudo tee /etc/modules
 echo "options xdma poll_mode=1" | sudo tee /etc/modprobe.d/xdma_options.conf 
 ```
 
-## Architecture
+</details>
 
-![Architecture](doc/CLAP_Overview.svg)
-
-## Usage
+## API Installation / Usage
+<details>
+<summary> Detailed description </summary>
 
 For a fully working example please refer to the examples provided in the samples folder.
 
@@ -104,9 +124,12 @@ When not using CMake, add CLAP/API/include to the include search path of your en
 
 At the moment please refer to the [DDRAccess example](samples/XDMA/DDRAccess/src/main.cpp).
 
+</details>
 
 
 ## PetaLinux (WiP)
+<details>
+<summary> Detailed description </summary>
 
 ### Add the UIO driver to the kernel
 
@@ -134,7 +157,9 @@ uio_pdrv_genirq.of_id=generic-uio
 6. Save the configuration and exit
 7. Build PetaLinux, using `petalinux-build`
 
-### Split of some memory from the kernel to use as exclusive memory for the FPGA design
+### Split of some memory from the kernel to use as exclusive memory for the FPGA design 
+
+You need this, if you want to use DMA transfers
 
 1. Open the device tree overlay
 ```bash
@@ -222,3 +247,4 @@ nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi
 echo "SUBSYSTEM==\"uio\", GROUP=\"users\", MODE=\"0666\"" | sudo tee /etc/udev/rules.d/uio.rules
 sudo udevadm trigger
 ```
+</details>
