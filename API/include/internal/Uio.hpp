@@ -56,6 +56,12 @@
 #define DIV_ROUND_UP(n, d) (((n) + (d)-1) / (d))
 #endif
 
+#if CLAP_64BIT
+using UIOAddrType = uint64_t;
+#else
+using UIOAddrType = uint32_t;
+#endif
+
 // TODO:
 //  - Handle multiple maps
 //    This will require proper offsetting -- according to https://www.kernel.org/doc/html/latest/driver-api/uio-howto.html#mmap-device-memory
@@ -580,7 +586,7 @@ public:
 		return m_invalidUioDev;
 	}
 
-	const UioDev<T>& FindUioDevByAddr(const uint32_t& addr) const
+	const UioDev<T>& FindUioDevByAddr(const T& addr) const
 	{
 		for (const UioDev<T>& uioDev : m_uioDevs)
 		{

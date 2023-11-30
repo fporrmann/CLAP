@@ -9,6 +9,14 @@ if(WIN32)
 	add_definitions(-DNOMINMAX)
 endif()
 
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+	add_definitions(-DCLAP_32BIT)
+endif()
+
+if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	add_definitions(-DCLAP_64BIT)
+endif()
+
 include(FindPackageHandleStandardArgs)
 find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)

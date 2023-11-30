@@ -290,7 +290,7 @@ private:
 
 	uint64_t readUIO(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
 		{
 			std::stringstream ss;
@@ -303,7 +303,7 @@ private:
 
 	uint64_t writeUIO(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
 		{
 			std::stringstream ss;
@@ -376,7 +376,7 @@ private:
 
 	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
 
 		return dev.ReadBinaryProperty<uint32_t>(propName);
@@ -384,7 +384,7 @@ private:
 
 	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
 		{
 			LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
@@ -397,12 +397,12 @@ private:
 	// TODO: Check if the properties are always 32-bit values or if they are 64-bit values on 64-bit systems
 	Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
 
 		Expected<std::vector<uint32_t>> res = dev.ReadBinaryPropertyVec<uint32_t>(propName);
 
-		if(!res) return MakeUnexpected();
+		if (!res) return MakeUnexpected();
 
 		std::vector<uint64_t> res64;
 		res64.reserve(res.Value().size());
@@ -414,7 +414,7 @@ private:
 
 	Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const
 	{
-		const UioDev<uint32_t>& dev = m_uioManager.FindUioDevByAddr(addr);
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
 
 		return dev.GetId();
@@ -425,8 +425,8 @@ private:
 	int32_t m_fd               = -1;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
-	Mode m_mode                       = Mode::DevMem;
-	UioManager<uint32_t> m_uioManager = {};
+	Mode m_mode                          = Mode::DevMem;
+	UioManager<UIOAddrType> m_uioManager = {};
 };
 
 } // namespace backends
