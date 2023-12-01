@@ -70,7 +70,6 @@ namespace clap
 {
 namespace internal
 {
-
 template<typename T>
 class UioDev
 {
@@ -244,22 +243,48 @@ public:
 			throw UIOException(ss.str());
 		}
 
-		T addrBase = m_maps[0].GetAddr();
-		T count    = 0;
-		T offset   = addr - addrBase;
+		T addrBase   = m_maps[0].GetAddr();
+		T count      = 0;
+		T bytes2Read = sizeInByte;
+
+		const T offset        = addr - addrBase;
+		const T unalignedAddr = addr % sizeof(T);
 
 		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
 
-		while (count < sizeInByte)
+		// Get a uint8_t pointer to the mapped memory of the device
+		const uint8_t* pMem = reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset;
+
+		// If the address is not aligned, read the first x-bytes sequentially
+		if (unalignedAddr != 0)
 		{
-			T bytes = sizeInByte - count;
+			const T bytes = bytes2Read > unalignedAddr ? unalignedAddr : bytes2Read;
+
+			readSingle(addr, pData, bytes);
+
+			count += bytes;
+			bytes2Read -= bytes;
+		}
+
+		const T unalignedBytes    = bytes2Read % sizeof(T);
+		const T sizeInByteAligned = bytes2Read - unalignedBytes;
+
+		while (count < sizeInByteAligned)
+		{
+			T bytes = sizeInByteAligned - count;
 
 			if (bytes > RW_MAX_SIZE)
 				bytes = RW_MAX_SIZE;
 
-			std::memcpy(pByteData + count, reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset + count), bytes);
+			std::memcpy(pByteData + count, reinterpret_cast<const void*>(pMem + count), bytes);
 
 			count += bytes;
+		}
+
+		if (unalignedBytes != 0)
+		{
+			readSingle(addr + count, reinterpret_cast<void*>(pByteData + count), unalignedBytes);
+			count += unalignedBytes;
 		}
 
 		return count;
@@ -281,22 +306,50 @@ public:
 			throw UIOException(ss.str());
 		}
 
-		T addrBase = m_maps[0].GetAddr();
-		T count    = 0;
-		T offset   = addr - addrBase;
+		T addrBase    = m_maps[0].GetAddr();
+		T count       = 0;
+		T bytes2Write = sizeInByte;
+
+		const T offset        = addr - addrBase;
+		const T unalignedAddr = addr % sizeof(T);
 
 		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
 
-		while (count < sizeInByte)
+		// Get a uint8_t pointer to the mapped memory of the device
+		uint8_t* pMem = reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset;
+
+		// If the address is not aligned, write the first x-bytes sequentially
+		if (unalignedAddr != 0)
 		{
-			T bytes = sizeInByte - count;
+			const T bytes = bytes2Write > unalignedAddr ? unalignedAddr : bytes2Write;
+
+			writeSingle(addr, pData, bytes);
+
+			count += bytes;
+			bytes2Write -= bytes;
+		}
+
+		const T unalignedBytes    = bytes2Write % sizeof(T);
+		const T sizeInByteAligned = bytes2Write - unalignedBytes;
+
+		while (count < sizeInByteAligned)
+		{
+			T bytes = sizeInByteAligned - count;
 
 			if (bytes > RW_MAX_SIZE)
 				bytes = RW_MAX_SIZE;
 
-			std::memcpy(reinterpret_cast<void*>(reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset + count), pByteData + count, bytes);
+			std::memcpy(reinterpret_cast<void*>(pMem + count), pByteData + count, bytes);
 
 			count += bytes;
+		}
+
+		// Write the last unaligned bytes sequentially
+		if (unalignedBytes != 0)
+		{
+			writeSingle(addr + count, reinterpret_cast<const void*>(pByteData + count), unalignedBytes);
+
+			count += unalignedBytes;
 		}
 
 		return count;
@@ -483,6 +536,106 @@ private:
 		propFile.close();
 
 		return propValue;
+	}
+
+	void readSingle(const T& addr, void* pData, const T& bytes) const
+	{
+		switch (bytes)
+		{
+			case 1:
+				readSingle<uint8_t>(addr, reinterpret_cast<uint8_t*>(pData));
+				break;
+			case 2:
+				readSingle<uint16_t>(addr, reinterpret_cast<uint16_t*>(pData));
+				break;
+			case 4:
+				readSingle<uint32_t>(addr, reinterpret_cast<uint32_t*>(pData));
+				break;
+			default:
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("UioDev") << "Reading \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				throw UIOException(ss.str());
+			}
+			break;
+		}
+	}
+
+	template<typename U>
+	void readSingle(const uint64_t& addr, U* pData) const
+	{
+		if (!m_valid)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("UioDev") << "Device \"" << m_name << "\" is not valid" << std::endl;
+			throw UIOException(ss.str());
+		}
+
+		if (!m_maps[0].AddrInRange(addr))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("UioDev") << "Address \"" << addr << "\" is not in range of device \"" << m_name << "\"" << std::endl;
+			throw UIOException(ss.str());
+		}
+
+		T addrBase = m_maps[0].GetAddr();
+
+		const T offset = addr - addrBase;
+
+		// Get a U pointer to the mapped memory of the device
+		const U* pMem = reinterpret_cast<const U*>(reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset);
+
+		*pData = *pMem;
+	}
+
+	void writeSingle(const T& addr, const void* pData, const T& bytes) const
+	{
+		switch (bytes)
+		{
+			case 1:
+				writeSingle<uint8_t>(addr, *reinterpret_cast<const uint8_t*>(pData));
+				break;
+			case 2:
+				writeSingle<uint16_t>(addr, *reinterpret_cast<const uint16_t*>(pData));
+				break;
+			case 4:
+				writeSingle<uint32_t>(addr, *reinterpret_cast<const uint32_t*>(pData));
+				break;
+			default:
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("UioDev") << "Writing \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				throw UIOException(ss.str());
+			}
+			break;
+		}
+	}
+
+	template<typename U>
+	void writeSingle(const T& addr, const U data) const
+	{
+		if (!m_valid)
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("UioDev") << "Device \"" << m_name << "\" is not valid" << std::endl;
+			throw UIOException(ss.str());
+		}
+
+		if (!m_maps[0].AddrInRange(addr))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("UioDev") << "Address \"" << addr << "\" is not in range of device \"" << m_name << "\"" << std::endl;
+			throw UIOException(ss.str());
+		}
+
+		T addrBase = m_maps[0].GetAddr();
+
+		const T offset = addr - addrBase;
+
+		// Get a U pointer to the mapped memory of the device
+		U* pMem = reinterpret_cast<U*>(reinterpret_cast<uint8_t*>(m_mmDev->GetPtr()) + offset);
+
+		*pMem = data;
 	}
 
 	static T readHexFromFile(const std::string& filename)
