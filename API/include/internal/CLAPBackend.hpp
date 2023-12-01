@@ -128,18 +128,21 @@ public:
 protected:
 	void logTransferTime(const uint64_t& addr, const uint64_t& sizeInByte, const Timer& timer, const bool& reading)
 	{
+		// Get the time in seconds, if the time is 0.0, set it to 1ns to avoid division by 0
+		const double tSec = (timer.GetElapsedTime() == 0.0 ? 1.0e-9 : timer.GetElapsedTime());
+
 		// Only log if the address is not in the poll list
 		if (std::find(m_pollAddrs.begin(), m_pollAddrs.end(), addr) == m_pollAddrs.end())
 		{
 			if (reading)
 			{
 				LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 			else
 			{
 				LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / timer.GetElapsedTime()) << ")" << std::endl;
+							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 		}
 	}
