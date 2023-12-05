@@ -138,9 +138,23 @@ public:
 
 	////////////////////////////////////////
 
-	void EnableInterrupts(const uint32_t& eventNo, const APInterrupts& intr = AP_INTR_ALL)
+	void EnableInterrupts(const uint32_t& eventNo = USE_AUTO_DETECT, const APInterrupts& intr = AP_INTR_ALL)
 	{
-		m_watchDog.InitInterrupt(getDevNum(), eventNo, &m_intrStat);
+		uint32_t intrID = eventNo;
+
+		if (eventNo == USE_AUTO_DETECT && m_detectedInterruptID == -1)
+			AutoDetectInterruptID();
+
+		if (m_detectedInterruptID != -1)
+			intrID = static_cast<uint32_t>(m_detectedInterruptID);
+
+		if (intrID == internal::MINUS_ONE)
+		{
+			LOG_ERROR << CLASS_TAG("HLSCore") << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
+			return;
+		}
+
+		m_watchDog.InitInterrupt(getDevNum(), intrID, &m_intrStat);
 		m_intrCtrl.EnableInterrupts(intr);
 		writeRegister<uint8_t>(ADDR_GIE, 1);
 	}
