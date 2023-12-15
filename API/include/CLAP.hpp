@@ -474,11 +474,11 @@ public:
 		Read(mem.GetBaseAddr(), pData, size);
 	}
 
-	/// @brief Reads data from the given memory object into the given XDMA buffer
+	/// @brief Reads data from the given memory object into the given CLAP buffer
 	/// @tparam T Type of the data to read
 	/// @param mem Memory object to read from
-	/// @param buffer XDMA buffer to read into
-	/// @param sizeInByte Size of the XDMA buffer in bytes
+	/// @param buffer CLAP buffer to read into
+	/// @param sizeInByte Size of the CLAP buffer in bytes
 	template<typename T>
 	void Read(const Memory& mem, CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
@@ -500,11 +500,11 @@ public:
 		Read(mem, buffer.data(), buffer.size() * sizeof(T));
 	}
 
-	/// @brief Reads data from the specified address into the given XDMA buffer
+	/// @brief Reads data from the specified address into the given CLAP buffer
 	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
-	/// @param buffer XDMA buffer to read into
-	/// @param sizeInByte Size of the XDMA buffer in bytes
+	/// @param buffer CLAP buffer to read into
+	/// @param sizeInByte Size of the CLAP buffer in bytes
 	template<typename T>
 	void Read(const uint64_t& addr, CLAPBuffer<T>& buffer, const uint64_t& sizeInByte)
 	{
@@ -518,26 +518,39 @@ public:
 		Read(addr, buffer.data(), sizeInByte);
 	}
 
-	/// @brief Reads data from the specified address into the given XDMA buffer
+	/// @brief Reads data from the specified address into the given CLAP buffer
 	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
-	/// @param buffer XDMA buffer to read into
+	/// @param buffer CLAP buffer to read into
 	template<typename T>
 	void Read(const uint64_t& addr, CLAPBuffer<T>& buffer)
 	{
 		Read(addr, buffer.data(), buffer.size() * sizeof(T));
 	}
 
-	/// @brief Reads data from the specified address and returns it as an XDMA buffer
+	/// @brief Reads data from the specified address and returns it as an CLAP buffer
 	/// @tparam T Type of the data to read
 	/// @param addr Address to read from
 	/// @param sizeInByte Size of the data buffer in bytes
-	/// @return XDMA buffer containing the read data
+	/// @return CLAP buffer containing the read data
 	template<typename T>
-	CLAPBuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint32_t& sizeInByte)
+	CLAPBuffer<T> CHECK_RESULT Read(const uint64_t& addr, const uint64_t& sizeInByte)
 	{
 		CLAPBuffer<T> buffer = CLAPBuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
 		Read<T>(addr, buffer, sizeInByte);
+		return buffer;
+	}
+
+	/// @brief Reads data from the specified memory object and returns it as an CLAP buffer
+	/// @tparam T Type of the data to read
+	/// @param mem Memory object to read from
+	/// @param sizeInByte Size of the data buffer in bytes
+	/// @return CLAP buffer containing the read data
+	template<typename T>
+	CLAPBuffer<T> CHECK_RESULT Read(const Memory& mem, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	{
+		CLAPBuffer<T> buffer = CLAPBuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
+		Read<T>(mem, buffer, sizeInByte);
 		return buffer;
 	}
 
@@ -677,7 +690,7 @@ public:
 	/// @brief Writes data to the specified memory object
 	/// @tparam T Type of the data to write
 	/// @param mem Memory object to write to
-	/// @param buffer XDMA Buffer containing the data to write
+	/// @param buffer CLAP buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
 	void Write(const Memory& mem, const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
@@ -703,7 +716,7 @@ public:
 	/// @brief Writes data to the specified address
 	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
-	/// @param buffer XDMA Buffer containing the data to write
+	/// @param buffer CLAP buffer containing the data to write
 	/// @param sizeInByte Size of the data buffer in bytes
 	template<typename T>
 	void Write(const uint64_t& addr, const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte)
@@ -721,7 +734,7 @@ public:
 	/// @brief Writes data to the specified address
 	/// @tparam T Type of the data to write
 	/// @param addr Address to write to
-	/// @param buffer XDMA Buffer containing the data to write
+	/// @param buffer CLAP buffer containing the data to write
 	template<typename T>
 	void Write(const uint64_t& addr, const CLAPBuffer<T>& buffer)
 	{
@@ -843,9 +856,9 @@ public:
 	///                      Streaming Methods                               ///
 	////////////////////////////////////////////////////////////////////////////
 
-	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified XDMA buffer
-	/// @tparam T Type of the XDMA buffer into which the data will be read
-	/// @param buffer XDMA buffer to read into
+	/// @brief Starts a streaming read, reading sizeInByte bytes into the specified CLAP buffer
+	/// @tparam T Type of the CLAP buffer into which the data will be read
+	/// @param buffer CLAP buffer to read into
 	/// @param sizeInByte Number of bytes to read
 	template<typename T>
 	void StartReadStream(CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
@@ -866,9 +879,9 @@ public:
 		startReadStream(buffer.data(), size);
 	}
 
-	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified XDMA buffer
-	/// @tparam T Type of the XDMA buffer from which the data will be written
-	/// @param buffer XDMA buffer containing the data to write
+	/// @brief Starts a streaming write, writing sizeInByte bytes from the specified CLAP buffer
+	/// @tparam T Type of the CLAP buffer from which the data will be written
+	/// @param buffer CLAP buffer containing the data to write
 	/// @param sizeInByte Number of bytes to write
 	template<typename T>
 	void StartWriteStream(const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
