@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: VDMA.hpp
  *  Copyright (c) 2021 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -111,7 +111,7 @@ public:
 
 	void Start(const DMAChannel& channel, const Memory& mem, const uint32_t& hSize, const uint32_t& vSize)
 	{
-		Start(static_cast<T>(mem.GetBaseAddr()), hSize, vSize);
+		Start(channel, static_cast<T>(mem.GetBaseAddr()), hSize, vSize);
 	}
 
 	// Starts the specified channel
@@ -132,7 +132,7 @@ public:
 			setMM2SSrcAddr(addr);
 
 			// Set the Stride to hSize
-			m_mm2sFDelyStrideReg.Stride = hSize;
+			m_mm2sFDelyStrideReg.SetStride(hSize);
 			m_mm2sFDelyStrideReg.Update(internal::Direction::WRITE);
 
 			// Set the amount of bytes in horizontal direction
@@ -156,7 +156,7 @@ public:
 			setS2MMDestAddr(addr);
 
 			// Set the Stride to hSize
-			m_s2mmFDelyStrideReg.Stride = hSize;
+			m_s2mmFDelyStrideReg.SetStride(hSize);
 			m_s2mmFDelyStrideReg.Update(internal::Direction::WRITE);
 
 			// Set the amount of bytes in horizontal direction
@@ -603,6 +603,11 @@ private:
 			RegisterElement<uint8_t>(&m_frameDelay, "FrameDelay", 24, 28);
 		}
 
+		void SetStride(const uint16_t& stride)
+		{
+			m_stride = stride;
+		}
+
 	private:
 		uint16_t m_stride    = 0;
 		uint8_t m_frameDelay = 0;
@@ -616,6 +621,11 @@ private:
 		{
 			RegisterElement<uint16_t>(&m_stride, "Stride", 0, 15);
 			RegisterElement<uint8_t>(&m_frameDelay, "FrameDelay", 24, 28);
+		}
+
+		void SetStride(const uint16_t& stride)
+		{
+			m_stride = stride;
 		}
 
 	private:
