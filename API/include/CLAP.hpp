@@ -549,7 +549,9 @@ public:
 	template<typename T>
 	CLAPBuffer<T> CHECK_RESULT Read(const Memory& mem, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
 	{
-		CLAPBuffer<T> buffer = CLAPBuffer<T>(ROUND_UP_DIV(sizeInByte, sizeof(T)), 0);
+		const uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+
+		CLAPBuffer<T> buffer = CLAPBuffer<T>(ROUND_UP_DIV(size, sizeof(T)), 0);
 		Read<T>(mem, buffer, sizeInByte);
 		return buffer;
 	}
