@@ -207,7 +207,7 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -284,7 +284,7 @@ public:
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
