@@ -110,7 +110,8 @@ public:
 
 	void AddPollAddr(const uint64_t& addr)
 	{
-		m_pollAddrs.push_back(addr);
+		if (std::find(m_pollAddrs.begin(), m_pollAddrs.end(), addr) == m_pollAddrs.end())
+			m_pollAddrs.push_back(addr);
 	}
 
 	void RemovePollAddr(const uint64_t& addr)

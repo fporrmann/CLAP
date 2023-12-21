@@ -134,6 +134,11 @@ protected:
 		m_registers.push_back(&reg);
 	}
 
+	void registerPollOffset(const uint64_t& offset)
+	{
+		CLAP()->AddPollAddress(m_ctrlOffset + offset);
+	}
+
 	template<typename T>
 	T readRegister(const uint64_t& regOffset)
 	{
