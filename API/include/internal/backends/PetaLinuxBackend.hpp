@@ -141,8 +141,8 @@ public:
 			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
 		}
-		else
-			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+		// else
+		// 	LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 
 		return false;
 	}

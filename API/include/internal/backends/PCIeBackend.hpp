@@ -147,8 +147,8 @@ public:
 			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 			return true;
 		}
-		else
-			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+		// else
+		// 	LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 
 		return false;
 #endif // _WIN32
