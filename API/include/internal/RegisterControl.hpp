@@ -33,6 +33,7 @@
 #include "Types.hpp"
 
 #include <cstdint>
+#include <cxxabi.h>
 #include <vector>
 
 // TODO: Move this to a more appropriate place
@@ -116,6 +117,15 @@ public:
 	}
 
 protected:
+	std::string className() const
+	{
+		int32_t status;
+		char* pName = abi::__cxa_demangle(typeid(*this).name(), NULL, NULL, &status);
+		std::string name(pName);
+		free(pName);
+		return name;
+	}
+
 	// Register a register to the list of known registers and
 	// setup its update callback function
 	template<typename T>
@@ -124,7 +134,7 @@ protected:
 		if constexpr (sizeof(T) > sizeof(uint64_t))
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+			ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 			throw std::runtime_error(ss.str());
 		}
 
@@ -154,7 +164,7 @@ protected:
 				return static_cast<T>(CLAP()->Read8(m_ctrlOffset + regOffset));
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 	}
@@ -178,7 +188,7 @@ protected:
 				break;
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG("") << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 
@@ -188,7 +198,7 @@ protected:
 			if (readData != regData)
 			{
 				std::stringstream ss("");
-				ss << CLASS_TAG("") << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
+				ss << CLASS_TAG(className()) << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
 				throw std::runtime_error(ss.str());
 			}
 		}
@@ -200,7 +210,7 @@ protected:
 		if (res)
 		{
 			m_detectedInterruptID = static_cast<int32_t>(res.Value());
-			LOG_INFO << CLASS_TAG("") << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+			LOG_INFO << CLASS_TAG(className()) << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
 			return true;
 		}
 
