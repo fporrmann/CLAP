@@ -42,6 +42,7 @@ using CLAPBuffer = std::vector<T, clap::internal::AlignmentAllocator<T, ALIGNMEN
 #endif
 
 using CLAPPtr = std::shared_ptr<class CLAP>;
+using Bit32Arr = std::array<bool, 32>;
 
 namespace internal
 {

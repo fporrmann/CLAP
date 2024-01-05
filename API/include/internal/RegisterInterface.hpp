@@ -449,5 +449,77 @@ public:
 protected:
 	uint32_t m_lastInterrupt = 0;
 };
+
+class Bit32Register : public Register<uint32_t>
+{
+public:
+	enum class RegUpdate
+	{
+		Update,
+		NoUpdate
+	};
+
+public:
+	Bit32Register(const std::string& name) :
+		Register(name)
+	{
+		for (std::size_t i = 0; i < m_bits.size(); i++)
+			RegisterElement<bool>(&m_bits[i], "Bit-" + std::to_string(i), static_cast<uint8_t>(i));
+	}
+
+	void Reset(const uint32_t& rstVal = 0x0)
+	{
+		// Initialize each bit with the coresponding bit of the reset value
+		for (std::size_t i = 0; i < m_bits.size(); i++)
+			m_bits[i] = (rstVal >> i) & 1;
+
+		Update(internal::Direction::WRITE);
+	}
+
+	void SetBitAt(const std::size_t& index, const bool& value)
+	{
+		if (index >= m_bits.size())
+			throw std::runtime_error("Index out of range");
+
+		m_bits[index] = value;
+
+		Update(internal::Direction::WRITE);
+	}
+
+	bool GetBitAt(const std::size_t& index, const RegUpdate& update = RegUpdate::Update)
+	{
+		if (index >= m_bits.size())
+			throw std::runtime_error("Index out of range");
+
+		if (update == RegUpdate::Update)
+			Update(Direction::READ);
+
+		return m_bits[index];
+	}
+
+	const Bit32Arr& GetBits(const RegUpdate& update = RegUpdate::Update)
+	{
+		if (update == RegUpdate::Update)
+			Update(Direction::READ);
+
+		return m_bits;
+	}
+
+	uint32_t ToUint32(const RegUpdate& update = RegUpdate::Update)
+	{
+		if (update == RegUpdate::Update)
+			Update(Direction::READ);
+
+		uint32_t val = 0x0;
+
+		for (std::size_t i = 0; i < m_bits.size(); i++)
+			val |= (m_bits[i] << i);
+
+		return val;
+	}
+
+protected:
+	Bit32Arr m_bits = { false };
+};
 } // namespace internal
 } // namespace clap

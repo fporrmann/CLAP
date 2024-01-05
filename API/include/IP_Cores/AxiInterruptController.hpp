@@ -138,12 +138,6 @@ class AxiInterruptController : public internal::RegisterControlBase
 		ADDR_ILR = 0x24
 	};
 
-	enum class RegUpdate
-	{
-		Update,
-		NoUpdate
-	};
-
 public:
 	AxiInterruptController(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
 		RegisterControlBase(pClap, ctrlOffset),
@@ -198,7 +192,7 @@ public:
 
 		uint32_t intrID = eventNo;
 
-		if(m_detectedInterruptID != -1)
+		if (m_detectedInterruptID != -1)
 			intrID = static_cast<uint32_t>(m_detectedInterruptID);
 
 		m_watchDog.InitInterrupt(getDevNum(), intrID);
@@ -296,59 +290,7 @@ private:
 		EnableInterrupt(interruptNum);
 	}
 
-	class Bit32Register : public internal::Register<uint32_t>
-	{
-	public:
-		Bit32Register(const std::string& name) :
-			Register(name)
-		{
-			for (std::size_t i = 0; i < m_bits.size(); i++)
-				RegisterElement<bool>(&m_bits[i], "Bit-" + std::to_string(i), static_cast<uint8_t>(i));
-		}
-
-		void Reset(const uint32_t& rstVal = 0x0)
-		{
-			// Initialize each bit with the coresponding bit of the reset value
-			for (std::size_t i = 0; i < m_bits.size(); i++)
-				m_bits[i] = (rstVal >> i) & 1;
-
-			Update(internal::Direction::WRITE);
-		}
-
-		void SetBitAt(const std::size_t& index, const bool& value)
-		{
-			if (index >= m_bits.size())
-				throw std::runtime_error("Index out of range");
-
-			m_bits[index] = value;
-
-			Update(internal::Direction::WRITE);
-		}
-
-		bool GetBitAt(const std::size_t& index, const RegUpdate& update = RegUpdate::Update)
-		{
-			if (index >= m_bits.size())
-				throw std::runtime_error("Index out of range");
-
-			if (update == RegUpdate::Update)
-				Update(internal::Direction::READ);
-
-			return m_bits[index];
-		}
-
-		const std::array<bool, 32>& GetBits(const RegUpdate& update = RegUpdate::Update)
-		{
-			if (update == RegUpdate::Update)
-				Update(internal::Direction::READ);
-
-			return m_bits;
-		}
-
-	protected:
-		std::array<bool, 32> m_bits = { false };
-	};
-
-	class InterruptAcknowledgeRegister : public Bit32Register
+	class InterruptAcknowledgeRegister : public internal::Bit32Register
 	{
 	public:
 		InterruptAcknowledgeRegister() :
@@ -377,7 +319,7 @@ private:
 		}
 	};
 
-	class InterruptStatusRegister : public Bit32Register
+	class InterruptStatusRegister : public internal::Bit32Register
 	{
 		DISABLE_COPY_ASSIGN_MOVE(InterruptStatusRegister)
 	public:
@@ -449,15 +391,15 @@ private:
 	bool m_running = false;
 
 	InterruptStatusRegister m_intrStatusReg   = InterruptStatusRegister();
-	Bit32Register m_intrPendingReg            = Bit32Register("Interrupt Pending Register");
-	Bit32Register m_intrEnReg                 = Bit32Register("Interrupt Enable Register");
+	internal::Bit32Register m_intrPendingReg  = internal::Bit32Register("Interrupt Pending Register");
+	internal::Bit32Register m_intrEnReg       = internal::Bit32Register("Interrupt Enable Register");
 	InterruptAcknowledgeRegister m_intrAccReg = InterruptAcknowledgeRegister();
-	Bit32Register m_setIntrEn                 = Bit32Register("Set Interrupt Enables");
-	Bit32Register m_clearIntrEn               = Bit32Register("Clear Interrupt Enables");
-	Bit32Register m_intrVecReg                = Bit32Register("Interrupt Vector Register");
+	internal::Bit32Register m_setIntrEn       = internal::Bit32Register("Set Interrupt Enables");
+	internal::Bit32Register m_clearIntrEn     = internal::Bit32Register("Clear Interrupt Enables");
+	internal::Bit32Register m_intrVecReg      = internal::Bit32Register("Interrupt Vector Register");
 	MasterEnableRegister m_masterEnReg        = MasterEnableRegister();
-	Bit32Register m_intrModeReg               = Bit32Register("Interrupt Mode Register");
-	Bit32Register m_intrLevelReg              = Bit32Register("Interrupt Level Register");
+	internal::Bit32Register m_intrModeReg     = internal::Bit32Register("Interrupt Mode Register");
+	internal::Bit32Register m_intrLevelReg    = internal::Bit32Register("Interrupt Level Register");
 };
 
 namespace internal
