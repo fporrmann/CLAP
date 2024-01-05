@@ -136,9 +136,14 @@ public:
 		Stop();
 	}
 
-	// TODO: Maybe clone configurations for the existing UserInterrupt object
+	operator bool() const
+	{
+		return (m_pInterrupt->IsSet() || m_pStatus != nullptr);
+	}
+
 	void SetUserInterrupt(UserInterruptPtr pInterrupt)
 	{
+		m_pInterrupt->TransferCallbacks(pInterrupt.get());
 		m_pInterrupt = std::move(pInterrupt);
 	}
 

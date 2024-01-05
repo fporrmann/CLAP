@@ -91,6 +91,16 @@ public:
 #endif
 	}
 
+	void TransferCallbacks(UserInterruptBase* pInterrupt)
+	{
+#ifndef EMBEDDED_XILINX
+		for (auto& callback : m_callbacks)
+			pInterrupt->RegisterCallback(callback);
+
+		m_callbacks.clear();
+#endif
+	}
+
 protected:
 	std::string m_devName = "";
 	HasInterrupt* m_pReg  = nullptr;
