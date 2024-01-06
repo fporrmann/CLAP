@@ -329,35 +329,6 @@ private:
 		}
 	}
 
-	class InterruptAcknowledgeRegister : public internal::Bit32Register
-	{
-	public:
-		InterruptAcknowledgeRegister() :
-			Bit32Register("Interrupt Acknowledge Register")
-		{
-		}
-
-		void AccnowledgeInterrupt(const uint32_t& interruptNum)
-		{
-			SetBitAt(interruptNum, true);
-
-			// Reset the bit to 0 so it does not trigger when a different interrupt is accnowledged
-			m_bits[interruptNum] = false;
-		}
-
-		void AccnowledgeAllInterrupts()
-		{
-			for (bool& bit : m_bits)
-				bit = true;
-
-			Update(internal::Direction::WRITE);
-
-			// Reset all bits to 0
-			for (bool& bit : m_bits)
-				bit = false;
-		}
-	};
-
 	class IPInterruptEnableRegister : public internal::Bit32Register
 	{
 		DISABLE_COPY_ASSIGN_MOVE(IPInterruptEnableRegister)

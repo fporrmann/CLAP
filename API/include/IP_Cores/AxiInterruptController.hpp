@@ -147,7 +147,7 @@ public:
 		registerReg<uint32_t>(m_intrStatusReg, ADDR_ISR);
 		registerReg<uint32_t>(m_intrPendingReg, ADDR_IPR);
 		registerReg<uint32_t>(m_intrEnReg, ADDR_IER);
-		registerReg<uint32_t>(m_intrAccReg, ADDR_IAR);
+		registerReg<uint32_t>(m_intrAckReg, ADDR_IAR);
 		registerReg<uint32_t>(m_setIntrEn, ADDR_SIE);
 		registerReg<uint32_t>(m_clearIntrEn, ADDR_CIE);
 		registerReg<uint32_t>(m_intrVecReg, ADDR_IVR);
@@ -167,7 +167,7 @@ public:
 
 	void Reset()
 	{
-		m_intrAccReg.AccnowledgeAllInterrupts();
+		m_intrAckReg.AcknowledgeAllInterrupts();
 		m_intrStatusReg.Reset();
 		m_intrPendingReg.Reset();
 		m_intrEnReg.Reset();
@@ -177,8 +177,8 @@ public:
 		m_masterEnReg.Reset();
 		m_intrModeReg.Reset();
 		m_intrLevelReg.Reset(0xFFFFFFFF);
-		m_intrAccReg.AccnowledgeAllInterrupts();
-		m_intrAccReg.Reset();
+		m_intrAckReg.AcknowledgeAllInterrupts();
+		m_intrAckReg.Reset();
 	}
 
 	/// @brief Start the interrupt controller and enable the interrupt line
@@ -246,7 +246,7 @@ public:
 					if (m_intrCallbacks.count(idx))
 						m_intrCallbacks[idx]();
 
-					m_intrAccReg.AccnowledgeInterrupt(idx);
+					m_intrAckReg.AcknowledgeInterrupt(idx);
 				}
 
 				idx++;
@@ -298,15 +298,15 @@ private:
 		{
 		}
 
-		void AccnowledgeInterrupt(const uint32_t& interruptNum)
+		void AcknowledgeInterrupt(const uint32_t& interruptNum)
 		{
 			SetBitAt(interruptNum, true);
 
-			// Reset the bit to 0 so it does not trigger when a different interrupt is accnowledged
+			// Reset the bit to 0 so it does not trigger when a different interrupt is acknowledged
 			m_bits[interruptNum] = false;
 		}
 
-		void AccnowledgeAllInterrupts()
+		void AcknowledgeAllInterrupts()
 		{
 			for (bool& bit : m_bits)
 				bit = true;
@@ -393,7 +393,7 @@ private:
 	InterruptStatusRegister m_intrStatusReg   = InterruptStatusRegister();
 	internal::Bit32Register m_intrPendingReg  = internal::Bit32Register("Interrupt Pending Register");
 	internal::Bit32Register m_intrEnReg       = internal::Bit32Register("Interrupt Enable Register");
-	InterruptAcknowledgeRegister m_intrAccReg = InterruptAcknowledgeRegister();
+	InterruptAcknowledgeRegister m_intrAckReg = InterruptAcknowledgeRegister();
 	internal::Bit32Register m_setIntrEn       = internal::Bit32Register("Set Interrupt Enables");
 	internal::Bit32Register m_clearIntrEn     = internal::Bit32Register("Clear Interrupt Enables");
 	internal::Bit32Register m_intrVecReg      = internal::Bit32Register("Interrupt Vector Register");
