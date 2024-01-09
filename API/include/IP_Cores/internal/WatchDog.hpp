@@ -28,6 +28,7 @@
 
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -35,14 +36,13 @@
 #include "../../internal/Constants.hpp"
 #include "../../internal/Exceptions.hpp"
 #include "../../internal/Logger.hpp"
+#include "../../internal/Timer.hpp"
 #include "../../internal/Types.hpp"
 #include "../../internal/UserInterruptBase.hpp"
 
 #ifndef EMBEDDED_XILINX
-#include "../../internal/Timer.hpp"
 #include <atomic>
 #include <chrono>
-#include <functional>
 #include <mutex>
 #endif
 
@@ -53,11 +53,9 @@ namespace internal
 static std::exception_ptr g_pExcept = nullptr;
 static int64_t g_pollSleepTimeMS    = 10;
 
-#ifndef EMBEDDED_XILINX
 // TODO: Rename to indicate that this also controls whether the thread should be terminated
 // TODO: Also replace the bool with an enum
 using WatchDogFinishCallback = std::function<bool(void)>;
-#endif
 
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
 //       Find a better way, i.e., a way to interrupt the call to poll (ppoll or epoll might be a solution)
@@ -119,14 +117,14 @@ class WatchDog
 public:
 	WatchDog(const std::string& name, UserInterruptPtr pInterrupt) :
 		m_name(name),
-		m_pInterrupt(std::move(pInterrupt))
+		m_pInterrupt(std::move(pInterrupt)),
+		m_timer()
 #ifndef EMBEDDED_XILINX
 		,
 		m_mtx(),
 		m_waitThread(),
 		m_cv(),
-		m_threadDone(false),
-		m_timer()
+		m_threadDone(false)
 #endif
 	{
 	}
@@ -245,6 +243,7 @@ public:
 		joinThread();
 		checkException();
 #else
+		// TODO: Implement callback handling for WatchDogFinishCallback
 		while (!m_pStatus->PollDone())
 			usleep(1);
 #endif
@@ -254,11 +253,7 @@ public:
 
 	double GetRuntime() const
 	{
-#ifndef EMBEDDED_XILINX
 		return m_timer.GetElapsedTimeInMilliSec();
-#else
-		return 0.0; // TODO: Add embedded runtime measurement
-#endif
 	}
 
 	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
@@ -268,9 +263,7 @@ public:
 
 	void SetFinishCallback(WatchDogFinishCallback callback)
 	{
-#ifndef EMBEDDED_XILINX
 		m_callback = callback;
-#endif
 	}
 
 private:
@@ -304,16 +297,16 @@ private:
 private:
 	std::string m_name;
 	UserInterruptPtr m_pInterrupt;
+	Timer m_timer;
 #ifndef EMBEDDED_XILINX
 	std::mutex m_mtx;
 	std::thread m_waitThread;
 	std::condition_variable m_cv;
 	bool m_threadRunning = false;
 	std::atomic<bool> m_threadDone;
-	Timer m_timer;
-	WatchDogFinishCallback m_callback = nullptr;
 #endif
-	HasStatus* m_pStatus = nullptr;
+	WatchDogFinishCallback m_callback = nullptr;
+	HasStatus* m_pStatus              = nullptr;
 };
 } // namespace internal
 

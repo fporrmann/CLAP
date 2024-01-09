@@ -94,10 +94,28 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		uint64_t count     = 0;
-		off_t offset       = addr;
-		uint8_t* pByteData = reinterpret_cast<uint8_t*>(pData);
+		uint64_t count      = 0;
+		uint64_t offset     = addr;
+		uint64_t bytes2Read = sizeInByte;
+		uint8_t* pByteData  = reinterpret_cast<uint8_t*>(pData);
 
+		const uint64_t unalignedAddr = addr % sizeof(uint64_t); // TODO: Check if this is correct, especially for 32-bit systems
+
+		// Get a uint8_t pointer to the memory
+		const uint8_t* pMem = reinterpret_cast<uint8_t*>(offset);
+
+		// If the address is not aligned, read the first x-bytes sequentially
+		if (unalignedAddr != 0)
+		{
+			const uint64_t bytes = bytes2Read > unalignedAddr ? unalignedAddr : bytes2Read;
+
+			readSingle(addr, pData, bytes);
+
+			count += bytes;
+			bytes2Read -= bytes;
+		}
+
+		/*
 		while (count < sizeInByte)
 		{
 			uint64_t bytes = sizeInByte - count;
@@ -109,6 +127,31 @@ public:
 
 			count += bytes;
 			offset += bytes;
+		}
+
+		*/
+
+		//	T Read(const T& addr, void* pData, const T& sizeInByte) const
+
+		const uint64_t unalignedBytes    = bytes2Read % sizeof(uint64_t);
+		const uint64_t sizeInByteAligned = bytes2Read - unalignedBytes;
+
+		while (count < sizeInByteAligned)
+		{
+			uint64_t bytes = sizeInByteAligned - count;
+
+			if (bytes > RW_MAX_SIZE)
+				bytes = RW_MAX_SIZE;
+
+			std::memcpy(pByteData + count, reinterpret_cast<const void*>(pMem + count), bytes);
+
+			count += bytes;
+		}
+
+		if (unalignedBytes != 0)
+		{
+			readSingle(addr + count, reinterpret_cast<void*>(pByteData + count), unalignedBytes);
+			count += unalignedBytes;
 		}
 
 		if (count != sizeInByte)
@@ -132,19 +175,62 @@ public:
 
 		uint64_t count           = 0;
 		const uint8_t* pByteData = reinterpret_cast<const uint8_t*>(pData);
-		off_t offset             = addr;
+		uint64_t offset          = addr;
+		uint64_t bytes2Write     = sizeInByte;
 
-		while (count < sizeInByte)
+		const uint64_t unalignedAddr = addr % sizeof(uint64_t); // TODO: Check if this is correct, especially for 32-bit systems
+
+		/*while (count < sizeInByte)
 		{
 			uint64_t bytes = sizeInByte - count;
 
 			if (bytes > RW_MAX_SIZE)
 				bytes = RW_MAX_SIZE;
 
+			std::cout << "Memcpy ... " << std::flush;
+
 			memcpy((void*)(offset), pByteData + count, bytes);
+
+			std::cout << "Done" << std::endl;
 
 			count += bytes;
 			offset += bytes;
+		}*/
+
+		// Get a uint8_t pointer to the mapped memory of the device
+		uint8_t* pMem = reinterpret_cast<uint8_t*>(offset);
+
+		// If the address is not aligned, write the first x-bytes sequentially
+		if (unalignedAddr != 0)
+		{
+			const uint64_t bytes = bytes2Write > unalignedAddr ? unalignedAddr : bytes2Write;
+
+			writeSingle(addr, pData, bytes);
+
+			count += bytes;
+			bytes2Write -= bytes;
+		}
+
+		const uint64_t unalignedBytes    = bytes2Write % sizeof(uint64_t);
+		const uint64_t sizeInByteAligned = bytes2Write - unalignedBytes;
+
+		while (count < sizeInByteAligned)
+		{
+			uint64_t bytes = sizeInByteAligned - count;
+
+			if (bytes > RW_MAX_SIZE)
+				bytes = RW_MAX_SIZE;
+
+			std::memcpy(reinterpret_cast<void*>(pMem + count), pByteData + count, bytes);
+
+			count += bytes;
+		}
+
+		// Write the last unaligned bytes sequentially
+		if (unalignedBytes != 0)
+		{
+			writeSingle(addr + count, reinterpret_cast<const void*>(pByteData + count), unalignedBytes);
+			count += unalignedBytes;
 		}
 
 		if (count != sizeInByte)
@@ -163,6 +249,67 @@ public:
 	UserInterruptPtr MakeUserInterrupt() const
 	{
 		return std::make_unique<BareMetalUserInterrupt>();
+	}
+
+private:
+	void readSingle(const uint64_t& addr, void* pData, const uint64_t& bytes) const
+	{
+		switch (bytes)
+		{
+			case 1:
+				readSingle<uint8_t>(addr, reinterpret_cast<uint8_t*>(pData));
+				break;
+			case 2:
+				readSingle<uint16_t>(addr, reinterpret_cast<uint16_t*>(pData));
+				break;
+			case 4:
+				readSingle<uint32_t>(addr, reinterpret_cast<uint32_t*>(pData));
+				break;
+			default:
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("BareMetalBackend") << "Reading \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				throw UIOException(ss.str());
+			}
+			break;
+		}
+	}
+
+	template<typename T>
+	void readSingle(const uint64_t& addr, T* pData) const
+	{
+		const T* pMem = reinterpret_cast<const T*>(reinterpret_cast<uint8_t*>(addr));
+		*pData        = *pMem;
+	}
+
+	void writeSingle(const uint64_t& addr, const void* pData, const uint64_t& bytes) const
+	{
+		switch (bytes)
+		{
+			case 1:
+				writeSingle<uint8_t>(addr, *reinterpret_cast<const uint8_t*>(pData));
+				break;
+			case 2:
+				writeSingle<uint16_t>(addr, *reinterpret_cast<const uint16_t*>(pData));
+				break;
+			case 4:
+				writeSingle<uint32_t>(addr, *reinterpret_cast<const uint32_t*>(pData));
+				break;
+			default:
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG("BareMetalBackend") << "Writing \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				throw UIOException(ss.str());
+			}
+			break;
+		}
+	}
+
+	template<typename T>
+	void writeSingle(const uint64_t& addr, const T data) const
+	{
+		T* pMem = reinterpret_cast<T*>(reinterpret_cast<uint8_t*>(addr));
+		*pMem   = data;
 	}
 };
 

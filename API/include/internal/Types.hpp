@@ -34,12 +34,16 @@
 namespace clap
 {
 #ifdef EMBEDDED_XILINX
-using CLAPBuffer = std::vector<uint8_t>;
+template<class T>
+using CLAPBufferAllocator = std::allocator<T>;
 #else
 #include "AlignmentAllocator.hpp"
 template<class T>
-using CLAPBuffer = std::vector<T, clap::internal::AlignmentAllocator<T, ALIGNMENT>>;
+using CLAPBufferAllocator = clap::internal::AlignmentAllocator<T, ALIGNMENT>;
 #endif
+
+template<class T>
+using CLAPBuffer = std::vector<T, CLAPBufferAllocator<T>>;
 
 using CLAPPtr = std::shared_ptr<class CLAP>;
 using Bit32Arr = std::array<bool, 32>;

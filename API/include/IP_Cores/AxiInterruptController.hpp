@@ -68,6 +68,7 @@ public:
 		return true;
 	}
 
+#ifndef EMBEDDED_XILINX
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 		std::mutex mtx;
@@ -101,6 +102,13 @@ public:
 
 		return true;
 	}
+#else
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
+	{
+		// TODO: Implement this
+		return false;
+	}
+#endif
 
 	void TriggerInterrupt()
 	{
@@ -108,13 +116,17 @@ public:
 			m_pReg->ClearInterrupts();
 
 		m_interruptOccured = true;
+#ifndef EMBEDDED_XILINX
 		m_cv.notify_all();
+#endif
 		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
 	}
 
 private:
 	AxiInterruptController* m_pAxiIntC;
+#ifndef EMBEDDED_XILINX
 	std::condition_variable m_cv = {};
+#endif
 	bool m_interruptOccured      = false;
 };
 } // namespace internal

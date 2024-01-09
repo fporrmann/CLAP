@@ -119,7 +119,7 @@ public:
 protected:
 	std::string className() const
 	{
-		int32_t status;
+		int status;
 		char* pName = abi::__cxa_demangle(typeid(*this).name(), NULL, NULL, &status);
 		std::string name(pName);
 		free(pName);

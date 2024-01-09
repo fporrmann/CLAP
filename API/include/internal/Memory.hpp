@@ -35,6 +35,7 @@
 #include <sstream>
 
 #include "Exceptions.hpp"
+#include "StdStub.hpp"
 
 namespace clap
 {
@@ -124,9 +125,7 @@ public:
 		m_baseAddr(baseAddr),
 		m_size(size),
 		m_spaceLeft(size),
-#ifndef EMBEDDED_XILINX
 		m_mutex(),
-#endif
 		m_freeMemory(),
 		m_usedMemory()
 	{
@@ -156,9 +155,7 @@ public:
 		const uint64_t pad         = (modSize == 0) ? 0 : (ALIGNMENT - modSize);
 		const uint64_t alignedSize = size + pad;
 
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		uint64_t addr = INV_NULL;
 
@@ -196,9 +193,7 @@ public:
 
 	bool FreeMemory(Memory& buffer)
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		// Search for the given address in the list of used memory regions
 		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [buffer](const MemList::value_type& p) { return p.first == buffer.m_baseAddr; });
@@ -224,9 +219,7 @@ public:
 
 	void Reset()
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		m_freeMemory.clear();
 		m_usedMemory.clear();
@@ -268,9 +261,7 @@ private:
 	uint64_t m_baseAddr;
 	uint64_t m_size;
 	uint64_t m_spaceLeft;
-#ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
-#endif
 	MemList m_freeMemory;
 	MemList m_usedMemory;
 };

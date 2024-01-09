@@ -29,6 +29,7 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
+#include "StdStub.hpp"
 
 namespace clap
 {

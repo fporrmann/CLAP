@@ -25,11 +25,15 @@
  */
 
 #pragma once
+
+#ifndef EMBEDDED_XILINX
 #include <chrono>
 #include <cmath>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
+#endif
+
 #include <ostream>
 #include <string>
 
@@ -51,12 +55,59 @@ namespace clap
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
+#ifndef EMBEDDED_XILINX
 #ifdef _MSC_VER
 using Clock = std::chrono::system_clock;
 #else
 using Clock = std::chrono::high_resolution_clock;
 #endif
+#endif
 
+#ifdef EMBEDDED_XILINX
+// TODO: Implement proper Timer for embedded Xilinx, currently only a stub
+class Timer
+{
+public:
+	Timer()  = default;
+	~Timer() = default;
+
+	void Start() {}
+	void Stop() {}
+	void Restart() {}
+
+	uint64_t GetElapsedTimeInMicroSec() const
+	{
+		return 0;
+	}
+	double GetElapsedTime() const
+	{
+		return 0.0;
+	}
+	double GetElapsedTimeInSec() const
+	{
+		return 0.0;
+	}
+	double GetElapsedTimeInMilliSec() const
+	{
+		return 0.0;
+	}
+
+	friend Timer operator+(const Timer& t1, const Timer& t2)
+	{
+		return Timer();
+	}
+	Timer& operator+=(const Timer& t1)
+	{
+		return *this;
+	}
+
+	friend std::ostream& operator<<(std::ostream& stream, const Timer& t)
+	{
+		return stream;
+	}
+};
+
+#else
 class Timer
 {
 public:
@@ -172,6 +223,7 @@ private:
 	Clock::time_point m_StartTime;
 	Clock::time_point m_EndTime;
 };
+#endif
 
 #define FuncTime() funcTime __ft(__PRETTY_FUNCTION__)
 

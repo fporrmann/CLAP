@@ -48,6 +48,8 @@
 // --------------------------------------------------------------------------------------------
 // - Address of memory can differ between internal and external
 // --------------------------------------------------------------------------------------------
+// - Read/Write stream methods are only implemented for XDMA, possible for other backends? -- Move to different location
+// --------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////
@@ -83,13 +85,14 @@
 #include "internal/Expected.hpp"
 #include "internal/Memory.hpp"
 #include "internal/SoloRunWarden.hpp"
+#include "internal/Timer.hpp"
 #include "internal/Types.hpp"
 #include "internal/Utils.hpp"
 
 #ifndef EMBEDDED_XILINX
 #include "internal/AlignmentAllocator.hpp"
-#include "internal/Timer.hpp"
 #endif
+
 
 namespace clap
 {
@@ -252,13 +255,13 @@ private:
 	CLAP(internal::CLAPBackendPtr pBackend) :
 		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(std::move(pBackend)),
-		m_memories()
-#ifndef EMBEDDED_XILINX
-		,
+		m_memories(),
 		m_mutex()
-#endif
 	{
+#ifndef EMBEDDED_XILINX
 		internal::SoloRunWarden::GetInstance();
+#endif
+
 		m_memories.insert(MemoryPair(MemoryType::DDR, internal::MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, internal::MemoryManagerVec()));
 
@@ -319,9 +322,7 @@ public:
 	/// @return Allocated memory block
 	Memory AllocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		if (memIdx == -1)
 		{
@@ -588,7 +589,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to read from
 	/// @param data Vector into which the data will be read
-	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
+	template<class T, class A = CLAPBufferAllocator<T>>
 	void Read(const uint64_t& addr, std::vector<T, A>& data)
 	{
 		std::size_t size = sizeof(T);
@@ -760,7 +761,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param addr Address to write to
 	/// @param data Vector containing the data to write to the specified address
-	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
+	template<class T, class A = CLAPBufferAllocator<T>>
 	void Write(const uint64_t& addr, const std::vector<T, A>& data)
 	{
 		Write(addr, data.data(), data.size() * sizeof(T));
@@ -874,7 +875,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector to read into
 	/// @param sizeInByte Number of bytes to read
-	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
+	template<class T, class A = CLAPBufferAllocator<T>>
 	void StartReadStream(std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -897,7 +898,7 @@ public:
 	/// @tparam A The allocator used for the vector
 	/// @param buffer Vector containing the data to write
 	/// @param sizeInByte Number of bytes to write
-	template<class T, class A = clap::internal::AlignmentAllocator<T, ALIGNMENT>>
+	template<class T, class A = CLAPBufferAllocator<T>>
 	void StartWriteStream(const std::vector<T, A>& buffer, const uint64_t& sizeInByte = USE_VECTOR_SIZE)
 	{
 		uint64_t size = (sizeInByte == USE_VECTOR_SIZE ? buffer.size() * sizeof(T) : sizeInByte);
@@ -935,22 +936,14 @@ public:
 	/// @return Runtime in milliseconds
 	double GetReadStreamRuntime() const
 	{
-#ifndef EMBEDDED_XILINX
 		return m_readStreamTimer.GetElapsedTimeInMilliSec();
-#else
-		return 0.0; // TODO: Add embedded runtime measurement
-#endif
 	}
 
 	/// @brief Returns the runtime of the last write stream operation in milliseconds
 	/// @return Runtime in milliseconds
 	double GetWriteStreamRuntime() const
 	{
-#ifndef EMBEDDED_XILINX
 		return m_writeStreamTimer.GetElapsedTimeInMilliSec();
-#else
-		return 0.0; // TODO: Add embedded runtime measurement
-#endif
 	}
 
 private:
@@ -1112,9 +1105,7 @@ private:
 
 	XDMAInfo m_info = {};
 
-#ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
-#endif
 };
 
 #ifndef _WIN32
@@ -1127,11 +1118,8 @@ public:
 		CLAPBase(deviceNum),
 		m_pioDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_user"),
 		m_pioSize(pioSize),
-		m_pioOffset(pioOffset)
-#ifndef EMBEDDED_XILINX
-		,
+		m_pioOffset(pioOffset),
 		m_mutex()
-#endif
 	{
 		m_fd        = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
 		int32_t err = errno;
@@ -1162,9 +1150,9 @@ public:
 
 	~XDMAPio()
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
 
+#ifndef EMBEDDED_XILINX
 		munmap(m_pMapBase, m_pioSize);
 #endif
 		close(m_fd);
@@ -1214,9 +1202,7 @@ private:
 	template<typename T>
 	T read(const uint64_t& addr)
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		if (!m_valid)
 		{
@@ -1248,9 +1234,7 @@ private:
 	template<typename T>
 	void write(const uint64_t& addr, const T& data)
 	{
-#ifndef EMBEDDED_XILINX
 		std::lock_guard<std::mutex> lock(m_mutex);
-#endif
 
 		if (!m_valid)
 		{
@@ -1285,9 +1269,7 @@ private:
 	int32_t m_fd     = -1;
 	void* m_pMapBase = nullptr;
 	bool m_valid     = false;
-#ifndef EMBEDDED_XILINX
 	std::mutex m_mutex;
-#endif
 
 	static const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
 };

@@ -44,10 +44,10 @@
 #include <poll.h>
 #endif
 /////////////////////////
-#include <functional>
 #endif
 
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -86,27 +86,21 @@ public:
 
 	void RegisterCallback([[maybe_unused]] const std::function<void(uint32_t)>& callback)
 	{
-#ifndef EMBEDDED_XILINX
 		m_callbacks.push_back(callback);
-#endif
 	}
 
 	void TransferCallbacks(UserInterruptBase* pInterrupt)
 	{
-#ifndef EMBEDDED_XILINX
 		for (auto& callback : m_callbacks)
 			pInterrupt->RegisterCallback(callback);
 
 		m_callbacks.clear();
-#endif
 	}
 
 protected:
 	std::string m_devName = "";
 	HasInterrupt* m_pReg  = nullptr;
-#ifndef EMBEDDED_XILINX
 	std::vector<std::function<void(uint32_t)>> m_callbacks = {};
-#endif
 	uint32_t m_interruptNum = 0;
 };
 } // namespace internal
