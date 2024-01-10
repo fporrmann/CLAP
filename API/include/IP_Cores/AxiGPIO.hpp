@@ -283,7 +283,7 @@ private:
 		if (res)
 		{
 			m_isDualChannel = (static_cast<uint32_t>(res.Value()) != 0);
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected dual channel mode: " << (m_isDualChannel ? "ON" : "OFF") << std::endl;
+			LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected dual channel mode: " << (m_isDualChannel ? "ON" : "OFF") << std::endl;
 		}
 	}
 
