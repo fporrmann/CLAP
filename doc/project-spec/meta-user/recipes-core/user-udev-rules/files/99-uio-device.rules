@@ -1,0 +1,8 @@
+SUBSYSTEM=="uio", GROUP="users", MODE="0666"
+
+
+# inspired by https://support.xilinx.com/s/question/0D54U00007Oh1E3SAJ/petalinux-permissions-ownership-of-device-nodes-in-dev?language=en_US
+# 
+# if you want to assign new group access rights, do this here
+# EXTRA_USERS_PARAMS += "groupadd -r spiuser;groupadd -r i2cuser;usermod -a -G spiuser petalinux;usermod -a -G i2cuser petalinux;
+# IMAGE_INSTALL:pn-petalinux-image-minimal:append = " user-udev-rules"

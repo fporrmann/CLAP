@@ -242,9 +242,31 @@ nano project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi
 ```
 4. Build PetaLinux, e.g., using `petalinux-build` or if the project has already been built and only changes to the device tree have been made using `petalinux-build -c kernel`
 
-### Allow users to access the UIO devices
 
+### Allow users to access the UIO devices without root permissions
+
+#### Variant A (online):
 ```bash
 echo "SUBSYSTEM==\"uio\", GROUP=\"users\", MODE=\"0666\"" | sudo tee /etc/udev/rules.d/uio.rules
 sudo udevadm trigger
 ```
+
+
+#### Variant B (integrate as bitbake recipe in petalinux-build):
+
+1. Create folder for udev rules recipes in your petalinux folder: 
+```
+mkdir -p project-spec/meta-user/recipes-core/user-udev-rules/files
+```
+
+2. Copy content of [doc/project_spec...](doc/project_spec/meta-user/recipes-core/) to your **project-spec** folder
+
+- place ```user-udev-rules.bb``` into ```project-spec/meta-user/recipes-core/user-udev-rules/```
+- place ```99-uio-device.rules``` into ```project-spec/meta-user/recipes-core/user-udev-rules/files```
+
+3. Append to project-spec/meta-user/conf/petalinuxbsp.conf
+```
+IMAGE_INSTALL:pn-petalinux-image-minimal:append = " user-udev-rules"
+```
+
+4. Re-build and deploy. 
