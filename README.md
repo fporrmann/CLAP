@@ -259,7 +259,7 @@ sudo udevadm trigger
 mkdir -p project-spec/meta-user/recipes-core/user-udev-rules/files
 ```
 
-2. Copy content of [doc/project_spec...](doc/project_spec/meta-user/recipes-core/) to your **project-spec** folder
+2. Copy content of [doc/project_spec/...](doc/project-spec/meta-user/recipes-core) to your **project-spec** folder
 
 - place ```user-udev-rules.bb``` into ```project-spec/meta-user/recipes-core/user-udev-rules/```
 - place ```99-uio-device.rules``` into ```project-spec/meta-user/recipes-core/user-udev-rules/files```
