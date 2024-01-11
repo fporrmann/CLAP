@@ -52,7 +52,7 @@ public:
 		return instance;
 	}
 
-	SoloRunWarden(SoloRunWarden const&)  = delete;
+	SoloRunWarden(SoloRunWarden const&) = delete;
 	void operator=(SoloRunWarden const&) = delete;
 
 private:
@@ -76,8 +76,13 @@ private:
 			else
 			{
 				LOG_WARNING << CLASS_TAG("SoloRunWarden") << "Warning: Lock file exists but process is not running - deleting lock file and continuing" << std::endl;
+
 				// Process is not running
-				unlink(LOCK_FILE.c_str());
+				if (unlink(LOCK_FILE.c_str()) != 0)
+				{
+					LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Unable to delete lock file (" << LOCK_FILE << ") - Please delete it manually and restart the application" << std::endl;
+					exit(1);
+				}
 			}
 		}
 
