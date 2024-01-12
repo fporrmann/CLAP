@@ -1082,7 +1082,7 @@ private:
 	template<typename T>
 	T readCtrl(const uint64_t& addr)
 	{
-		uint64_t tmp;
+		uint64_t tmp = 0;
 		m_pBackend->ReadCtrl(addr, tmp, sizeof(T));
 		return static_cast<T>(tmp);
 	}
