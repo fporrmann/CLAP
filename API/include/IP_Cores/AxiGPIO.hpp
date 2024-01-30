@@ -178,7 +178,7 @@ public:
 
 		if (m_watchDog && !m_watchDog.Start(true))
 		{
-			LOG_ERROR << CLASS_TAG("AxiGPIO") << "Trying to start GPIO at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("AxiGPIO") << "Trying to start GPIO at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
 			return false;
 		}
 
@@ -190,14 +190,14 @@ public:
 	void Stop()
 	{
 		if (!m_running) return;
-		LOG_INFO << CLASS_TAG("AxiGPIO") << "Stopping GPIO at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
+		CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Stopping GPIO at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
 
 		m_watchDog.Stop();
 		m_watchDog.UnsetInterrupt();
 
 		m_running = false;
 
-		LOG_INFO << "Done" << std::endl;
+		CLAP_LOG_INFO << "Done" << std::endl;
 	}
 
 	void SetGPIOState(const Channel& channel, const uint32_t& port, const PortStates& state)
@@ -283,7 +283,7 @@ private:
 		if (res)
 		{
 			m_isDualChannel = (static_cast<uint32_t>(res.Value()) != 0);
-			LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected dual channel mode: " << (m_isDualChannel ? "ON" : "OFF") << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected dual channel mode: " << (m_isDualChannel ? "ON" : "OFF") << std::endl;
 		}
 	}
 
@@ -293,7 +293,7 @@ private:
 		if (res)
 		{
 			m_gpioWidth[0] = static_cast<uint32_t>(res.Value());
-			LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO width for channel 1: " << m_gpioWidth[0] << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO width for channel 1: " << m_gpioWidth[0] << std::endl;
 		}
 
 		if (m_isDualChannel)
@@ -303,7 +303,7 @@ private:
 			if (res)
 			{
 				m_gpioWidth[1] = static_cast<uint32_t>(res.Value());
-				LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO width for channel 2: " << m_gpioWidth[1] << std::endl;
+				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO width for channel 2: " << m_gpioWidth[1] << std::endl;
 			}
 		}
 	}
@@ -314,7 +314,7 @@ private:
 		if (res)
 		{
 			m_triDefaultValue[0] = static_cast<uint32_t>(res.Value());
-			LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 1: 0x" << std::hex << m_triDefaultValue[0] << std::dec << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 1: 0x" << std::hex << m_triDefaultValue[0] << std::dec << std::endl;
 		}
 
 		if (m_isDualChannel)
@@ -324,7 +324,7 @@ private:
 			if (res)
 			{
 				m_triDefaultValue[1] = static_cast<uint32_t>(res.Value());
-				LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 2: 0x" << std::hex << m_triDefaultValue[1] << std::dec << std::endl;
+				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 2: 0x" << std::hex << m_triDefaultValue[1] << std::dec << std::endl;
 			}
 		}
 	}

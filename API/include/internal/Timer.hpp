@@ -241,8 +241,8 @@ public:
 	{
 		m_timer.Stop();
 		if (!m_funcName.empty())
-			LOG_INFO << m_funcName << " - " << std::flush;
-		LOG_INFO << "Execution Time: " << m_timer << std::endl;
+			CLAP_LOG_INFO << m_funcName << " - " << std::flush;
+		CLAP_LOG_INFO << "Execution Time: " << m_timer << std::endl;
 	}
 
 private:

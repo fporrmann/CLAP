@@ -210,7 +210,7 @@ protected:
 		if (res)
 		{
 			m_detectedInterruptID = static_cast<int32_t>(res.Value());
-			LOG_INFO << CLASS_TAG(className()) << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG(className()) << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
 			return true;
 		}
 

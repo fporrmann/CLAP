@@ -51,7 +51,7 @@ public:
 	void PrintStatus()
 	{
 		getStatus();
-		LOG_INFO << "---- ap_ctrl: ----" << std::endl
+		CLAP_LOG_INFO << "---- ap_ctrl: ----" << std::endl
 				 << "ap_start    : " << ap_start << std::endl
 				 << "ap_done     : " << ap_done << " (" << m_done << ")" << std::endl
 				 << "ap_idle     : " << ap_idle << std::endl

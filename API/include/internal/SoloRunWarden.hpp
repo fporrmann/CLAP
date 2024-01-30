@@ -70,17 +70,17 @@ private:
 			if (kill(pid, 0) == 0)
 			{
 				// Process is still running
-				LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Another instance of this program is already running" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Another instance of this program is already running" << std::endl;
 				exit(1);
 			}
 			else
 			{
-				LOG_WARNING << CLASS_TAG("SoloRunWarden") << "Warning: Lock file exists but process is not running - deleting lock file and continuing" << std::endl;
+				CLAP_LOG_WARNING << CLASS_TAG("SoloRunWarden") << "Warning: Lock file exists but process is not running - deleting lock file and continuing" << std::endl;
 
 				// Process is not running
 				if (unlink(LOCK_FILE.c_str()) != 0)
 				{
-					LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Unable to delete lock file (" << LOCK_FILE << ") - Please delete it manually and restart the application" << std::endl;
+					CLAP_LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Unable to delete lock file (" << LOCK_FILE << ") - Please delete it manually and restart the application" << std::endl;
 					exit(1);
 				}
 			}
@@ -93,7 +93,7 @@ private:
 		// Make sure the file was created successfully
 		if (!lockFileOut.is_open())
 		{
-			LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Unable to create lock file" << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("SoloRunWarden") << "Error: Unable to create lock file" << std::endl;
 			exit(1);
 		}
 

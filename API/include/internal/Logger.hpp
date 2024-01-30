@@ -183,20 +183,20 @@ static inline void SetVerbosity(const Verbosity& v)
 } // namespace logging
 
 #ifndef DISABLE_LOGGING
-#define LOG_DEBUG   logging::g_debug
-#define LOG_VERBOSE logging::g_verbose
-#define LOG_INFO    logging::g_info
-#define LOG_WARNING logging::g_warning
-#define LOG_ERROR   logging::g_error
+#define CLAP_LOG_DEBUG   logging::g_debug
+#define CLAP_LOG_VERBOSE logging::g_verbose
+#define CLAP_LOG_INFO    logging::g_info
+#define CLAP_LOG_WARNING logging::g_warning
+#define CLAP_LOG_ERROR   logging::g_error
 #else
-#define LOG_DEBUG   logging::g_none
-#define LOG_VERBOSE logging::g_none
-#define LOG_INFO    logging::g_none
-#define LOG_WARNING logging::g_none
-#define LOG_ERROR   logging::g_none
+#define CLAP_LOG_DEBUG   logging::g_none
+#define CLAP_LOG_VERBOSE logging::g_none
+#define CLAP_LOG_INFO    logging::g_none
+#define CLAP_LOG_WARNING logging::g_none
+#define CLAP_LOG_ERROR   logging::g_none
 #endif
 
 /// Info log messages that will not be disabled by the DISABLE_LOGGING macro
-#define LOG_INFO_ALWAYS logging::g_info
+#define CLAP_LOG_INFO_ALWAYS logging::g_info
 
 } // namespace clap

@@ -98,7 +98,7 @@ public:
 				callback(lastIntr);
 		}
 
-		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 
 		return true;
 	}
@@ -119,7 +119,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		m_cv.notify_all();
 #endif
-		LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
 	}
 
 private:
@@ -211,7 +211,7 @@ public:
 
 		if (!m_watchDog.Start(true))
 		{
-			LOG_ERROR << CLASS_TAG("AxiInterruptController") << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("AxiInterruptController") << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
 			return false;
 		}
 
@@ -221,7 +221,7 @@ public:
 	void Stop()
 	{
 		if (!m_running) return;
-		LOG_INFO << CLASS_TAG("AxiInterruptController") << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
+		CLAP_LOG_INFO << CLASS_TAG("AxiInterruptController") << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
 		stop();
 
 		m_watchDog.Stop();
@@ -229,7 +229,7 @@ public:
 
 		m_running = false;
 
-		LOG_INFO << "Done" << std::endl;
+		CLAP_LOG_INFO << "Done" << std::endl;
 	}
 
 	void EnableInterrupt(const uint32_t& interruptNum, const bool& enable = true)
@@ -247,7 +247,7 @@ public:
 		uint32_t intrs = m_intrStatusReg.GetInterrupts();
 		uint32_t idx   = 0;
 
-		LOG_DEBUG << CLASS_TAG("AxiInterruptController") << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiInterruptController") << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
 
 		try
 		{

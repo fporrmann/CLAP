@@ -140,7 +140,7 @@ public:
 
 	bool OnMM2SFinished()
 	{
-		LOG_DEBUG << CLASS_TAG("AxiDMA") << "MM2S Chunk finished" << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiDMA") << "MM2S Chunk finished" << std::endl;
 
 		// Check if there are more chunks to transfer
 		if (!m_mm2sChunks.empty())
@@ -154,7 +154,7 @@ public:
 
 	bool OnS2MMFinished()
 	{
-		LOG_DEBUG << CLASS_TAG("AxiDMA") << "S2MM Chunk finished" << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiDMA") << "S2MM Chunk finished" << std::endl;
 
 		// Check if there are more chunks to transfer
 		if (!m_s2mmChunks.empty())
@@ -182,7 +182,7 @@ public:
 	void Start(const Memory& mem)
 	{
 		if (m_mm2sPresent && m_s2mmPresent)
-			LOG_ERROR << CLASS_TAG("AxiDMA") << "Channel unspecific start with single memory object is not supported when both channels are present, please use the dual memory method" << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Channel unspecific start with single memory object is not supported when both channels are present, please use the dual memory method" << std::endl;
 
 		if (m_mm2sPresent)
 			Start(DMAChannel::MM2S, mem);
@@ -198,7 +198,7 @@ public:
 	// Starts the specified channel
 	void Start(const DMAChannel& channel, const T& addr, const uint32_t& length)
 	{
-		LOG_DEBUG << CLASS_TAG("AxiDMA") << "Starting DMA transfer on channel " << channel << " with address 0x" << std::hex << addr << std::dec << " and length " << length << " byte" << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("AxiDMA") << "Starting DMA transfer on channel " << channel << " with address 0x" << std::hex << addr << std::dec << " and length " << length << " byte" << std::endl;
 
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
@@ -216,11 +216,11 @@ public:
 
 			} while (remainingLength > 0);
 
-			LOG_VERBOSE << CLASS_TAG("AxiDMA") << "MM2S chunks: " << m_mm2sChunks.size() << std::endl;
+			CLAP_LOG_VERBOSE << CLASS_TAG("AxiDMA") << "MM2S chunks: " << m_mm2sChunks.size() << std::endl;
 
 			if (!m_watchDogMM2S.Start(true))
 			{
-				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for MM2S already running!" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for MM2S already running!" << std::endl;
 				return;
 			}
 
@@ -243,11 +243,11 @@ public:
 
 			} while (remainingLength > 0);
 
-			LOG_VERBOSE << CLASS_TAG("AxiDMA") << "S2MM chunks: " << m_s2mmChunks.size() << std::endl;
+			CLAP_LOG_VERBOSE << CLASS_TAG("AxiDMA") << "S2MM chunks: " << m_s2mmChunks.size() << std::endl;
 
 			if (!m_watchDogS2MM.Start(true))
 			{
-				LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for S2MM already running!" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Watchdog for S2MM already running!" << std::endl;
 				return;
 			}
 
@@ -355,7 +355,7 @@ public:
 
 			if (intrID == internal::MINUS_ONE)
 			{
-				LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for MM2S channel - Unable to setup interrupts for channel MM2S" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for MM2S channel - Unable to setup interrupts for channel MM2S" << std::endl;
 				return;
 			}
 
@@ -371,7 +371,7 @@ public:
 
 			if (intrID == internal::MINUS_ONE)
 			{
-				LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for S2MM channel - Unable to setup interrupts for channel S2MM" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Interrupt ID was not automatically detected and no interrupt ID specified for S2MM channel - Unable to setup interrupts for channel S2MM" << std::endl;
 				return;
 			}
 
@@ -489,11 +489,11 @@ protected:
 			if (intrs.size() >= 4)
 			{
 				if (intrParent)
-					LOG_WARNING << CLASS_TAG("AxiDMA") << "Interrupt parent is set while both channels are active - This might cause problems" << std::endl;
+					CLAP_LOG_WARNING << CLASS_TAG("AxiDMA") << "Interrupt parent is set while both channels are active - This might cause problems" << std::endl;
 
 				m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
 				m_s2mmIntrDetected = static_cast<uint32_t>(intrs[2]);
-				LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
+				CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupts: MM2S=" << m_mm2sIntrDetected << ", S2MM=" << m_s2mmIntrDetected << std::endl;
 				return true;
 			}
 			else if (intrs.size() >= 2)
@@ -512,7 +512,7 @@ protected:
 						m_mm2sIntrDetected = devID.Value();
 					else
 						m_mm2sIntrDetected = static_cast<uint32_t>(intrs[0]);
-					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: MM2S=" << m_mm2sIntrDetected << std::endl;
+					CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: MM2S=" << m_mm2sIntrDetected << std::endl;
 				}
 				else if (intrName.Value() == S2MM_INTR_NAME)
 				{
@@ -520,11 +520,11 @@ protected:
 						m_s2mmIntrDetected = devID.Value();
 					else
 						m_s2mmIntrDetected = static_cast<uint32_t>(intrs[0]);
-					LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
+					CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected interrupt: S2MM=" << m_s2mmIntrDetected << std::endl;
 				}
 				else
 				{
-					LOG_ERROR << CLASS_TAG("AxiDMA") << "Unable to detect interrupt ID for channel: \"" << intrName.Value() << "\"" << std::endl;
+					CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "Unable to detect interrupt ID for channel: \"" << intrName.Value() << "\"" << std::endl;
 					return false;
 				}
 
@@ -542,7 +542,7 @@ private:
 	{
 		if (m_mm2sChunks.empty())
 		{
-			LOG_ERROR << CLASS_TAG("AxiDMA") << "No MM2S chunks available!" << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "No MM2S chunks available!" << std::endl;
 			return;
 		}
 
@@ -563,7 +563,7 @@ private:
 	{
 		if (m_s2mmChunks.empty())
 		{
-			LOG_ERROR << CLASS_TAG("AxiDMA") << "No S2MM chunks available!" << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("AxiDMA") << "No S2MM chunks available!" << std::endl;
 			return;
 		}
 
@@ -615,7 +615,7 @@ private:
 		{
 			m_bufLenRegWidth = static_cast<uint32_t>(res.Value());
 			updateMaxTransferLength();
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << " bit" << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected buffer length register width: " << m_bufLenRegWidth << " bit" << std::endl;
 		}
 	}
 
@@ -627,7 +627,7 @@ private:
 		if (res)
 		{
 			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
-			LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
 		}
 	}
 

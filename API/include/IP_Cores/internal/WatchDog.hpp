@@ -70,9 +70,9 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 	bool end = !dontTerminate;
 
 	if (pUserIntr->IsSet())
-		LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
+		CLAP_LOG_DEBUG << "[" << name << "] Interrupt Mode ... " << std::endl;
 	else
-		LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
+		CLAP_LOG_DEBUG << "[" << name << "] Polling Mode ... " << std::endl;
 
 	try
 	{
@@ -106,7 +106,7 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 	pThreadDone->store(true, std::memory_order_release);
 	pCv->notify_all();
 
-	LOG_DEBUG << "[" << name << "] Finished" << std::endl;
+	CLAP_LOG_DEBUG << "[" << name << "] Finished" << std::endl;
 }
 #endif
 
@@ -148,11 +148,11 @@ public:
 	void InitInterrupt([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
 	{
 #ifdef _WIN32
-		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		CLAP_LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_pInterrupt->Init(devNum, interruptNum, pReg);
 		// Check for existing interrupts and clear them
-		LOG_DEBUG << CLASS_TAG("WatchDog") << "Clearing existing interrupts ..." << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("WatchDog") << "Clearing existing interrupts ..." << std::endl;
 		while (m_pInterrupt->WaitForInterrupt(1))
 			;
 
@@ -162,7 +162,7 @@ public:
 	void UnsetInterrupt()
 	{
 #ifdef _WIN32
-		LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		CLAP_LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_pInterrupt->Unset();
 #endif
@@ -220,7 +220,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		using namespace std::chrono_literals;
 
-		LOG_DEBUG << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
 
 		if (!m_threadRunning)
 			return true;

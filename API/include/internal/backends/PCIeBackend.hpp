@@ -104,7 +104,7 @@ public:
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
 #ifdef _WIN32
-		LOG_ERROR << CLASS_TAG("PCIeUserInterrupt") << " Currently not implemented for Windows" << std::endl;
+		CLAP_LOG_ERROR << CLASS_TAG("PCIeUserInterrupt") << " Currently not implemented for Windows" << std::endl;
 		return false;
 #else
 		if (!IsSet())
@@ -144,11 +144,11 @@ public:
 					callback(lastIntr);
 			}
 
-			LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+			CLAP_LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 			return true;
 		}
 		// else
-		// 	LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+		// 	CLAP_LOG_DEBUG << CLASS_TAG("PCIeUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 
 		return false;
 #endif // _WIN32
@@ -207,7 +207,7 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		// LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -284,7 +284,7 @@ public:
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		// LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -360,7 +360,7 @@ public:
 
 	void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt)
 	{
-		LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " data=0x" << &data << std::dec << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " data=0x" << &data << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_ctrlMutex);
 

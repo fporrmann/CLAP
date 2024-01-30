@@ -137,12 +137,12 @@ protected:
 		{
 			if (reading)
 			{
-				LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+				CLAP_LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
 							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 			else
 			{
-				LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+				CLAP_LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
 							<< " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 		}

@@ -244,7 +244,7 @@ public:
 		// Check if the target bit space exceeds the possible range
 		if (startBit > m_registerBitSize || (endBit > m_registerBitSize && endBit != SAME_AS_START_BIT))
 		{
-			LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
+			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
 					  << ") exceeds the registers bit size (" << m_registerBitSize << ")" << std::endl;
 			return;
 		}
@@ -256,14 +256,14 @@ public:
 		// Check if the the entire or a part of the bit range have already been registered
 		if ((m_regUsage & shiftVal) != 0)
 		{
-			LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
+			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
 					  << ") has already been registered, either entirely or partially by:" << std::endl;
 
 			// Print the elements occupying the target bit space
 			for (const RegIntfPtr& pRElem : m_regElems)
 			{
 				if ((pRElem->GetShiftValue() & shiftVal) != 0)
-					LOG_ERROR << pRElem->GetName() << " " << pRElem->GetStartBit() << "-" << pRElem->GetEndBit() << std::endl;
+					CLAP_LOG_ERROR << pRElem->GetName() << " " << pRElem->GetStartBit() << "-" << pRElem->GetEndBit() << std::endl;
 			}
 
 			return;
@@ -368,17 +368,17 @@ public:
 			   << "Value";
 
 		// Print the registers name
-		LOG_INFO << m_name << ":" << std::endl;
+		CLAP_LOG_INFO << m_name << ":" << std::endl;
 		// Print the header
-		LOG_INFO << header.str() << std::endl;
+		CLAP_LOG_INFO << header.str() << std::endl;
 		// Print the divider
-		LOG_INFO << std::left << std::setfill('-') << std::setw(header.str().length()) << "-" << std::endl;
+		CLAP_LOG_INFO << std::left << std::setfill('-') << std::setw(header.str().length()) << "-" << std::endl;
 
 		// Print the actuall register address map
 		for (const std::pair<uint32_t, std::string> p : utils::ReverseIterate(map))
-			LOG_INFO << p.second << std::endl;
+			CLAP_LOG_INFO << p.second << std::endl;
 
-		LOG_INFO << std::endl;
+		CLAP_LOG_INFO << std::endl;
 	}
 
 private:

@@ -110,13 +110,13 @@ public:
 
 		if (!m_watchDog.Start())
 		{
-			LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 			return false;
 		}
 
 		if (!m_apCtrl.Start())
 		{
-			LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("HLSCore") << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
 			m_watchDog.Stop();
 			return false;
 		}
@@ -150,7 +150,7 @@ public:
 
 		if (intrID == internal::MINUS_ONE)
 		{
-			LOG_ERROR << CLASS_TAG("HLSCore") << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("HLSCore") << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
 			return;
 		}
 
@@ -228,7 +228,7 @@ public:
 
 	void PrintApStatus()
 	{
-		LOG_INFO << "---- " << m_name << " ----" << std::endl;
+		CLAP_LOG_INFO << "---- " << m_name << " ----" << std::endl;
 		m_apCtrl.PrintStatus();
 	}
 

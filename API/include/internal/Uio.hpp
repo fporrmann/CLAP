@@ -138,7 +138,7 @@ class UioDev
 			m_fd = OpenDevice(m_path, O_RDWR);
 			if (m_fd == INVALID_HANDLE)
 			{
-				LOG_ERROR << CLASS_TAG("MMDev") << "Could not open the device \"" << m_path << "\"" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("MMDev") << "Could not open the device \"" << m_path << "\"" << std::endl;
 				m_valid = false;
 				return;
 			}
@@ -146,7 +146,7 @@ class UioDev
 			m_pPtr = mmap(0, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, 0);
 			if (m_pPtr == MAP_FAILED)
 			{
-				LOG_ERROR << CLASS_TAG("MMDev") << "Could not map the device \"" << m_path << "\"" << std::endl;
+				CLAP_LOG_ERROR << CLASS_TAG("MMDev") << "Could not map the device \"" << m_path << "\"" << std::endl;
 				m_valid = false;
 				return;
 			}
@@ -352,7 +352,7 @@ public:
 		std::ifstream file(m_devTreePropPath + name);
 		if (!file.is_open())
 		{
-			LOG_ERROR << CLASS_TAG("UioDev") << "Could not open property \"" << name << "\" - path=" << m_devTreePropPath + name << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("UioDev") << "Could not open property \"" << name << "\" - path=" << m_devTreePropPath + name << std::endl;
 			return MakeUnexpected();
 		}
 
@@ -509,7 +509,7 @@ private:
 		// Check if the file is open
 		if (!propFile.is_open())
 		{
-			// LOG_ERROR << CLASS_TAG("") << "Could not open the property file \"" << propertyPath << "\"" << std::endl;
+			// CLAP_LOG_ERROR << CLASS_TAG("") << "Could not open the property file \"" << propertyPath << "\"" << std::endl;
 			return propValue;
 		}
 

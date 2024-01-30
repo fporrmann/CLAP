@@ -138,11 +138,11 @@ public:
 					callback(lastIntr);
 			}
 
-			LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+			CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
 		}
 		// else
-		// 	LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+		// 	CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
 
 		return false;
 	}
@@ -185,7 +185,7 @@ public:
 
 		if (!initUIO())
 		{
-			LOG_INFO << CLASS_TAG("PetaLinuxBackend") << "UIO not available, falling back to /dev/mem" << std::endl;
+			CLAP_LOG_INFO << CLASS_TAG("PetaLinuxBackend") << "UIO not available, falling back to /dev/mem" << std::endl;
 			m_nameRead  = m_devMem;
 			m_nameWrite = m_devMem;
 			m_fd        = OpenDevice(m_devMem);
@@ -195,7 +195,7 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		// LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
@@ -230,7 +230,7 @@ public:
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		// LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
@@ -265,7 +265,7 @@ public:
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
 	{
-		LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const
@@ -387,7 +387,7 @@ private:
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
 		{
-			LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
 			return MakeUnexpected();
 		}
 

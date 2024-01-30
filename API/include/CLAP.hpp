@@ -267,10 +267,10 @@ private:
 
 		readInfo();
 
-		LOG_VERBOSE << "CLAP instance created" << std::endl;
-		LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
-		LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
-		LOG_VERBOSE << m_info << std::endl;
+		CLAP_LOG_VERBOSE << "CLAP instance created" << std::endl;
+		CLAP_LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
+		CLAP_LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
+		CLAP_LOG_VERBOSE << m_info << std::endl;
 	}
 
 public:
