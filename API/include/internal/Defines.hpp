@@ -26,6 +26,7 @@
 
 #pragma once
 
+// TODO: Consider adding a prefix, e.g., CLAP_ to all defines to prevent collisions with other libraries
 namespace clap
 {
 #ifdef _WIN32

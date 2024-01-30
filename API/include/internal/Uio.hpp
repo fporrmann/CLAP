@@ -40,18 +40,6 @@
 #include "FileOps.hpp"
 #include "Logger.hpp"
 
-#ifndef MINORBITS
-#define MINORBITS 20
-#endif
-
-#ifndef UIO_MAX_DEVICES
-#define UIO_MAX_DEVICES (1U << MINORBITS)
-#endif
-
-#ifndef UIO_MAX_MAPS
-#define UIO_MAX_MAPS 5
-#endif
-
 #ifndef DIV_ROUND_UP
 #define DIV_ROUND_UP(n, d) (((n) + (d)-1) / (d))
 #endif
@@ -70,6 +58,10 @@ namespace clap
 {
 namespace internal
 {
+static constexpr uint32_t MINOR_BITS      = 20;
+static constexpr uint32_t UIO_MAX_DEVICES = 1U << MINOR_BITS;
+static constexpr uint32_t UIO_MAX_MAPS    = 5;
+
 template<typename T>
 class UioDev
 {
