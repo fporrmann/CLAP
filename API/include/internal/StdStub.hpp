@@ -69,7 +69,7 @@ public:
 
 extern "C"
 {
-	int _gettimeofday(struct timeval* tv, void* tz)
+	static int _gettimeofday(struct timeval* tv, void* tz)
 	{
 		tv->tv_sec  = 0;
 		tv->tv_usec = 0;

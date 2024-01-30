@@ -43,7 +43,7 @@ enum class DMAChannel
 	S2MM
 };
 
-std::ostream& operator<<(std::ostream& os, const DMAChannel& channel)
+static inline std::ostream& operator<<(std::ostream& os, const DMAChannel& channel)
 {
 	switch (channel)
 	{
