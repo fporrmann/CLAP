@@ -138,7 +138,7 @@ public:
 		if (m_pValue == nullptr)
 		{
 			std::stringstream ss("");
-			ss << "ERROR: Trying to create RegElem (" << m_name << ": " << m_startBit << "-" << m_endBit << ") without a valid pointer";
+			ss << "ERROR: Trying to create RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") without a valid pointer";
 			throw std::runtime_error(ss.str());
 		}
 	}
@@ -178,7 +178,7 @@ private:
 		if (m_pValue == nullptr)
 		{
 			std::stringstream ss("");
-			ss << "ERROR: Trying to use RegElem (" << m_name << ": " << m_startBit << "-" << m_endBit << ") whoes pointer is invalid";
+			ss << "ERROR: Trying to use RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") whoes pointer is invalid";
 			throw std::runtime_error(ss.str());
 		}
 	}
@@ -241,29 +241,40 @@ public:
 	template<typename T2>
 	void RegisterElement(T2* pVar, const std::string& name, const uint8_t& startBit, const uint8_t& endBit = SAME_AS_START_BIT)
 	{
+		uint8_t startBitUse = startBit;
+		uint8_t endBitUse   = endBit;
+
 		// Check if the target bit space exceeds the possible range
-		if (startBit > m_registerBitSize || (endBit > m_registerBitSize && endBit != SAME_AS_START_BIT))
+		if (startBitUse > m_registerBitSize || (endBitUse > m_registerBitSize && endBitUse != SAME_AS_START_BIT))
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
+			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBitUse << "-" << endBitUse
 					  << ") exceeds the registers bit size (" << m_registerBitSize << ")" << std::endl;
 			return;
 		}
 
+		if (startBitUse > endBitUse)
+		{
+			CLAP_LOG_WARNING << CLASS_TAG("") << "WARNING: Start bit (" << static_cast<uint32_t>(startBitUse) << ") is greater than end bit (" << static_cast<uint32_t>(endBitUse) << "), swapping the values" << std::endl;
+			startBitUse = endBit;
+			endBitUse = startBit;
+		}
+
 		// Create a new element with the given parameter
-		std::shared_ptr<RegElem<T2, T>> pElem = std::make_shared<RegElem<T2, T>>(pVar, name, startBit, endBit);
+		std::shared_ptr<RegElem<T2, T>> pElem = std::make_shared<RegElem<T2, T>>(pVar, name, startBitUse, endBitUse);
 		uint32_t shiftVal                     = pElem->GetShiftValue();
 
 		// Check if the the entire or a part of the bit range have already been registered
 		if ((m_regUsage & shiftVal) != 0)
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBit << "-" << endBit
-					  << ") has already been registered, either entirely or partially by:" << std::endl;
+			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space ("
+						   << static_cast<uint32_t>(startBitUse) << "-" << static_cast<uint32_t>(endBitUse)
+						   << ") has already been registered, either entirely or partially by:" << std::endl;
 
 			// Print the elements occupying the target bit space
 			for (const RegIntfPtr& pRElem : m_regElems)
 			{
 				if ((pRElem->GetShiftValue() & shiftVal) != 0)
-					CLAP_LOG_ERROR << pRElem->GetName() << " " << pRElem->GetStartBit() << "-" << pRElem->GetEndBit() << std::endl;
+					CLAP_LOG_ERROR << pRElem->GetName() << " " << static_cast<uint32_t>(pRElem->GetStartBit()) << "-" << static_cast<uint32_t>(pRElem->GetEndBit()) << std::endl;
 			}
 
 			return;
