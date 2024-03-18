@@ -29,6 +29,7 @@
 #ifdef EMBEDDED_XILINX
 
 #include <cstdint>
+#include <sys/time.h>
 
 namespace std
 {

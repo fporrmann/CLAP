@@ -84,13 +84,13 @@
 #include "internal/Exceptions.hpp"
 #include "internal/Expected.hpp"
 #include "internal/Memory.hpp"
-#include "internal/SoloRunWarden.hpp"
 #include "internal/Timer.hpp"
 #include "internal/Types.hpp"
 #include "internal/Utils.hpp"
 
 #ifndef EMBEDDED_XILINX
 #include "internal/AlignmentAllocator.hpp"
+#include "internal/SoloRunWarden.hpp"
 #endif
 
 
