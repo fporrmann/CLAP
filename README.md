@@ -3,7 +3,7 @@
 ## Overview
 
 CLAP is a C++ API aiming to simplify the usage of IP Cores in Xilinx FPGAs: 
-- C++ 17, header-only
+- C++ 17, header-only (The entire source code is located in `API/include` and its subfolders)
 - Unified API to access IP Cores via PCIe (Xilinx XDMA), PetaLinux, or Bare Metal
 - Contains quickly learned interfaces to Xilinx DMA, VDMA, GPIO, or user-created HLS cores (AP_intf)
 - It makes the time-consuming familiarization with Linux driver development superfluous. Write easy-to-debug code running in user space without caring about low-level device access.
@@ -93,7 +93,7 @@ include_directories(${CLAP_INCLUDE_DIRS})
 target_link_libraries (<YOUR_PROJECT_NAME> PRIVATE ${CLAP_LIBS})
 ```
 
-When not using CMake, add CLAP/API/include to the include search path of your environment and link against pthread (or whichever threading library is used by your compiler in combination with std::thread).
+When not using CMake, add `CLAP/API/include` to the include search path of your environment and link against pthread (or whichever threading library is used by your compiler in combination with std::thread).
 
 ### Use the API
 
