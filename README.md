@@ -28,9 +28,7 @@ NOTE: This is a work in progress. Current limitations:
 
 Only required when using an FPGA board, connected to a host system via PCIe.
 
-Either use the latest version from the [official git](https://github.com/Xilinx/dma_ip_drivers) or the version (v2020.2.0) included here.
-
-#### Using the official git:
+Use the latest version from the [official git](https://github.com/Xilinx/dma_ip_drivers).
 
 **Checkout and build**
 
@@ -45,23 +43,6 @@ sudo make install
 
 ```bash
 cd ../tests
-sudo ./load_driver.sh
-```
-
-#### Using the included driver:
-
-**Build**
-
-```bash
-cd driver/xdma
-make
-sudo make install
-```
-
-**Test load the driver**
-
-```bash
-cd ..
 sudo ./load_driver.sh
 ```
 
