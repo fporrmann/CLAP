@@ -222,6 +222,16 @@ public:
 		return -1;
 	}
 
+	uint32_t GetGPIOBits(const Channel& channel)
+	{
+		if (channel == CHANNEL_1)
+			return m_gpio1Data.ToUint32();
+		else if (channel == CHANNEL_2 && m_isDualChannel)
+			return m_gpio2Data.ToUint32();
+
+		return 0;
+	}
+
 	void SetGPIOBit(const Channel& channel, const uint32_t& port, const bool& value)
 	{
 		if (port > m_gpioWidth[channel]) return;
@@ -230,6 +240,15 @@ public:
 			m_gpio1Data.SetBitAt(port, value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBitAt(port, value);
+	}
+
+	void SetGPIOBits(const Channel& channel, const uint32_t& value)
+	{
+		if (channel == CHANNEL_1)
+			m_gpio1Data.SetBits(value);
+		else if (channel == CHANNEL_2 && m_isDualChannel)
+			m_gpio2Data.SetBits(value);
+	
 	}
 
 	void InterruptTriggered([[maybe_unused]] const uint32_t& mask)

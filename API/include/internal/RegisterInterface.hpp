@@ -516,6 +516,11 @@ public:
 		return m_bits;
 	}
 
+	void SetBits(const uint32_t& value = 0x0)
+	{
+		Reset(value);
+	}
+
 	uint32_t ToUint32(const RegUpdate& update = RegUpdate::Update)
 	{
 		if (update == RegUpdate::Update)
