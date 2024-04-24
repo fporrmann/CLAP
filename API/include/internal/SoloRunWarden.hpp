@@ -43,7 +43,7 @@ namespace internal
 {
 class SoloRunWarden
 {
-	inline static const std::string LOCK_FILE = "/tmp/clap.lock";
+	static inline const std::string LOCK_FILE = "/tmp/clap.lock";
 
 public:
 	static SoloRunWarden& GetInstance()

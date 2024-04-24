@@ -31,22 +31,22 @@
 
 namespace clap
 {
-static const std::size_t ALIGNMENT     = 4096;
-static const uint64_t USE_VECTOR_SIZE  = 0; // Flag to automatically calculate the byte size based on the vector size and type
-static const int32_t WAIT_INFINITE     = -1;
-static const uint8_t SAME_AS_START_BIT = 0xFF;
-static const uint64_t USE_MEMORY_SIZE  = 0;
+inline constexpr std::size_t ALIGNMENT     = 4096;
+inline constexpr uint64_t USE_VECTOR_SIZE  = 0; // Flag to automatically calculate the byte size based on the vector size and type
+inline constexpr int32_t WAIT_INFINITE     = -1;
+inline constexpr uint8_t SAME_AS_START_BIT = 0xFF;
+inline constexpr uint64_t USE_MEMORY_SIZE  = 0;
 
 namespace internal
 {
-static const uint64_t XDMA_STREAM_OFFSET         = 0;   // For streams data is always write/read from/to the offset 0
-static const std::size_t XDMA_AXI_DATA_WIDTH_BIT = 512; // 512-Bit
-static const std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT / 8;
+inline constexpr uint64_t XDMA_STREAM_OFFSET         = 0;   // For streams data is always write/read from/to the offset 0
+inline constexpr std::size_t XDMA_AXI_DATA_WIDTH_BIT = 512; // 512-Bit
+inline constexpr std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT / 8;
 
-static const uint64_t XDMA_CTRL_BASE = 0x0;
-static const uint64_t XDMA_CTRL_SIZE = 0x100;
+inline constexpr uint64_t XDMA_CTRL_BASE = 0x0;
+inline constexpr uint64_t XDMA_CTRL_SIZE = 0x100;
 
-static const uint32_t MINUS_ONE = 0xFFFFFFFF;
+inline constexpr uint32_t MINUS_ONE = 0xFFFFFFFF;
 
 /*
  * man 2 write:
@@ -55,9 +55,9 @@ static const uint32_t MINUS_ONE = 0xFFFFFFFF;
  *	actually transferred.  (This is true on both 32-bit and 64-bit
  *	systems.)
  */
-static const uint32_t RW_MAX_SIZE = 0x7ffff000;
+inline constexpr uint32_t RW_MAX_SIZE = 0x7ffff000;
 } // namespace internal
 
-static const uint32_t USE_AUTO_DETECT = internal::MINUS_ONE;
+inline constexpr uint32_t USE_AUTO_DETECT = internal::MINUS_ONE;
 
 } // namespace clap

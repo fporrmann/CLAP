@@ -5,14 +5,14 @@
 #include "testCore.hpp"
 
 // The DDR is located at 0x000000000
-static const uint64_t DDR_BASE_ADDR = 0x000000000;
+static constexpr uint64_t DDR_BASE_ADDR = 0x000000000;
 // The size of the DDR is 4GB
-static const uint64_t DDR_SIZE = 0x100000000;
+static constexpr uint64_t DDR_SIZE = 0x100000000;
 
 // The HLS core control registers are located at 0x100100000
-static const uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
+static constexpr uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
 
-static const uint32_t TEST_DATA_SIZE = 8;
+static constexpr uint32_t TEST_DATA_SIZE = 8;
 
 void InterruptCallBack(const uint32_t& mask)
 {

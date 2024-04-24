@@ -3,9 +3,9 @@
 #include <CLAP.hpp>
 
 // The DDR is located at 0x000000000
-static const uint64_t DDR_BASE_ADDR = 0x000000000;
+static constexpr uint64_t DDR_BASE_ADDR = 0x000000000;
 // The size of the DDR is 4GB
-static const uint64_t DDR_SIZE = 0x100000000;
+static constexpr uint64_t DDR_SIZE = 0x100000000;
 
 const uint64_t TEST_DATA_SIZE = 8;
 

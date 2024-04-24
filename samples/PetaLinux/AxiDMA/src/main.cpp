@@ -6,12 +6,12 @@
 #include <IP_Cores/AxiInterruptController.hpp>
 
 // The DDR is located at 0x20000000
-static const uint64_t DDR_BASE_ADDR = 0x20000000;
+static constexpr uint64_t DDR_BASE_ADDR = 0x20000000;
 // The size of the DDR is 512MB
-static const uint64_t DDR_SIZE = 0x20000000;
+static constexpr uint64_t DDR_SIZE = 0x20000000;
 
-static const uint64_t AXI_DMA_BASE_ADDR                  = 0x40010000;
-static const uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x40020000;
+static constexpr uint64_t AXI_DMA_BASE_ADDR              = 0x40010000;
+static constexpr uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x40020000;
 
 int main(int argc, char** argv)
 {

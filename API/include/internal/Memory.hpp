@@ -1,19 +1,19 @@
-/* 
+/*
  *  File: Memory.hpp
  *  Copyright (c) 2023 Florian Porrmann
- *  
+ *
  *  MIT License
- *  
+ *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *  
+ *
  *  The above copyright notice and this permission notice shall be included in all
  *  copies or substantial portions of the Software.
- *  
+ *
  *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
- *  
+ *
  */
 
 #pragma once
@@ -39,12 +39,12 @@
 
 namespace clap
 {
-	// Forward declaration is required here to allow for the friend declaration
-	// TODO: Find a better way to do this -- maybe a separate header file?
-	namespace internal
-	{
-		class MemoryManager;
-	}
+// Forward declaration is required here to allow for the friend declaration
+// TODO: Find a better way to do this -- maybe a separate header file?
+namespace internal
+{
+class MemoryManager;
+}
 
 class Memory
 {
@@ -115,10 +115,10 @@ namespace internal
 {
 class MemoryManager
 {
-	static const uint32_t ALIGNMENT          = 0x40;
-	static const uint32_t COALESCE_THRESHOLD = 4;
-	static const uint64_t INV_NULL           = ~static_cast<uint64_t>(0);
-	using MemList                            = std::list<std::pair<uint64_t, uint64_t>>;
+	static constexpr uint32_t ALIGNMENT          = 0x40;
+	static constexpr uint32_t COALESCE_THRESHOLD = 4;
+	static constexpr uint64_t INV_NULL           = ~static_cast<uint64_t>(0);
+	using MemList                                = std::list<std::pair<uint64_t, uint64_t>>;
 
 public:
 	MemoryManager(const uint64_t& baseAddr, const uint64_t& size) :

@@ -4,19 +4,19 @@
 #include <IP_Cores/HLSCore.hpp>
 
 // The DDR is located at 0x000000000
-static const uint64_t DDR_BASE_ADDR = 0x000000000;
+static constexpr uint64_t DDR_BASE_ADDR = 0x000000000;
 // The size of the DDR is 4GB
-static const uint64_t DDR_SIZE = 0x100000000;
+static constexpr uint64_t DDR_SIZE = 0x100000000;
 
 // The HLS core control registers are located at 0x100100000
-static const uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
+static constexpr uint64_t HLS_TEST_CORE_BASE_ADDR = 0x100100000;
 
 // The HLS core control register ofsets for the different paramters
-static const uint64_t TEST_CONTROL_ADDR_PDDRIN_DATA   = 0x10;
-static const uint64_t TEST_CONTROL_ADDR_PDDROUT_DATA  = 0x1c;
-static const uint64_t TEST_CONTROL_ADDR_ELEMENTS_DATA = 0x28;
+static constexpr uint64_t TEST_CONTROL_ADDR_PDDRIN_DATA   = 0x10;
+static constexpr uint64_t TEST_CONTROL_ADDR_PDDROUT_DATA  = 0x1c;
+static constexpr uint64_t TEST_CONTROL_ADDR_ELEMENTS_DATA = 0x28;
 
-static const uint32_t TEST_DATA_SIZE = 8;
+static constexpr uint32_t TEST_DATA_SIZE = 8;
 
 int main()
 {
