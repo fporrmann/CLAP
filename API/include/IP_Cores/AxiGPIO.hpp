@@ -80,10 +80,12 @@ private:
 	using InterruptFunc = std::function<void(const Channel&, const uint32_t&, const bool&)>;
 
 public:
-	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& dualChannel = false) :
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& dualChannel = false,
+		const uint32_t defaultValueCh1 = 0, const uint32_t defaultValueCh2 = 0) :
 		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDog("AxiGPIO", pClap->MakeUserInterrupt()),
-		m_isDualChannel(dualChannel)
+		m_isDualChannel(dualChannel),
+		m_defaultValue{ defaultValueCh1, defaultValueCh2 }
 	{
 		registerReg<uint32_t>(m_gpio1Data, ADDR_GPIO_DATA);
 		registerReg<uint32_t>(m_gpio1Tri, ADDR_GPIO_TRI);
@@ -111,9 +113,9 @@ public:
 
 	void Reset()
 	{
-		m_gpio1Data.Reset();
+		m_gpio1Data.Reset(m_defaultValue[0]);
 		m_gpio1Tri.Reset(m_triDefaultValue[0]);
-		m_gpio2Data.Reset();
+		m_gpio2Data.Reset(m_defaultValue[1]);
 		m_gpio2Tri.Reset(m_triDefaultValue[1]);
 		m_globalIntrEn.Reset();
 		m_ipIntrEn.Reset();
@@ -471,5 +473,6 @@ private:
 	bool m_isDualChannel;
 	uint32_t m_gpioWidth[2] = { 32, 32 };
 	uint32_t m_triDefaultValue[2] = { 0xFFFFFFFF, 0xFFFFFFFF };
+	uint32_t m_defaultValue[2]    = { 0x00000000, 0x00000000 };
 };
 } // namespace clap
