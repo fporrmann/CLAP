@@ -63,6 +63,18 @@ public:
 		INPUT  = 1
 	};
 
+	enum class DualChannel : bool
+	{
+		Yes = true,
+		No = false
+	};
+
+	enum class ResetOnInit : bool
+	{
+		Yes = true,
+		No = false
+	};
+
 private:
 	DISABLE_COPY_ASSIGN_MOVE(AxiGPIO)
 
@@ -80,10 +92,15 @@ private:
 	using InterruptFunc = std::function<void(const Channel&, const uint32_t&, const bool&)>;
 
 public:
-	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& dualChannel = false, const bool& resetOnInit = true) :
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const ResetOnInit& resetOnInit) :
+		AxiGPIO(pClap, ctrlOffset, DualChannel::No, resetOnInit)
+	{
+	}
+
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const DualChannel& dualChannel = DualChannel::No, const ResetOnInit& resetOnInit = ResetOnInit::Yes) :
 		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDog("AxiGPIO", pClap->MakeUserInterrupt()),
-		m_isDualChannel(dualChannel)
+		m_isDualChannel((dualChannel == DualChannel::Yes))
 	{
 		registerReg<uint32_t>(m_gpio1Data, ADDR_GPIO_DATA);
 		registerReg<uint32_t>(m_gpio1Tri, ADDR_GPIO_TRI);
@@ -102,7 +119,7 @@ public:
 		detectDataDefaultValues();
 		detectTriDefaultValues();
 
-		if (resetOnInit)
+		if (resetOnInit == ResetOnInit::Yes)
 			Reset();
 	}
 
