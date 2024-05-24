@@ -80,7 +80,7 @@ private:
 	using InterruptFunc = std::function<void(const Channel&, const uint32_t&, const bool&)>;
 
 public:
-	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& dualChannel = false) :
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& dualChannel = false, const bool& resetOnInit = true) :
 		RegisterControlBase(pClap, ctrlOffset),
 		m_watchDog("AxiGPIO", pClap->MakeUserInterrupt()),
 		m_isDualChannel(dualChannel)
@@ -97,12 +97,13 @@ public:
 		m_watchDog.SetFinishCallback(std::bind(&AxiGPIO::OnFinished, this));
 		m_watchDog.RegisterInterruptCallback(std::bind(&AxiGPIO::InterruptTriggered, this, std::placeholders::_1));
 
-		Reset();
-
 		detectDualChannel();
 		detectGPIOWidth();
 		detectDataDefaultValues();
 		detectTriDefaultValues();
+
+		if (resetOnInit)
+			Reset();
 	}
 
 	virtual ~AxiGPIO()
