@@ -101,7 +101,8 @@ public:
 
 		detectDualChannel();
 		detectGPIOWidth();
-		detectTriDefaultValue();
+		detectDataDefaultValues();
+		detectTriDefaultValues();
 	}
 
 	virtual ~AxiGPIO()
@@ -111,10 +112,10 @@ public:
 
 	void Reset()
 	{
-		m_gpio1Data.Reset();
-		m_gpio1Tri.Reset(m_triDefaultValue[0]);
-		m_gpio2Data.Reset();
-		m_gpio2Tri.Reset(m_triDefaultValue[1]);
+		m_gpio1Data.Reset(m_dataDefaultValues[0]);
+		m_gpio1Tri.Reset(m_triDefaultValues[0]);
+		m_gpio2Data.Reset(m_dataDefaultValues[1]);
+		m_gpio2Tri.Reset(m_triDefaultValues[1]);
 		m_globalIntrEn.Reset();
 		m_ipIntrEn.Reset();
 		m_ipIntrStatus.Reset();
@@ -136,9 +137,17 @@ public:
 	void SetTriStateDefaultValue(const Channel& channel, const uint32_t& value)
 	{
 		if (channel == CHANNEL_1)
-			m_triDefaultValue[0] = value;
+			m_triDefaultValues[0] = value;
 		else if (channel == CHANNEL_2)
-			m_triDefaultValue[1] = value;
+			m_triDefaultValues[1] = value;
+	}
+
+	void SetDataStateDefaultValue(const Channel& channel, const uint32_t& value)
+	{
+		if (channel == CHANNEL_1)
+			m_dataDefaultValues[0] = value;
+		else if (channel == CHANNEL_2)
+			m_dataDefaultValues[1] = value;
 	}
 
 	void EnableInterrupts(const uint32_t& eventNo = USE_AUTO_DETECT, const GPIOInterrupts& intr = INTR_ALL)
@@ -327,13 +336,13 @@ private:
 		}
 	}
 
-	void detectTriDefaultValue()
+	void detectTriDefaultValues()
 	{
 		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,tri-default");
 		if (res)
 		{
-			m_triDefaultValue[0] = static_cast<uint32_t>(res.Value());
-			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 1: 0x" << std::hex << m_triDefaultValue[0] << std::dec << std::endl;
+			m_triDefaultValues[0] = static_cast<uint32_t>(res.Value());
+			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 1: 0x" << std::hex << m_triDefaultValues[0] << std::dec << std::endl;
 		}
 
 		if (m_isDualChannel)
@@ -342,8 +351,29 @@ private:
 			Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,tri-default-2");
 			if (res)
 			{
-				m_triDefaultValue[1] = static_cast<uint32_t>(res.Value());
-				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 2: 0x" << std::hex << m_triDefaultValue[1] << std::dec << std::endl;
+				m_triDefaultValues[1] = static_cast<uint32_t>(res.Value());
+				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 2: 0x" << std::hex << m_triDefaultValues[1] << std::dec << std::endl;
+			}
+		}
+	}
+
+	void detectDataDefaultValues()
+	{
+		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,dout-default");
+		if (res)
+		{
+			m_dataDefaultValues[0] = static_cast<uint32_t>(res.Value());
+			CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO data default for channel 1: 0x" << std::hex << m_dataDefaultValues[0] << std::dec << std::endl;
+		}
+
+		if (m_isDualChannel)
+		{
+			// The shadowing here is intentional, as Expected currently does not allow overwriting the value
+			Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,dout-default-2");
+			if (res)
+			{
+				m_dataDefaultValues[1] = static_cast<uint32_t>(res.Value());
+				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO data default for channel 2: 0x" << std::hex << m_dataDefaultValues[1] << std::dec << std::endl;
 			}
 		}
 	}
@@ -469,7 +499,8 @@ private:
 
 	std::vector<InterruptFunc> m_callbacks = {};
 	bool m_isDualChannel;
-	uint32_t m_gpioWidth[2] = { 32, 32 };
-	uint32_t m_triDefaultValue[2] = { 0xFFFFFFFF, 0xFFFFFFFF };
+	std::array<uint32_t, 2> m_gpioWidth = { 32, 32 };
+	std::array<uint32_t, 2> m_triDefaultValues = { 0xFFFFFFFF, 0xFFFFFFFF };
+	std::array<uint32_t, 2> m_dataDefaultValues = { 0x0, 0x0 };
 };
 } // namespace clap
