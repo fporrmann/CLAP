@@ -142,7 +142,7 @@ public:
 			m_triDefaultValues[1] = value;
 	}
 
-	void SetDataStateDefaultValue(const Channel& channel, const uint32_t& value)
+	void SetDataDefaultValue(const Channel& channel, const uint32_t& value)
 	{
 		if (channel == CHANNEL_1)
 			m_dataDefaultValues[0] = value;
