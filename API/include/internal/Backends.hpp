@@ -28,11 +28,12 @@
 #ifdef _WIN32
 #include "backends/PCIeBackend.hpp"
 #else
-#ifndef EMBEDDED_XILINX
+#ifdef EMBEDDED_XILINX
+#include "backends/BareMetalBackend.hpp"
+#else
 #include "backends/PCIeBackend.hpp"
 #include "backends/PetaLinuxBackend.hpp"
 #endif // EMBEDDED_XILINX
-#include "backends/BareMetalBackend.hpp"
 #endif // _WIN32
 
 namespace clap
