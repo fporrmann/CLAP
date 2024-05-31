@@ -260,6 +260,7 @@ For Baremetal it is currently required to increase the size of the **STACK**, **
 ```c
 STACK_SIZE     = 0x10000;
 HEAP_SIZE      = 0x20000;
+// Only present on 32-bit systems
 IRQ_STACK_SIZE =  0x1000;
 ```
 
