@@ -251,3 +251,26 @@ IMAGE_INSTALL:pn-petalinux-image-minimal:append = " user-udev-rules"
 ```
 
 4. Re-build and deploy. 
+
+
+## Baremetal
+
+For Baremetal it is currently required to increase the size of the **STACK**, **HEAP**, and **IRQ_STACK** in the linker script `script.ld`. The default values are too small for the CLAP API. The following values are recommended:
+
+```c
+STACK_SIZE     = 0x10000;
+HEAP_SIZE      = 0x20000;
+IRQ_STACK_SIZE =  0x1000;
+```
+
+Furthermore, the `EMBEDDED_XILINX` define has to be set before including the CLAP API. This can be done by either adding the following to the compiler flags:
+
+```c
+-D EMBEDDED_XILINX
+```
+
+Or by adding the following to the source code before the first CLAP include:
+
+```c
+#define EMBEDDED_XILINX
+```
