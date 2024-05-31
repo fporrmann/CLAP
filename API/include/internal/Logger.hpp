@@ -171,13 +171,16 @@ static inline Verbosity ToVerbosity(const int32_t& val)
 	return static_cast<Verbosity>(val);
 }
 
-static inline void SetVerbosity(const Verbosity& v)
+
+static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {
+#ifndef DISABLE_LOGGING
 	g_debug.SetVerbosity(v);
 	g_verbose.SetVerbosity(v);
 	g_info.SetVerbosity(v);
 	g_warning.SetVerbosity(v);
 	g_error.SetVerbosity(v);
+#endif
 }
 
 } // namespace logging

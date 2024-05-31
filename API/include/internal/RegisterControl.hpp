@@ -110,7 +110,7 @@ public:
 	static void UpdateCallBack(Register<T>* pReg, const uint64_t& offset, const Direction& dir, void* pObj)
 	{
 		// Make sure that the given object pointer is in fact an RegisterControlBase object
-		RegisterControlBase* pIPCtrl = static_cast<RegisterControlBase*>(pObj);
+		RegisterControlBase* pIPCtrl = reinterpret_cast<RegisterControlBase*>(pObj);
 		if (!pIPCtrl) return;
 
 		pIPCtrl->UpdateRegister(pReg, offset, dir);
@@ -140,7 +140,7 @@ protected:
 
 		CLAP()->AddPollAddress(m_ctrlOffset + offset);
 
-		reg.SetupCallBackBasedUpdate(this, offset, UpdateCallBack<T>);
+		reg.SetupCallBackBasedUpdate(reinterpret_cast<void*>(this), offset, UpdateCallBack<T>);
 		m_registers.push_back(&reg);
 	}
 

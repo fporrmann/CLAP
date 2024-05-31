@@ -280,7 +280,7 @@ public:
 			return;
 		}
 
-		// Add the element to the list of registered ele
+		// Add the element to the list of registered elements
 		m_regElems.push_back(pElem);
 		// Update the used register bits
 		m_regUsage |= shiftVal;
@@ -301,7 +301,7 @@ public:
 		m_pUpdateCB(this, m_offset, dir, m_pCallBackObject);
 	}
 
-	// Update the all registered elements using the given value
+	// Update all registered elements using the given value
 	void Update(const uint32_t& val)
 	{
 		for (RegIntfPtr pElem : m_regElems)
