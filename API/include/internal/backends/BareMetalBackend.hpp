@@ -156,6 +156,12 @@ public:
 
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
+		if (m_intrPresent)
+		{
+			m_intrPresent = false;
+			return true;
+		}
+
 		return false;
 	}
 
@@ -175,12 +181,14 @@ public:
 		}
 
 		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		m_intrPresent = true;
 	}
 
 private:
 	bool m_isSet        = false;
 	uint32_t m_intrNum  = -1;
 	bool m_runCallbacks = true;
+	bool m_intrPresent  = false;
 };
 
 class BareMetalBackend : virtual public CLAPBackend
