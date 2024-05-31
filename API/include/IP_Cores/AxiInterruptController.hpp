@@ -68,23 +68,10 @@ public:
 		return true;
 	}
 
-#ifndef EMBEDDED_XILINX
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
-		std::mutex mtx;
-		std::unique_lock<std::mutex> lck(mtx);
-
-		// The interruptOccured flag is used to make sure that the interrupt has not already occured
-		if (!m_interruptOccured)
-		{
-			if (timeout == WAIT_INFINITE)
-				m_cv.wait(lck);
-			else
-			{
-				if (m_cv.wait_for(lck, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
-					return false;
-			}
-		}
+		if (!m_interruptOccured && !waitForInterrupt(timeout))
+			return false;
 
 		m_interruptOccured = false;
 
@@ -102,13 +89,6 @@ public:
 
 		return true;
 	}
-#else
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
-	{
-		// TODO: Implement this
-		return false;
-	}
-#endif
 
 	void TriggerInterrupt()
 	{
@@ -118,8 +98,53 @@ public:
 		m_interruptOccured = true;
 #ifndef EMBEDDED_XILINX
 		m_cv.notify_all();
+#else
+		WaitForInterrupt();
 #endif
 		CLAP_LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
+	}
+
+private:
+	bool waitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
+	{
+		// The interruptOccured flag is used to make sure that the interrupt has not already occured
+#ifdef EMBEDDED_XILINX
+		uint64_t ticks              = 0;
+		const uint64_t timeoutTicks = timeout * 1000;
+
+		if (timeout == WAIT_INFINITE)
+		{
+			while (!m_interruptOccured)
+				usleep(1);
+		}
+		else
+		{
+			while (!m_interruptOccured && ticks < timeoutTicks)
+			{
+				usleep(1);
+				ticks++;
+			}
+
+			if (ticks >= timeoutTicks)
+				return false;
+		}
+#else
+		std::mutex mtx;
+		std::unique_lock<std::mutex> lck(mtx);
+
+		if (!m_interruptOccured)
+		{
+			if (timeout == WAIT_INFINITE)
+				m_cv.wait(lck);
+			else
+			{
+				if (m_cv.wait_for(lck, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
+					return false;
+			}
+		}
+#endif
+
+		return true;
 	}
 
 private:
@@ -127,7 +152,7 @@ private:
 #ifndef EMBEDDED_XILINX
 	std::condition_variable m_cv = {};
 #endif
-	bool m_interruptOccured      = false;
+	bool m_interruptOccured = false;
 };
 } // namespace internal
 
