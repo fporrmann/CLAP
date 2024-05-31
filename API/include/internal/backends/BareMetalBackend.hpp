@@ -43,7 +43,7 @@ namespace internal
 {
 namespace backends
 {
-void interruptHandler(void* p);
+static inline void interruptHandler(void* p);
 
 class BareMetalGic
 {
@@ -156,7 +156,6 @@ public:
 
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
-		// CLAP_LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
 		return false;
 	}
 
@@ -189,7 +188,6 @@ class BareMetalBackend : virtual public CLAPBackend
 public:
 	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
 	{
-		CLAP_LOG_WARNING << CLASS_TAG("BareMetalBackend") << "WARNING: BareMetalBackend is currently untested and therefore, probably not fully functional." << std::endl;
 		m_nameRead    = "BareMetal";
 		m_nameWrite   = "BareMetal";
 		m_backendName = "BareMetal";
@@ -391,7 +389,7 @@ private:
 	}
 };
 
-void interruptHandler(void* p)
+static inline void interruptHandler(void* p)
 {
 	BareMetalUserInterrupt* pObj = reinterpret_cast<BareMetalUserInterrupt*>(p);
 	pObj->interruptHandler();
