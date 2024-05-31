@@ -59,7 +59,7 @@ public:
 
 	void RegisterInterrupt(const uint32_t& interruptNum, void* pObj)
 	{
-		std::cout << CLASS_TAG("BareMetalGic") << "Registering interrupt " << interruptNum << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalGic") << "Registering interrupt " << interruptNum << std::endl;
 		XScuGic_SetPriorityTriggerType(&m_gic, interruptNum, 0xA0, 0x3);
 
 		// Connect a device driver handler that will be called when an interrupt for the device occurs, the device driver handler performs the specific interrupt processing for the device
@@ -131,7 +131,7 @@ public:
 		m_intrNum = interruptNum;
 		m_pReg    = pReg;
 
-		std::cout << "Registering Interrupt " << interruptNum << " - pReg: " << m_pReg << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Registering Interrupt " << interruptNum << std::endl;
 
 		void* tAddr = reinterpret_cast<void*>(this);
 
@@ -156,32 +156,26 @@ public:
 
 	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
 	{
-		LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
+		// CLAP_LOG_WARNING << CLASS_TAG("BareMetalUserInterrupt") << " Currently not implemented" << std::endl;
 		return false;
 	}
 
 	void interruptHandler()
 	{
-		std::cout << "Interrupt Handler - " << m_pReg << std::endl;
 		if (m_pReg)
 			m_pReg->ClearInterrupts();
-
-		std::cout << "Interrupt Cleared" << std::endl;
 
 		uint32_t lastIntr = -1;
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
-		std::cout << "Interrupt Mask: " << lastIntr << std::endl;
-
 		if (m_runCallbacks)
 		{
-			std::cout << "Running Callbacks" << std::endl;
 			for (auto& callback : m_callbacks)
 				callback(lastIntr);
 		}
 
-		LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 	}
 
 private:
@@ -195,7 +189,7 @@ class BareMetalBackend : virtual public CLAPBackend
 public:
 	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
 	{
-		LOG_WARNING << CLASS_TAG("BareMetalBackend") << "WARNING: BareMetalBackend is currently untested and therefore, probably not fully functional." << std::endl;
+		CLAP_LOG_WARNING << CLASS_TAG("BareMetalBackend") << "WARNING: BareMetalBackend is currently untested and therefore, probably not fully functional." << std::endl;
 		m_nameRead    = "BareMetal";
 		m_nameWrite   = "BareMetal";
 		m_backendName = "BareMetal";
@@ -204,7 +198,7 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{
@@ -218,7 +212,7 @@ public:
 		uint64_t bytes2Read = sizeInByte;
 		uint8_t* pByteData  = reinterpret_cast<uint8_t*>(pData);
 
-		const uint64_t unalignedAddr = addr % sizeof(uint64_t); // TODO: Check if this is correct, especially for 32-bit systems
+		const uint64_t unalignedAddr = addr % sizeof(uint64_t);
 
 		// Get a uint8_t pointer to the memory
 		const uint8_t* pMem = reinterpret_cast<uint8_t*>(offset);
@@ -233,24 +227,6 @@ public:
 			count += bytes;
 			bytes2Read -= bytes;
 		}
-
-		/*
-		while (count < sizeInByte)
-		{
-			uint64_t bytes = sizeInByte - count;
-
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			std::memcpy(pByteData + count, (void*)(offset), bytes);
-
-			count += bytes;
-			offset += bytes;
-		}
-
-		*/
-
-		//	T Read(const T& addr, void* pData, const T& sizeInByte) const
 
 		const uint64_t unalignedBytes    = bytes2Read % sizeof(uint64_t);
 		const uint64_t sizeInByteAligned = bytes2Read - unalignedBytes;
@@ -283,7 +259,7 @@ public:
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
 	{
-		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{
@@ -297,24 +273,7 @@ public:
 		uint64_t offset          = addr;
 		uint64_t bytes2Write     = sizeInByte;
 
-		const uint64_t unalignedAddr = addr % sizeof(uint64_t); // TODO: Check if this is correct, especially for 32-bit systems
-
-		/*while (count < sizeInByte)
-		{
-			uint64_t bytes = sizeInByte - count;
-
-			if (bytes > RW_MAX_SIZE)
-				bytes = RW_MAX_SIZE;
-
-			std::cout << "Memcpy ... " << std::flush;
-
-			memcpy((void*)(offset), pByteData + count, bytes);
-
-			std::cout << "Done" << std::endl;
-
-			count += bytes;
-			offset += bytes;
-		}*/
+		const uint64_t unalignedAddr = addr % sizeof(uint64_t);
 
 		// Get a uint8_t pointer to the mapped memory of the device
 		uint8_t* pMem = reinterpret_cast<uint8_t*>(offset);
@@ -362,7 +321,7 @@ public:
 
 	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
 	{
-		LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
+		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const
