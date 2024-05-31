@@ -29,6 +29,7 @@
 #include <iostream>
 #include <mutex>
 #include <sstream>
+
 #include "StdStub.hpp"
 
 namespace clap
@@ -170,7 +171,6 @@ static inline Verbosity ToVerbosity(const int32_t& val)
 
 	return static_cast<Verbosity>(val);
 }
-
 
 static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {

@@ -52,12 +52,12 @@ public:
 	{
 		getStatus();
 		CLAP_LOG_INFO << "---- ap_ctrl: ----" << std::endl
-				 << "ap_start    : " << ap_start << std::endl
-				 << "ap_done     : " << ap_done << " (" << m_done << ")" << std::endl
-				 << "ap_idle     : " << ap_idle << std::endl
-				 << "ap_ready    : " << ap_ready << std::endl
-				 << "auto_restart: " << auto_restart << std::endl
-				 << "------------------" << std::endl;
+					  << "ap_start    : " << ap_start << std::endl
+					  << "ap_done     : " << ap_done << " (" << m_done << ")" << std::endl
+					  << "ap_idle     : " << ap_idle << std::endl
+					  << "ap_ready    : " << ap_ready << std::endl
+					  << "auto_restart: " << auto_restart << std::endl
+					  << "------------------" << std::endl;
 	}
 
 	bool Start()

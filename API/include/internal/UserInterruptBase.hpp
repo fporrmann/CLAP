@@ -98,10 +98,10 @@ public:
 	}
 
 protected:
-	std::string m_devName = "";
-	HasInterrupt* m_pReg  = nullptr;
+	std::string m_devName                                  = "";
+	HasInterrupt* m_pReg                                   = nullptr;
 	std::vector<std::function<void(uint32_t)>> m_callbacks = {};
-	uint32_t m_interruptNum = 0;
+	uint32_t m_interruptNum                                = 0;
 };
 } // namespace internal
 } // namespace clap

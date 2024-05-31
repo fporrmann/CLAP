@@ -52,7 +52,7 @@ public:
 		return instance;
 	}
 
-	SoloRunWarden(SoloRunWarden const&) = delete;
+	SoloRunWarden(SoloRunWarden const&)  = delete;
 	void operator=(SoloRunWarden const&) = delete;
 
 private:

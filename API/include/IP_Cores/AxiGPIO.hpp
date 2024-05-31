@@ -66,13 +66,13 @@ public:
 	enum class DualChannel : bool
 	{
 		Yes = true,
-		No = false
+		No  = false
 	};
 
 	enum class ResetOnInit : bool
 	{
 		Yes = true,
-		No = false
+		No  = false
 	};
 
 private:
@@ -275,7 +275,6 @@ public:
 			m_gpio1Data.SetBits(value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBits(value);
-	
 	}
 
 	void InterruptTriggered([[maybe_unused]] const uint32_t& mask)
@@ -517,8 +516,8 @@ private:
 
 	std::vector<InterruptFunc> m_callbacks = {};
 	bool m_isDualChannel;
-	std::array<uint32_t, 2> m_gpioWidth = { 32, 32 };
-	std::array<uint32_t, 2> m_triDefaultValues = { 0xFFFFFFFF, 0xFFFFFFFF };
+	std::array<uint32_t, 2> m_gpioWidth         = { 32, 32 };
+	std::array<uint32_t, 2> m_triDefaultValues  = { 0xFFFFFFFF, 0xFFFFFFFF };
 	std::array<uint32_t, 2> m_dataDefaultValues = { 0x0, 0x0 };
 };
 } // namespace clap

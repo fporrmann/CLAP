@@ -93,7 +93,6 @@
 #include "internal/SoloRunWarden.hpp"
 #endif
 
-
 namespace clap
 {
 namespace internal

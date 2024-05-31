@@ -39,7 +39,7 @@ public:
 	mutex()  = default;
 	~mutex() = default;
 
-	mutex(const mutex&) = delete;
+	mutex(const mutex&)            = delete;
 	mutex& operator=(const mutex&) = delete;
 
 	void lock() {}
@@ -53,7 +53,7 @@ public:
 	future()  = default;
 	~future() = default;
 
-	future(const future&) = default;
+	future(const future&)            = default;
 	future& operator=(const future&) = default;
 
 	T get()
