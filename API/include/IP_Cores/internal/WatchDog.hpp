@@ -54,7 +54,7 @@ static std::exception_ptr g_pExcept = nullptr;
 static int64_t g_pollSleepTimeMS    = 10;
 
 // TODO: Rename to indicate that this also controls whether the thread should be terminated
-// TODO: Also replace the bool with an enum
+// TODO: Replace the bool with an enum
 using WatchDogFinishCallback = std::function<bool(void)>;
 
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
@@ -243,9 +243,18 @@ public:
 		joinThread();
 		checkException();
 #else
-		// TODO: Implement callback handling for WatchDogFinishCallback
-		while (!m_pStatus->PollDone())
-			usleep(1);
+		if (m_pInterrupt->IsSet())
+		{
+			while (!m_pInterrupt->WaitForInterrupt())
+				usleep(1);
+		}
+		else if (m_pStatus != nullptr)
+		{
+			while (!m_pStatus->PollDone())
+				usleep(1);
+		}
+
+		m_callback();
 #endif
 
 		return true;
