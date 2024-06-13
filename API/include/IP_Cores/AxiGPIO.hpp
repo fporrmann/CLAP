@@ -152,6 +152,11 @@ public:
 			m_gpioWidth[1] = width;
 	}
 
+	void SetGPIOWidths(const std::array<uint32_t, 2>& widths)
+	{
+		m_gpioWidth = widths;
+	}
+
 	void SetTriStateDefaultValue(const Channel& channel, const uint32_t& value)
 	{
 		if (channel == CHANNEL_1)
@@ -160,12 +165,22 @@ public:
 			m_triDefaultValues[1] = value;
 	}
 
+	void SetTriStateDefaultValues(const std::array<uint32_t, 2>& values)
+	{
+		m_triDefaultValues = values;
+	}
+
 	void SetDataDefaultValue(const Channel& channel, const uint32_t& value)
 	{
 		if (channel == CHANNEL_1)
 			m_dataDefaultValues[0] = value;
 		else if (channel == CHANNEL_2)
 			m_dataDefaultValues[1] = value;
+	}
+
+	void SetDataDefaultValues(const std::array<uint32_t, 2>& values)
+	{
+		m_dataDefaultValues = values;
 	}
 
 	void EnableInterrupts(const uint32_t& eventNo = USE_AUTO_DETECT, const GPIOInterrupts& intr = INTR_ALL)
