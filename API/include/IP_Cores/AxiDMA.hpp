@@ -31,6 +31,7 @@
 
 #include "AxiInterruptController.hpp"
 
+#include <array>
 #include <cstdint>
 #include <queue>
 
@@ -207,7 +208,7 @@ public:
 
 			do
 			{
-				uint32_t currentLength = std::min(remainingLength, m_maxTransferLength);
+				uint32_t currentLength = std::min(remainingLength, m_maxTransferLengths[ch2Id(channel)]);
 
 				m_mm2sChunks.push({ channel, currentAddr, currentLength });
 
@@ -234,7 +235,7 @@ public:
 
 			do
 			{
-				uint32_t currentLength = std::min(remainingLength, m_maxTransferLength);
+				uint32_t currentLength = std::min(remainingLength, m_maxTransferLengths[ch2Id(channel)]);
 
 				m_s2mmChunks.push({ channel, currentAddr, currentLength });
 
@@ -417,17 +418,29 @@ public:
 
 	/// @brief Sets the data width of the Axi DMA in bytes
 	/// @param width The data width in bytes
-	void SetDataWidth(const uint32_t& width)
+	void SetDataWidth(const uint32_t& width, const DMAChannel& channel = DMAChannel::MM2S)
 	{
-		m_dataWidth = width;
+		m_dataWidths[ch2Id(channel)] = width;
 		updateMaxTransferLength();
+	}
+
+	void SetDataWidth(const std::array<uint32_t, 2>& widths)
+	{
+		SetDataWidth(widths[0], DMAChannel::MM2S);
+		SetDataWidth(widths[1], DMAChannel::S2MM);
 	}
 
 	/// @brief Sets the data width of the Axi DMA in bits
 	/// @param width The data width in bits
-	void SetDataWidthBits(const uint32_t& width)
+	void SetDataWidthBits(const uint32_t& width, const DMAChannel& channel = DMAChannel::MM2S)
 	{
-		SetDataWidth(width / 8);
+		SetDataWidth(width / 8, channel);
+	}
+
+	void SetDataWidthBits(const std::array<uint32_t, 2>& widths)
+	{
+		SetDataWidthBits(widths[0], DMAChannel::MM2S);
+		SetDataWidthBits(widths[1], DMAChannel::S2MM);
 	}
 
 	////////////////////////////////////////
@@ -621,19 +634,35 @@ private:
 
 	void detectDataWidth()
 	{
-		const std::string addr = utils::Hex2Str(m_ctrlOffset + (m_mm2sPresent ? REGISTER_MAP::MM2S_DMACR : REGISTER_MAP::S2MM_DMACR));
+		if (m_mm2sPresent)
+			detectDataWidth(DMAChannel::MM2S);
+		if (m_s2mmPresent)
+			detectDataWidth(DMAChannel::S2MM);
+	}
+
+	void detectDataWidth(const DMAChannel& channel)
+	{
+		const uint64_t offset = (channel == DMAChannel::MM2S ? REGISTER_MAP::MM2S_DMACR : REGISTER_MAP::S2MM_DMACR);
+
+		const std::string addr = utils::Hex2Str(m_ctrlOffset + offset);
 
 		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
 		if (res)
 		{
-			SetDataWidthBits(static_cast<uint32_t>(res.Value()));
-			CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidth << " byte" << std::endl;
+			SetDataWidthBits(static_cast<uint32_t>(res.Value()), channel);
+			CLAP_LOG_INFO << CLASS_TAG("AxiDMA") << "Detected data width: " << m_dataWidths[ch2Id(channel)] << " byte for channel " << channel << std::endl;
 		}
 	}
 
 	void updateMaxTransferLength()
 	{
-		m_maxTransferLength = (1 << m_bufLenRegWidth) - m_dataWidth;
+		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) - m_dataWidths[ch2Id(DMAChannel::MM2S)];
+		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) - m_dataWidths[ch2Id(DMAChannel::S2MM)];
+	}
+
+	uint32_t ch2Id(const DMAChannel& channel) const
+	{
+		return (channel == DMAChannel::MM2S ? 0 : 1);
 	}
 
 	////////////////////////////////////////
@@ -842,10 +871,11 @@ private:
 	internal::WatchDog m_watchDogMM2S;
 	internal::WatchDog m_watchDogS2MM;
 
-	uint32_t m_bufLenRegWidth    = 14;     // Default AXI DMA width of the buffer length register is 14 bits
-	uint32_t m_maxTransferLength = 0x3FFC; // Default AXI DMA max transfer length is 16K
+	uint32_t m_bufLenRegWidth = 14; // Default AXI DMA width of the buffer length register is 14 bits
 
-	uint32_t m_dataWidth = 4; // Default AXI DMA data width is 32 bits
+	std::array<uint32_t, 2> m_maxTransferLengths = { 0x3FFC, 0x3FFC }; // Default AXI DMA max transfer length is 16K
+
+	std::array<uint32_t, 2> m_dataWidths = { 4, 4 }; // Default AXI DMA data width is 32 bits
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};
