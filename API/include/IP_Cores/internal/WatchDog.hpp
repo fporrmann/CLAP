@@ -28,7 +28,6 @@
 
 #include <condition_variable>
 #include <cstdint>
-#include <functional>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -265,7 +264,7 @@ public:
 		return m_timer.GetElapsedTimeInMilliSec();
 	}
 
-	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
+	void RegisterInterruptCallback(const IntrCallback& callback)
 	{
 		m_pInterrupt->RegisterCallback(callback);
 	}

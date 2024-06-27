@@ -75,6 +75,8 @@ public:
 		No  = false
 	};
 
+	using IntrCallback = std::function<void(const Channel&, const uint32_t&, const bool&)>;
+
 private:
 	DISABLE_COPY_ASSIGN_MOVE(AxiGPIO)
 
@@ -88,8 +90,6 @@ private:
 		ADDR_IP_IER     = 0x128,
 		ADDR_IP_ISR     = 0x120
 	};
-
-	using InterruptFunc = std::function<void(const Channel&, const uint32_t&, const bool&)>;
 
 public:
 	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const ResetOnInit& resetOnInit) :
@@ -201,7 +201,7 @@ public:
 		m_watchDog.SetUserInterrupt(axiIntC.MakeUserInterrupt());
 	}
 
-	void RegisterInterruptCallback(const InterruptFunc& callback)
+	void RegisterInterruptCallback(const IntrCallback& callback)
 	{
 		m_callbacks.push_back(callback);
 	}
@@ -529,7 +529,7 @@ private:
 	IPInterruptEnableRegister m_ipIntrEn     = IPInterruptEnableRegister();
 	IPInterruptStatusRegister m_ipIntrStatus = IPInterruptStatusRegister();
 
-	std::vector<InterruptFunc> m_callbacks = {};
+	std::vector<IntrCallback> m_callbacks = {};
 	bool m_isDualChannel;
 	std::array<uint32_t, 2> m_gpioWidth         = { 32, 32 };
 	std::array<uint32_t, 2> m_triDefaultValues  = { 0xFFFFFFFF, 0xFFFFFFFF };

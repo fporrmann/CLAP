@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
@@ -47,6 +48,8 @@ using CLAPBuffer = std::vector<T, CLAPBufferAllocator<T>>;
 
 using CLAPPtr  = std::shared_ptr<class CLAP>;
 using Bit32Arr = std::array<bool, 32>;
+
+using IntrCallback = std::function<void(uint32_t)>;
 
 namespace internal
 {

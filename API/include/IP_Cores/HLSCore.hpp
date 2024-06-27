@@ -33,7 +33,6 @@
 #include "internal/WatchDog.hpp"
 
 #include <cstdint>
-#include <functional>
 #include <string>
 
 namespace clap
@@ -236,7 +235,7 @@ public:
 
 	////////////////////////////////////////
 
-	void RegisterInterruptCallback(const std::function<void(uint32_t)>& callback)
+	void RegisterInterruptCallback(const IntrCallback& callback)
 	{
 		m_watchDog.RegisterInterruptCallback(callback);
 	}

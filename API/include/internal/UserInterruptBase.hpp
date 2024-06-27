@@ -47,7 +47,6 @@
 #endif
 
 #include <cstdint>
-#include <functional>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -84,7 +83,7 @@ public:
 
 	virtual bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true) = 0;
 
-	void RegisterCallback([[maybe_unused]] const std::function<void(uint32_t)>& callback)
+	void RegisterCallback([[maybe_unused]] const IntrCallback& callback)
 	{
 		m_callbacks.push_back(callback);
 	}
@@ -98,10 +97,10 @@ public:
 	}
 
 protected:
-	std::string m_devName                                  = "";
-	HasInterrupt* m_pReg                                   = nullptr;
-	std::vector<std::function<void(uint32_t)>> m_callbacks = {};
-	uint32_t m_interruptNum                                = 0;
+	std::string m_devName                 = "";
+	HasInterrupt* m_pReg                  = nullptr;
+	std::vector<IntrCallback> m_callbacks = {};
+	uint32_t m_interruptNum               = 0;
 };
 } // namespace internal
 } // namespace clap
