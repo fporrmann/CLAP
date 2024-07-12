@@ -202,6 +202,7 @@ public:
 	enum class MemoryType
 	{
 		DDR,
+		HBM,
 		BRAM
 	};
 
@@ -262,6 +263,7 @@ private:
 #endif
 
 		m_memories.insert(MemoryPair(MemoryType::DDR, internal::MemoryManagerVec()));
+		m_memories.insert(MemoryPair(MemoryType::HBM, internal::MemoryManagerVec()));
 		m_memories.insert(MemoryPair(MemoryType::BRAM, internal::MemoryManagerVec()));
 
 		readInfo();
@@ -369,6 +371,16 @@ public:
 		return AllocMemory(MemoryType::DDR, elements, sizeOfElement, memIdx);
 	}
 
+	/// @brief Allocates a HBM memory block for n-elements
+	/// @param elements Number of elements to allocate
+	/// @param sizeOfElement Size of one element in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated HBM memory block
+	Memory AllocMemoryHBM(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
+	{
+		return AllocMemory(MemoryType::HBM, elements, sizeOfElement, memIdx);
+	}
+
 	/// @brief Allocates a BRAM memory block for n-elements
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
@@ -386,6 +398,15 @@ public:
 	Memory AllocMemoryDDR(const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::DDR, byteSize, memIdx);
+	}
+
+	/// @brief Allocates a HBM memory block of the specified byte size
+	/// @param byteSize Size of the memory block in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated HBM memory block
+	Memory AllocMemoryHBM(const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		return AllocMemory(MemoryType::HBM, byteSize, memIdx);
 	}
 
 	/// @brief Allocates a BRAM memory block of the specified byte size
