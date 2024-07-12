@@ -32,13 +32,16 @@
 
 #include "Constants.hpp"
 
+#ifndef EMBEDDED_XILINX
+#include "AlignmentAllocator.hpp"
+#endif
+
 namespace clap
 {
 #ifdef EMBEDDED_XILINX
 template<class T>
 using CLAPBufferAllocator = std::allocator<T>;
 #else
-#include "AlignmentAllocator.hpp"
 template<class T>
 using CLAPBufferAllocator = clap::internal::AlignmentAllocator<T, ALIGNMENT>;
 #endif
