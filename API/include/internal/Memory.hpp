@@ -176,7 +176,10 @@ public:
 			}
 			// Else remove the region from the list
 			else
+			{
 				m_freeMemory.remove(freeMem);
+				if (m_freeMemory.empty()) break;
+			}
 		}
 
 		if (addr == INV_NULL)
