@@ -41,6 +41,7 @@ namespace clap
 {
 // Forward declaration is required here to allow for the friend declaration
 // TODO: Find a better way to do this -- maybe a separate header file?
+// TODO: Add a destructor to free the memory on destruction -- This will need to be propagated to the MemoryManager -- MM check for invalid memory objs on alloc and cleanup?
 namespace internal
 {
 class MemoryManager;

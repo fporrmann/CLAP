@@ -252,14 +252,15 @@ private:
 		bool m_polling      = false;
 	};
 
-	CLAP(internal::CLAPBackendPtr pBackend) :
+	CLAP(internal::CLAPBackendPtr pBackend, const bool& disableWarden = false) :
 		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(std::move(pBackend)),
 		m_memories(),
 		m_mutex()
 	{
 #ifndef EMBEDDED_XILINX
-		internal::SoloRunWarden::GetInstance();
+		if (!disableWarden)
+			internal::SoloRunWarden::GetInstance();
 #endif
 
 		m_memories.insert(MemoryPair(MemoryType::DDR, internal::MemoryManagerVec()));
@@ -280,12 +281,13 @@ public:
 	/// @return A shared pointer to the new CLAP instance
 	/// @param deviceNum Device number of the CLAP device
 	/// @param channelNum Channel number of the CLAP device
+	/// @param disableWarden Disables the SoloRunWarden if set to true
 	template<typename T>
-	static CLAPPtr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0)
+	static CLAPPtr Create(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0, const bool& disableWarden = false)
 	{
 		// We have to use the result of new here, because the constructor is private
 		// and can therefore, not be called from make_shared
-		return CLAPPtr(new CLAP(std::make_shared<T>(deviceNum, channelNum)));
+		return CLAPPtr(new CLAP(std::make_shared<T>(deviceNum, channelNum), disableWarden));
 	}
 
 	~CLAP()
@@ -722,7 +724,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -734,6 +736,33 @@ public:
 		}
 
 		Write(mem, buffer.data(), size);
+	}
+
+	/// @brief Writes data to the specified memory object
+	/// @tparam T Type of the data to write
+	/// @param mem Memory object to write to
+	/// @param memOffset Offset in the memory object to write to
+	/// @param buffer CLAP buffer containing the data to write
+	/// @param sizeInByte Size of the data buffer in bytes
+	template<typename T>
+	void Write(const Memory& mem, const uint64_t& memOffset, const CLAPBuffer<T>& buffer, const uint64_t& sizeInByte = USE_MEMORY_SIZE)
+	{
+		uint64_t size = (sizeInByte == USE_MEMORY_SIZE ? mem.GetSize() : sizeInByte);
+		if (memOffset + size > mem.GetSize())
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") and offset (0x" << memOffset << ") exceed the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			throw CLAPException(ss.str());
+		}
+
+		if (size > (buffer.size() * sizeof(T)))
+		{
+			std::stringstream ss;
+			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
+			throw CLAPException(ss.str());
+		}
+
+		Write(mem.GetBaseAddr() + memOffset, buffer, size);
 	}
 
 	/// @brief Writes data to the specified address
