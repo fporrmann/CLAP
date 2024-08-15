@@ -160,26 +160,23 @@ public:
 
 		uint64_t addr = INV_NULL;
 
-		for (std::pair<uint64_t, uint64_t>& freeMem : m_freeMemory)
+		for (auto it = m_freeMemory.begin(); it != m_freeMemory.end(); it++)
 		{
 			// Check if the current element has enough free space
-			if (freeMem.second < alignedSize) continue;
+			if (it->second < alignedSize) continue;
 
-			addr = freeMem.first;
+			addr = it->first;
 
 			// If the region is bigger than the amount requested
 			// Update the memory left in the current region
-			if (freeMem.second > alignedSize)
+			if (it->second > alignedSize)
 			{
-				freeMem.first += alignedSize;
-				freeMem.second -= alignedSize;
+				it->first += alignedSize;
+				it->second -= alignedSize;
 			}
-			// Else remove the region from the list
+			// Else remove the region from the list and update the iterator
 			else
-			{
-				m_freeMemory.remove(freeMem);
-				if (m_freeMemory.empty()) break;
-			}
+				m_freeMemory.erase(it++);
 		}
 
 		if (addr == INV_NULL)
@@ -205,7 +202,7 @@ public:
 		if (it == m_usedMemory.end()) return false;
 
 		m_spaceLeft += it->second;
-		m_freeMemory.push_back(std::make_pair(it->first, it->second));
+		m_freeMemory.push_front(std::make_pair(it->first, it->second));
 		m_usedMemory.erase(it);
 
 		buffer.invalidate();
