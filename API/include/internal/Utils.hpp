@@ -80,21 +80,22 @@ namespace utils
 template<typename T>
 class ReverseRange
 {
-	T &x;
-
 public:
 	ReverseRange(T &x) :
-		x(x) {}
+		m_x(x) {}
 
-	auto begin() const -> decltype(this->x.rbegin())
+	auto begin() const -> decltype(this->m_x.rbegin())
 	{
-		return x.rbegin();
+		return m_x.rbegin();
 	}
 
-	auto end() const -> decltype(this->x.rend())
+	auto end() const -> decltype(this->m_x.rend())
 	{
-		return x.rend();
+		return m_x.rend();
 	}
+
+private:
+	T &m_x;
 };
 
 template<typename T>
