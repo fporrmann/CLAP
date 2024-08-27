@@ -122,7 +122,8 @@ protected:
 private:
 	void markCLAPInvalid()
 	{
-		m_pClap = nullptr;
+		if (m_pClap)
+			m_pClap = nullptr;
 	}
 
 	void checkCLAPValid() const
@@ -169,30 +170,40 @@ public:
 protected:
 	CLAPBase(const uint32_t& devNum) :
 		m_devNum(devNum),
-		m_managedObjects()
+		m_managedObjects(),
+		m_mtx()
 	{
 	}
 
 	virtual ~CLAPBase()
 	{
+		std::lock_guard<std::mutex> lock(m_mtx);
 		for (CLAPManaged* pM : m_managedObjects)
-			pM->markCLAPInvalid();
+		{
+			if (pM)
+				pM->markCLAPInvalid();
+		}
 	}
 
 private:
 	void registerObject(CLAPManaged* pObj)
 	{
+		std::lock_guard<std::mutex> lock(m_mtx);
 		m_managedObjects.push_back(pObj);
 	}
 
 	void unregisterObject(CLAPManaged* pObj)
 	{
+		std::lock_guard<std::mutex> lock(m_mtx);
 		m_managedObjects.erase(std::remove(m_managedObjects.begin(), m_managedObjects.end(), pObj), m_managedObjects.end());
 	}
 
 protected:
 	uint32_t m_devNum;
 	std::vector<CLAPManaged*> m_managedObjects;
+
+private:
+	std::mutex m_mtx;
 };
 } // namespace internal
 
@@ -256,7 +267,8 @@ private:
 		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(std::move(pBackend)),
 		m_memories(),
-		m_mutex()
+		m_rwMtx(),
+		m_pollAddrMtx()
 	{
 #ifndef EMBEDDED_XILINX
 		if (!disableWarden)
@@ -301,6 +313,8 @@ public:
 
 	void AddPollAddress(const uint64_t& addr)
 	{
+		std::lock_guard<std::mutex> lock(m_pollAddrMtx);
+
 		m_pBackend->AddPollAddr(addr);
 	}
 
@@ -325,7 +339,7 @@ public:
 	/// @return Allocated memory block
 	Memory AllocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard<std::mutex> lock(m_rwMtx);
 
 		if (memIdx == -1)
 		{
@@ -1154,7 +1168,8 @@ private:
 
 	XDMAInfo m_info = {};
 
-	std::mutex m_mutex;
+	std::mutex m_rwMtx;
+	std::mutex m_pollAddrMtx;
 };
 
 #ifndef _WIN32
@@ -1168,7 +1183,7 @@ public:
 		m_pioDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_user"),
 		m_pioSize(pioSize),
 		m_pioOffset(pioOffset),
-		m_mutex()
+		m_rwMtx()
 	{
 		m_fd        = open(m_pioDeviceName.c_str(), O_RDWR | O_NONBLOCK);
 		int32_t err = errno;
@@ -1199,7 +1214,7 @@ public:
 
 	~XDMAPio()
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard<std::mutex> lock(m_rwMtx);
 
 #ifndef EMBEDDED_XILINX
 		munmap(m_pMapBase, m_pioSize);
@@ -1251,7 +1266,7 @@ private:
 	template<typename T>
 	T read(const uint64_t& addr)
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard<std::mutex> lock(m_rwMtx);
 
 		if (!m_valid)
 		{
@@ -1283,7 +1298,7 @@ private:
 	template<typename T>
 	void write(const uint64_t& addr, const T& data)
 	{
-		std::lock_guard<std::mutex> lock(m_mutex);
+		std::lock_guard<std::mutex> lock(m_rwMtx);
 
 		if (!m_valid)
 		{
@@ -1318,7 +1333,7 @@ private:
 	int32_t m_fd     = -1;
 	void* m_pMapBase = nullptr;
 	bool m_valid     = false;
-	std::mutex m_mutex;
+	std::mutex m_rwMtx;
 
 	static const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
 };

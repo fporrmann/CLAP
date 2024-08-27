@@ -96,6 +96,10 @@ public:
 		if (size == 0)
 			return nullptr;
 
+		// If the the size is not a multiple of the alignment, increase the size to the next multiple
+		if (size % Alignment != 0)
+			size += Alignment - (size % Alignment);
+
 		void* p = alignedMalloc(Alignment, size * sizeof(T));
 
 		if (!p)
