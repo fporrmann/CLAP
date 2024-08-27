@@ -359,10 +359,10 @@ private:
 		if (m_isDualChannel)
 		{
 			// The shadowing here is intentional, as Expected currently does not allow overwriting the value
-			Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,gpio2-width");
-			if (res)
+			Expected<uint64_t> res2 = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,gpio2-width");
+			if (res2)
 			{
-				m_gpioWidth[1] = static_cast<uint32_t>(res.Value());
+				m_gpioWidth[1] = static_cast<uint32_t>(res2.Value());
 				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO width for channel 2: " << m_gpioWidth[1] << std::endl;
 			}
 		}
@@ -380,10 +380,10 @@ private:
 		if (m_isDualChannel)
 		{
 			// The shadowing here is intentional, as Expected currently does not allow overwriting the value
-			Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,tri-default-2");
-			if (res)
+			Expected<uint64_t> res2 = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,tri-default-2");
+			if (res2)
 			{
-				m_triDefaultValues[1] = static_cast<uint32_t>(res.Value());
+				m_triDefaultValues[1] = static_cast<uint32_t>(res2.Value());
 				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO tri state default for channel 2: 0x" << std::hex << m_triDefaultValues[1] << std::dec << std::endl;
 			}
 		}
@@ -401,10 +401,10 @@ private:
 		if (m_isDualChannel)
 		{
 			// The shadowing here is intentional, as Expected currently does not allow overwriting the value
-			Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,dout-default-2");
-			if (res)
+			Expected<uint64_t> res2 = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,dout-default-2");
+			if (res2)
 			{
-				m_dataDefaultValues[1] = static_cast<uint32_t>(res.Value());
+				m_dataDefaultValues[1] = static_cast<uint32_t>(res2.Value());
 				CLAP_LOG_INFO << CLASS_TAG("AxiGPIO") << "Detected GPIO data default for channel 2: 0x" << std::hex << m_dataDefaultValues[1] << std::dec << std::endl;
 			}
 		}
