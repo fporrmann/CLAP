@@ -151,9 +151,11 @@ public:
 			throw MemoryException(ss.str());
 		}
 
+		uint32_t alignment = (m_alignment == -1) ? ALIGNMENT : static_cast<uint32_t>(m_alignment);
+
 		// Due to the internal memory structure the memory needs to be properly aligned
-		const uint64_t modSize     = size % ALIGNMENT;
-		const uint64_t pad         = (modSize == 0) ? 0 : (ALIGNMENT - modSize);
+		const uint64_t modSize     = size % alignment;
+		const uint64_t pad         = (modSize == 0) ? 0 : (alignment - modSize);
 		const uint64_t alignedSize = size + pad;
 
 		std::lock_guard<std::mutex> lock(m_mutex);
@@ -228,6 +230,16 @@ public:
 		m_spaceLeft = m_size;
 	}
 
+	void SetCustomAlignment(const int32_t& alignment)
+	{
+		m_alignment = alignment;
+	}
+
+	const int32_t& GetCustomAlignment() const
+	{
+		return m_alignment;
+	}
+
 private:
 	void coalesce()
 	{
@@ -265,6 +277,7 @@ private:
 	std::mutex m_mutex;
 	MemList m_freeMemory;
 	MemList m_usedMemory;
+	int32_t m_alignment = -1;
 };
 } // namespace internal
 } // namespace clap

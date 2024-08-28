@@ -481,6 +481,26 @@ public:
 		}
 	}
 
+	/// @brief Sets the alignment of the specified memory region
+	/// @param type Type of memory
+	/// @param alignment Alignment to set, -1 disables custom alignment and uses the default alignment (64 bytes)
+	void SetMemoryAlignment(const MemoryType& type, const int32_t& alignment)
+	{
+		for (auto& memManager : m_memories[type])
+			memManager->SetCustomAlignment(alignment);
+	}
+
+	/// @brief Sets the alignment of all memory regions
+	/// @param alignment Alignment to set, -1 disables custom alignment and uses the default alignment (64 bytes)
+	void SetMemoryAlignment(const int32_t& alignment)
+	{
+		for (auto& [type, memories] : m_memories)
+		{
+			for (auto& memManager : memories)
+				memManager->SetCustomAlignment(alignment);
+		}
+	}
+
 	////////////////////////////////////////////////////////////////////////////
 	///                      Read Methods                                    ///
 	////////////////////////////////////////////////////////////////////////////
