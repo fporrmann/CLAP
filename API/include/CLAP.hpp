@@ -314,7 +314,6 @@ public:
 	void AddPollAddress(const uint64_t& addr)
 	{
 		std::lock_guard<std::mutex> lock(m_pollAddrMtx);
-
 		m_pBackend->AddPollAddr(addr);
 	}
 
@@ -324,11 +323,13 @@ public:
 	/// @param size Size of the memory region in bytes
 	void AddMemoryRegion(const MemoryType& type, const uint64_t& baseAddr, const uint64_t& size)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
 		m_memories[type].push_back(std::make_shared<internal::MemoryManager>(baseAddr, size));
 	}
 
 	void AddMemoryRegion(const MemoryRegion& region)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
 		AddMemoryRegion(region.type, region.baseAddress, region.size);
 	}
 
@@ -339,7 +340,7 @@ public:
 	/// @return Allocated memory block
 	Memory AllocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-		std::lock_guard<std::mutex> lock(m_rwMtx);
+		std::lock_guard<std::mutex> lock(m_memMtx);
 
 		if (memIdx == -1)
 		{
@@ -438,6 +439,8 @@ public:
 	/// @param mem Memory block to free
 	void FreeMemory(Memory& mem)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
 		for (auto& [type, memories] : m_memories)
 		{
 			for (auto& memManager : memories)
@@ -453,6 +456,8 @@ public:
 	/// @param memIdx Index of the memory region to reset
 	void ResetMemory(const MemoryType& type, const int32_t& memIdx = -1)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
 		if (memIdx == -1)
 		{
 			for (auto& memManager : m_memories[type])
@@ -474,6 +479,8 @@ public:
 	/// @brief Resets all memory regions
 	void ResetMemory()
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
 		for (auto& [type, memories] : m_memories)
 		{
 			for (auto& memManager : memories)
@@ -486,6 +493,8 @@ public:
 	/// @param alignment Alignment to set, -1 disables custom alignment and uses the default alignment (64 bytes)
 	void SetMemoryAlignment(const MemoryType& type, const int32_t& alignment)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
 		for (auto& memManager : m_memories[type])
 			memManager->SetCustomAlignment(alignment);
 	}
@@ -494,6 +503,8 @@ public:
 	/// @param alignment Alignment to set, -1 disables custom alignment and uses the default alignment (64 bytes)
 	void SetMemoryAlignment(const int32_t& alignment)
 	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
 		for (auto& [type, memories] : m_memories)
 		{
 			for (auto& memManager : memories)
@@ -1190,6 +1201,7 @@ private:
 
 	std::mutex m_rwMtx;
 	std::mutex m_pollAddrMtx;
+	std::mutex m_memMtx;
 };
 
 #ifndef _WIN32
