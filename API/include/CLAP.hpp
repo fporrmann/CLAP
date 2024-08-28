@@ -268,7 +268,8 @@ private:
 		m_pBackend(std::move(pBackend)),
 		m_memories(),
 		m_rwMtx(),
-		m_pollAddrMtx()
+		m_pollAddrMtx(),
+		m_memMtx()
 	{
 #ifndef EMBEDDED_XILINX
 		if (!disableWarden)
