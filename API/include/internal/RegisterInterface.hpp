@@ -226,7 +226,7 @@ public:
 	using UpdateCB = void(Register<T>*, const uint64_t&, const Direction&, void*);
 
 public:
-	Register(const std::string& name) :
+	explicit Register(const std::string& name) :
 		m_regElems(),
 		m_registerBitSize(sizeof(T) * 8),
 		m_name(name)
@@ -295,7 +295,7 @@ public:
 	}
 
 	// Triggers the callback based update process for the given direction
-	void Update(const Direction& dir = Direction::READ)
+	void Update(const Direction& dir = Direction::READ) override
 	{
 		if (m_pCallBackObject == nullptr) return;
 		m_pUpdateCB(this, m_offset, dir, m_pCallBackObject);
@@ -471,7 +471,7 @@ public:
 	};
 
 public:
-	Bit32Register(const std::string& name) :
+	explicit Bit32Register(const std::string& name) :
 		Register(name)
 	{
 		for (std::size_t i = 0; i < m_bits.size(); i++)

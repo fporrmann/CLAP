@@ -54,7 +54,7 @@ using ManipType = std::ostream&(std::ostream&);
 class Logger
 {
 public:
-	Logger(const Verbosity& lvl, const Verbosity& verbosity = Verbosity::VB_INFO, std::ostream& outStream = std::cout) :
+	explicit Logger(const Verbosity& lvl, const Verbosity& verbosity = Verbosity::VB_INFO, std::ostream& outStream = std::cout) :
 		m_lvl(lvl),
 		m_verbosity(verbosity),
 		m_outStream(outStream)
@@ -106,7 +106,7 @@ public:
 	LoggerBuffer& operator=(const LoggerBuffer&) = delete;
 	LoggerBuffer& operator=(LoggerBuffer&&)      = delete;
 
-	LoggerBuffer(Logger* pLogger) :
+	explicit LoggerBuffer(Logger* pLogger) :
 		m_stream(),
 		m_pLogger(pLogger)
 	{}

@@ -83,7 +83,7 @@ class ReverseRange
 	T &m_x;
 
 public:
-	ReverseRange(T &x) :
+	explicit ReverseRange(T &x) :
 		m_x(x) {}
 
 	auto begin() const -> decltype(this->m_x.rbegin())

@@ -126,7 +126,12 @@ public:
 		m_devName = "BareMetal";
 	}
 
-	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
+	~BareMetalUserInterrupt() override
+	{
+		unset();
+	}
+
+	void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr) override
 	{
 		m_intrNum = interruptNum;
 		m_pReg    = pReg;
@@ -139,22 +144,17 @@ public:
 		m_isSet = true;
 	}
 
-	void Unset()
+	void Unset() override
 	{
-		if (m_isSet && m_intrNum != MINUS_ONE)
-			BareMetalGic::GetInstance().UnregisterInterrupt(m_intrNum);
-
-		m_isSet   = false;
-		m_intrNum = MINUS_ONE;
-		m_pReg    = nullptr;
+		unset();
 	}
 
-	bool IsSet() const
+	bool IsSet() const override
 	{
 		return m_isSet;
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true) override
 	{
 		if (m_intrPresent)
 		{
@@ -176,12 +176,23 @@ public:
 
 		if (m_runCallbacks)
 		{
-			for (auto& callback : m_callbacks)
+			for (const auto& callback : m_callbacks)
 				callback(lastIntr);
 		}
 
 		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 		m_intrPresent = true;
+	}
+
+private:
+	void unset()
+	{
+		if (m_isSet && m_intrNum != MINUS_ONE)
+			BareMetalGic::GetInstance().UnregisterInterrupt(m_intrNum);
+
+		m_isSet   = false;
+		m_intrNum = MINUS_ONE;
+		m_pReg    = nullptr;
 	}
 
 private:
@@ -194,7 +205,7 @@ private:
 class BareMetalBackend : virtual public CLAPBackend
 {
 public:
-	BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
+	explicit BareMetalBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0)
 	{
 		m_nameRead    = "BareMetal";
 		m_nameWrite   = "BareMetal";
@@ -202,7 +213,7 @@ public:
 		m_valid       = true;
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte) override
 	{
 		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -263,7 +274,7 @@ public:
 		}
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
 	{
 		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -325,12 +336,12 @@ public:
 		}
 	}
 
-	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
+	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt) override
 	{
 		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
 	}
 
-	UserInterruptPtr MakeUserInterrupt() const
+	UserInterruptPtr MakeUserInterrupt() const override
 	{
 		return std::make_unique<BareMetalUserInterrupt>();
 	}

@@ -80,7 +80,7 @@ public:
 		CLAP()->AddPollAddress(ctrlOffset);
 	}
 
-	virtual ~RegisterControlBase() = default;
+	virtual ~RegisterControlBase() override = default;
 
 	// Method used by the static update callback function to update the given register
 	template<typename T>

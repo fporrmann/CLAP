@@ -395,7 +395,7 @@ private:
 	class ControlRegister : public internal::Register<uint32_t>
 	{
 	public:
-		ControlRegister(const std::string& name) :
+		explicit ControlRegister(const std::string& name) :
 			Register(name)
 		{
 			RegisterElement<bool>(&m_rs, "RS", 0);
@@ -485,7 +485,7 @@ private:
 	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt
 	{
 	public:
-		StatusRegister(const std::string& name) :
+		explicit StatusRegister(const std::string& name) :
 			Register(name)
 		{
 			RegisterElement<bool>(&m_halted, "Halted", 0);
@@ -500,13 +500,13 @@ private:
 			RegisterElement<uint8_t>(&m_irqDelayCntSts, "IRQDelayCntSts", 24, 31);
 		}
 
-		void ClearInterrupts()
+		void ClearInterrupts() override
 		{
 			m_lastInterrupt = GetInterrupts();
 			ResetInterrupts(VDMA_INTR_ALL);
 		}
 
-		uint32_t GetInterrupts()
+		uint32_t GetInterrupts() override
 		{
 			Update();
 			uint32_t intr = 0;

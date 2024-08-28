@@ -230,7 +230,7 @@ private:
 class funcTime
 {
 public:
-	funcTime(const std::string& funcName = "") :
+	explicit funcTime(const std::string& funcName = "") :
 		m_timer(),
 		m_funcName(funcName)
 	{

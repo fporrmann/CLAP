@@ -88,7 +88,7 @@ public:
 	}
 
 private:
-	void getStatus()
+	void getStatus() override
 	{
 		Update();
 

@@ -178,7 +178,10 @@ public:
 			}
 			// Else remove the region from the list and update the iterator
 			else
+			{
 				m_freeMemory.erase(it++);
+				if (it == m_freeMemory.end()) break;
+			}
 		}
 
 		if (addr == INV_NULL)
@@ -247,7 +250,7 @@ private:
 
 		MemList::iterator cur  = m_freeMemory.begin();
 		MemList::iterator next = cur;
-		next++;
+		++next;
 
 		MemList::iterator end = m_freeMemory.end();
 
@@ -266,7 +269,7 @@ private:
 			else
 				cur = next;
 
-			next++;
+			++next;
 		}
 	}
 

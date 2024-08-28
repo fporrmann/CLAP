@@ -60,7 +60,12 @@ public:
 		m_pollFd()
 	{}
 
-	virtual void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
+	~PetaLinuxUserInterrupt() override
+	{
+		unset();
+	}
+
+	void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, HasInterrupt* pReg = nullptr) override
 	{
 		if (DEVICE_HANDLE_VALID(m_fd))
 			Unset();
@@ -85,20 +90,17 @@ public:
 		unmask();
 	}
 
-	void Unset()
+	void Unset() override
 	{
-		CloseDevice(m_fd);
-
-		m_pollFd.fd = -1;
-		m_pReg      = nullptr;
+		unset();
 	}
 
-	bool IsSet() const
+	bool IsSet() const override
 	{
 		return (DEVICE_HANDLE_VALID(m_fd));
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true) override
 	{
 		if (!IsSet())
 		{
@@ -134,7 +136,7 @@ public:
 
 			if (runCallbacks)
 			{
-				for (auto& callback : m_callbacks)
+				for (const auto& callback : m_callbacks)
 					callback(lastIntr);
 			}
 
@@ -148,6 +150,14 @@ public:
 	}
 
 private:
+	void unset()
+	{
+		CloseDevice(m_fd);
+
+		m_pollFd.fd = -1;
+		m_pReg      = nullptr;
+	}
+
 	void unmask()
 	{
 		const uint32_t unmask = 1;
@@ -177,7 +187,7 @@ class PetaLinuxBackend : virtual public CLAPBackend
 	};
 
 public:
-	PetaLinuxBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0) :
+	explicit PetaLinuxBackend([[maybe_unused]] const uint32_t& deviceNum = 0, [[maybe_unused]] const uint32_t& channelNum = 0) :
 		m_readMutex(),
 		m_writeMutex()
 	{
@@ -193,7 +203,7 @@ public:
 		}
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte) override
 	{
 		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -228,7 +238,7 @@ public:
 		logTransferTime(addr, sizeInByte, timer, true);
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
 	{
 		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -263,12 +273,12 @@ public:
 		logTransferTime(addr, sizeInByte, timer, false);
 	}
 
-	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
+	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt) override
 	{
 		CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
 	}
 
-	UserInterruptPtr MakeUserInterrupt() const
+	UserInterruptPtr MakeUserInterrupt() const override
 	{
 		return std::make_unique<PetaLinuxUserInterrupt>();
 	}
@@ -374,7 +384,7 @@ private:
 		return count;
 	}
 
-	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const override
 	{
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
@@ -382,7 +392,7 @@ private:
 		return dev.ReadBinaryProperty<uint32_t>(propName);
 	}
 
-	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const
+	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const override
 	{
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
@@ -395,7 +405,7 @@ private:
 	}
 
 	// TODO: Check if the properties are always 32-bit values or if they are 64-bit values on 64-bit systems
-	Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	Expected<std::vector<uint64_t>> ReadUIOPropertyVec([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const override
 	{
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();
@@ -412,7 +422,7 @@ private:
 		return res64;
 	}
 
-	Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const
+	Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const override
 	{
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev) return MakeUnexpected();

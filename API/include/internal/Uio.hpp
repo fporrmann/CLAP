@@ -86,7 +86,7 @@ class UioDev
 			m_path(path)
 		{}
 
-		uint32_t GetId() const
+		const uint32_t& GetId() const
 		{
 			return m_id;
 		}
@@ -102,11 +102,11 @@ class UioDev
 		{
 			return m_offset;
 		}
-		std::string GetName() const
+		const std::string& GetName() const
 		{
 			return m_name;
 		}
-		std::string GetPath() const
+		const std::string& GetPath() const
 		{
 			return m_path;
 		}

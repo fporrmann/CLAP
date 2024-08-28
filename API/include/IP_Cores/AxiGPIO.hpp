@@ -123,7 +123,7 @@ public:
 			Reset();
 	}
 
-	virtual ~AxiGPIO()
+	virtual ~AxiGPIO() override
 	{
 		Stop();
 	}
@@ -454,24 +454,18 @@ private:
 			Bit32Register("IP Interrupt Status Register")
 		{
 			// Do an initial clear to discard old interrupts
-			ClearInterrupts();
+			clearInterrupts();
 			m_lastInterrupt = 0;
 		}
 
-		void ClearInterrupts()
+		void ClearInterrupts() override
 		{
-			m_lastInterrupt = GetInterrupts();
-			ResetInterrupts(INTR_ALL);
+			clearInterrupts();
 		}
 
-		uint32_t GetInterrupts()
+		uint32_t GetInterrupts() override
 		{
-			Update();
-			uint32_t intr = 0;
-			intr |= m_bits[0] << (INTR_ON_CH1 >> 1);
-			intr |= m_bits[1] << (INTR_ON_CH2 >> 1);
-
-			return intr;
+			return getInterrupts();
 		}
 
 		void ResetInterrupts(const GPIOInterrupts& intr)
@@ -482,6 +476,23 @@ private:
 				m_bits[1] = true;
 
 			Update(internal::Direction::WRITE);
+		}
+
+	private:
+		void clearInterrupts()
+		{
+			m_lastInterrupt = getInterrupts();
+			ResetInterrupts(INTR_ALL);
+		}
+
+		uint32_t getInterrupts()
+		{
+			Update();
+			uint32_t intr = 0;
+			intr |= m_bits[0] << (INTR_ON_CH1 >> 1);
+			intr |= m_bits[1] << (INTR_ON_CH2 >> 1);
+
+			return intr;
 		}
 	};
 

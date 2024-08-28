@@ -231,13 +231,14 @@ public:
 			return true;
 		}
 
-		std::mutex mtx;
-		std::unique_lock<std::mutex> lck(mtx);
+		{
+			std::unique_lock<std::mutex> lck(m_mtx);
 
-		if (timeoutMS == WAIT_INFINITE)
-			m_cv.wait(lck, [this] { return m_threadDone.load(std::memory_order_acquire); });
-		else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
-			return false;
+			if (timeoutMS == WAIT_INFINITE)
+				m_cv.wait(lck, [this] { return m_threadDone.load(std::memory_order_acquire); });
+			else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
+				return false;
+		}
 
 		joinThread();
 		checkException();

@@ -70,10 +70,8 @@ class UserInterruptBase
 public:
 	UserInterruptBase() {}
 
-	virtual ~UserInterruptBase()
-	{
-		Unset();
-	}
+	// Don't call derived methods in the destructor
+	virtual ~UserInterruptBase() = default;
 
 	virtual void Init(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr) = 0;
 
@@ -90,7 +88,7 @@ public:
 
 	void TransferCallbacks(UserInterruptBase* pInterrupt)
 	{
-		for (auto& callback : m_callbacks)
+		for (const auto& callback : m_callbacks)
 			pInterrupt->RegisterCallback(callback);
 
 		m_callbacks.clear();

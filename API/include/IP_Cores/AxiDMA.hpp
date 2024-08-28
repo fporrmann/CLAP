@@ -488,7 +488,7 @@ public:
 	////////////////////////////////////////
 
 protected:
-	bool detectInterruptID()
+	bool detectInterruptID() override
 	{
 		Expected<std::vector<uint64_t>> res = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
 		Expected<uint32_t> intrParent       = CLAP()->ReadUIOProperty(m_ctrlOffset, "interrupt-parent");
@@ -516,8 +516,6 @@ protected:
 				if (!intrName) return false;
 
 				Expected<uint32_t> devID = CLAP()->GetUIOID(m_ctrlOffset);
-
-				const std::string intrNameStr = intrName.Value();
 
 				if (intrName.Value() == MM2S_INTR_NAME)
 				{
@@ -670,7 +668,7 @@ private:
 	class ControlRegister : public internal::Register<uint32_t>
 	{
 	public:
-		ControlRegister(const std::string& name) :
+		explicit ControlRegister(const std::string& name) :
 			Register(name)
 		{
 			RegisterElement<bool>(&m_rs, "RS", 0);
@@ -753,7 +751,7 @@ private:
 	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt, public internal::HasStatus
 	{
 	public:
-		StatusRegister(const std::string& name) :
+		explicit StatusRegister(const std::string& name) :
 			Register(name)
 		{
 			RegisterElement<bool>(&m_halted, "Halted", 0);
@@ -772,13 +770,13 @@ private:
 			RegisterElement<uint8_t>(&m_irqDelaySts, "IRQDelaySts", 24, 31);
 		}
 
-		void ClearInterrupts()
+		void ClearInterrupts() override
 		{
 			m_lastInterrupt = GetInterrupts();
 			ResetInterrupts(INTR_ALL);
 		}
 
-		uint32_t GetInterrupts()
+		uint32_t GetInterrupts() override
 		{
 			Update();
 			uint32_t intr = 0;
@@ -802,7 +800,7 @@ private:
 		}
 
 	protected:
-		void getStatus()
+		void getStatus() override
 		{
 			Update();
 			if (!m_done && m_idle)

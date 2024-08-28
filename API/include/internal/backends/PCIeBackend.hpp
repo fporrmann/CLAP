@@ -58,7 +58,12 @@ public:
 #endif
 	{}
 
-	virtual void Init(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr)
+	~PCIeUserInterrupt() override
+	{
+		unset();
+	}
+
+	void Init(const uint32_t& devNum, const uint32_t& interruptNum, HasInterrupt* pReg = nullptr) override
 	{
 		if (DEVICE_HANDLE_VALID(m_fd))
 			Unset();
@@ -83,25 +88,17 @@ public:
 		m_interruptNum = interruptNum;
 	}
 
-	void Unset()
+	void Unset() override
 	{
-		if (!DEVICE_HANDLE_VALID(m_fd)) return;
-
-		CLOSE_DEVICE(m_fd);
-		m_fd = INVALID_HANDLE;
-
-#ifndef _WIN32
-		m_pollFd.fd = -1;
-#endif
-		m_pReg = nullptr;
+		unset();
 	}
 
-	bool IsSet() const
+	bool IsSet() const override
 	{
 		return (DEVICE_HANDLE_VALID(m_fd));
 	}
 
-	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true)
+	bool WaitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE, [[maybe_unused]] const bool& runCallbacks = true) override
 	{
 #ifdef _WIN32
 		CLAP_LOG_ERROR << CLASS_TAG("PCIeUserInterrupt") << " Currently not implemented for Windows" << std::endl;
@@ -140,7 +137,7 @@ public:
 
 			if (runCallbacks)
 			{
-				for (auto& callback : m_callbacks)
+				for (const auto& callback : m_callbacks)
 					callback(lastIntr);
 			}
 
@@ -155,6 +152,20 @@ public:
 	}
 
 private:
+	void unset()
+	{
+		if (!DEVICE_HANDLE_VALID(m_fd)) return;
+
+		CLOSE_DEVICE(m_fd);
+		m_fd = INVALID_HANDLE;
+
+#ifndef _WIN32
+		m_pollFd.fd = -1;
+#endif
+		m_pReg = nullptr;
+	}
+
+private:
 	DeviceHandle m_fd = INVALID_HANDLE;
 #ifndef _WIN32
 	struct pollfd m_pollFd;
@@ -166,7 +177,7 @@ class PCIeBackend : virtual public CLAPBackend
 	DISABLE_COPY_ASSIGN_MOVE(PCIeBackend)
 
 public:
-	PCIeBackend(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0) :
+	explicit PCIeBackend(const uint32_t& deviceNum = 0, const uint32_t& channelNum = 0) :
 		m_h2cDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_h2c_" + std::to_string(channelNum)),
 		m_c2hDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_c2h_" + std::to_string(channelNum)),
 		m_ctrlDeviceName("/dev/xdma" + std::to_string(deviceNum) + "_control"),
@@ -186,7 +197,7 @@ public:
 		m_valid  = (DEVICE_HANDLE_VALID(m_h2cFd) && DEVICE_HANDLE_VALID(m_c2hFd) && DEVICE_HANDLE_VALID(m_ctrlFd));
 	}
 
-	virtual ~PCIeBackend()
+	~PCIeBackend() override
 	{
 		// Try to lock the read, write and ctrl mutex in order to prevent read, write or ctrl access
 		// while the XDMA object is being destroyed and also to prevent the destruction
@@ -200,12 +211,12 @@ public:
 		CLOSE_DEVICE(m_ctrlFd);
 	}
 
-	uint32_t GetDevNum() const
+	uint32_t GetDevNum() const override
 	{
 		return m_devNum;
 	}
 
-	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)
+	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte) override
 	{
 		// CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -282,7 +293,7 @@ public:
 		logTransferTime(addr, sizeInByte, timer, true);
 	}
 
-	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte)
+	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
 	{
 		// CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
@@ -358,7 +369,7 @@ public:
 		logTransferTime(addr, sizeInByte, timer, false);
 	}
 
-	void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt)
+	void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt) override
 	{
 		CLAP_LOG_DEBUG << CLASS_TAG("PCIeBackend") << "addr=0x" << std::hex << addr << " data=0x" << &data << std::dec << std::endl;
 
@@ -406,7 +417,7 @@ public:
 		}
 	}
 
-	UserInterruptPtr MakeUserInterrupt() const
+	UserInterruptPtr MakeUserInterrupt() const override
 	{
 		return std::make_unique<PCIeUserInterrupt>();
 	}

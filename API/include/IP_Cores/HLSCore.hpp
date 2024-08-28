@@ -311,24 +311,18 @@ private:
 			RegisterElement<bool>(&m_ap_ready, "ap_ready", 1);
 
 			// Do an initial clear to discard old interrupts
-			ClearInterrupts();
+			clearInterrupts();
 			m_lastInterrupt = 0;
 		}
 
-		void ClearInterrupts()
+		void ClearInterrupts() override
 		{
-			m_lastInterrupt = GetInterrupts();
-			ResetInterrupts(AP_INTR_ALL);
+			clearInterrupts();
 		}
 
-		uint32_t GetInterrupts()
+		uint32_t GetInterrupts() override
 		{
-			Update();
-			uint32_t intr = 0;
-			intr |= m_ap_done << (AP_INTR_DONE >> 1);
-			intr |= m_ap_ready << (AP_INTR_READY >> 1);
-
-			return intr;
+			return getInterrupts();
 		}
 
 		void ResetInterrupts(const APInterrupts& intr)
@@ -339,6 +333,23 @@ private:
 				m_ap_ready = 1;
 
 			Update(internal::Direction::WRITE);
+		}
+
+	private:
+		uint32_t getInterrupts()
+		{
+			Update();
+			uint32_t intr = 0;
+			intr |= m_ap_done << (AP_INTR_DONE >> 1);
+			intr |= m_ap_ready << (AP_INTR_READY >> 1);
+
+			return intr;
+		}
+
+		void clearInterrupts()
+		{
+			m_lastInterrupt = getInterrupts();
+			ResetInterrupts(AP_INTR_ALL);
 		}
 
 	private:
