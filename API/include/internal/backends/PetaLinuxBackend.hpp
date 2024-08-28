@@ -416,8 +416,7 @@ private:
 
 		std::vector<uint64_t> res64;
 		res64.reserve(res.Value().size());
-		for (const auto& r : res.Value())
-			res64.push_back(r);
+		std::copy(res.Value().begin(), res.Value().end(), std::back_inserter(res64));
 
 		return res64;
 	}

@@ -116,14 +116,7 @@ public:
 
 	void RemovePollAddr(const uint64_t& addr)
 	{
-		for (auto it = m_pollAddrs.begin(); it != m_pollAddrs.end(); it++)
-		{
-			if (*it == addr)
-			{
-				m_pollAddrs.erase(it);
-				break;
-			}
-		}
+		m_pollAddrs.erase(std::remove_if(m_pollAddrs.begin(), m_pollAddrs.end(), [addr](const uint64_t& a) { return a == addr; }), m_pollAddrs.end());
 	}
 
 protected:

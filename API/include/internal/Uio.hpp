@@ -444,9 +444,7 @@ public:
 
 	bool HasAddr(const T& addr) const
 	{
-		for (const auto& map : m_maps)
-			if (map.AddrInRange(addr)) return true;
-		return false;
+		return std::any_of(m_maps.begin(), m_maps.end(), [addr](const UioMap<T>& map) { return map.AddrInRange(addr); });
 	}
 
 	friend std::ostream& operator<<(std::ostream& os, const UioDev& uioDev)
@@ -711,33 +709,30 @@ public:
 
 	const UioDev<T>& FindUioDevByName(const std::string& name) const
 	{
-		for (const UioDev<T>& uioDev : m_uioDevs)
-		{
-			if (uioDev.GetName() == name)
-				return uioDev;
-		}
+		auto it = std::find_if(m_uioDevs.begin(), m_uioDevs.end(), [&name](const UioDev<T>& uioDev) { return uioDev.GetName() == name; });
+
+		if (it != m_uioDevs.end())
+			return *it;
 
 		return m_invalidUioDev;
 	}
 
 	const UioDev<T>& FindUioDevById(const uint32_t& id) const
 	{
-		for (const UioDev<T>& uioDev : m_uioDevs)
-		{
-			if (uioDev.GetId() == id)
-				return uioDev;
-		}
+		auto it = std::find_if(m_uioDevs.begin(), m_uioDevs.end(), [&id](const UioDev<T>& uioDev) { return uioDev.GetId() == id; });
+
+		if (it != m_uioDevs.end())
+			return *it;
 
 		return m_invalidUioDev;
 	}
 
 	const UioDev<T>& FindUioDevByAddr(const T& addr) const
 	{
-		for (const UioDev<T>& uioDev : m_uioDevs)
-		{
-			if (uioDev.HasAddr(addr))
-				return uioDev;
-		}
+		auto it = std::find_if(m_uioDevs.begin(), m_uioDevs.end(), [&addr](const UioDev<T>& uioDev) { return uioDev.HasAddr(addr); });
+
+		if (it != m_uioDevs.end())
+			return *it;
 
 		return m_invalidUioDev;
 	}
