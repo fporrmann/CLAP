@@ -103,7 +103,7 @@ class CLAPManaged
 	DISABLE_COPY_ASSIGN_MOVE(CLAPManaged)
 
 protected:
-	CLAPManaged(internal::CLAPBasePtr pClap);
+	explicit CLAPManaged(internal::CLAPBasePtr pClap);
 
 	virtual ~CLAPManaged();
 
@@ -263,7 +263,7 @@ private:
 		bool m_polling      = false;
 	};
 
-	CLAP(internal::CLAPBackendPtr pBackend, const bool& disableWarden = false) :
+	explicit CLAP(internal::CLAPBackendPtr pBackend, const bool& disableWarden = false) :
 		CLAPBase(pBackend->GetDevNum()),
 		m_pBackend(std::move(pBackend)),
 		m_memories(),
@@ -303,7 +303,7 @@ public:
 		return CLAPPtr(new CLAP(std::make_shared<T>(deviceNum, channelNum), disableWarden));
 	}
 
-	~CLAP()
+	~CLAP() override
 	{
 	}
 
@@ -312,7 +312,7 @@ public:
 		return m_pBackend->MakeUserInterrupt();
 	}
 
-	void AddPollAddress(const uint64_t& addr)
+	void AddPollAddress(const uint64_t& addr) override
 	{
 		std::lock_guard<std::mutex> lock(m_pollAddrMtx);
 		m_pBackend->AddPollAddr(addr);
@@ -667,7 +667,7 @@ public:
 	/// @brief Reads a single unsigned byte from the specified address
 	/// @param addr Address to read from
 	/// @return Unsigned byte read from the specified address
-	uint8_t Read8(const uint64_t& addr)
+	uint8_t Read8(const uint64_t& addr) override
 	{
 		return Read<uint8_t>(addr);
 	}
@@ -675,7 +675,7 @@ public:
 	/// @brief Reads a single unsigned word from the specified address
 	/// @param addr Address to read from
 	/// @return Unsigned word read from the specified address
-	uint16_t Read16(const uint64_t& addr)
+	uint16_t Read16(const uint64_t& addr) override
 	{
 		return Read<uint16_t>(addr);
 	}
@@ -683,7 +683,7 @@ public:
 	/// @brief Reads a single unsigned double word from the specified address
 	/// @param addr Address to read from
 	/// @return Unsigned double word read from the specified address
-	uint32_t Read32(const uint64_t& addr)
+	uint32_t Read32(const uint64_t& addr) override
 	{
 		return Read<uint32_t>(addr);
 	}
@@ -691,7 +691,7 @@ public:
 	/// @brief Reads a single unsigned quad word from the specified address
 	/// @param addr Address to read from
 	/// @return Unsigned quad word read from the specified address
-	uint64_t Read64(const uint64_t& addr)
+	uint64_t Read64(const uint64_t& addr) override
 	{
 		return Read<uint64_t>(addr);
 	}
@@ -865,7 +865,7 @@ public:
 	/// @brief Writes a single unsigned byte to the specified address
 	/// @param addr Address to write to
 	/// @param data Unsigned byte to write to the specified address
-	void Write8(const uint64_t& addr, const uint8_t& data)
+	void Write8(const uint64_t& addr, const uint8_t& data) override
 	{
 		Write<uint8_t>(addr, data);
 	}
@@ -873,7 +873,7 @@ public:
 	/// @brief Writes a single unsigned word to the specified address
 	/// @param addr Address to write to
 	/// @param data Unsigned word to write to the specified address
-	void Write16(const uint64_t& addr, const uint16_t& data)
+	void Write16(const uint64_t& addr, const uint16_t& data) override
 	{
 		Write<uint16_t>(addr, data);
 	}
@@ -881,7 +881,7 @@ public:
 	/// @brief Writes a single unsigned double word to the specified address
 	/// @param addr Address to write to
 	/// @param data Unsigned double word to write to the specified address
-	void Write32(const uint64_t& addr, const uint32_t& data)
+	void Write32(const uint64_t& addr, const uint32_t& data) override
 	{
 		Write<uint32_t>(addr, data);
 	}
@@ -889,7 +889,7 @@ public:
 	/// @brief Writes a single unsigned quad word to the specified address
 	/// @param addr Address to write to
 	/// @param data Unsigned quad word to write to the specified address
-	void Write64(const uint64_t& addr, const uint64_t& data)
+	void Write64(const uint64_t& addr, const uint64_t& data) override
 	{
 		Write<uint64_t>(addr, data);
 	}
@@ -930,22 +930,22 @@ public:
 	///                      UIO Property Methods                            ///
 	////////////////////////////////////////////////////////////////////////////
 
-	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const
+	Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const override
 	{
 		return m_pBackend->ReadUIOProperty(addr, propName);
 	}
 
-	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const
+	Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const override
 	{
 		return m_pBackend->ReadUIOStringProperty(addr, propName);
 	}
 
-	Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const
+	Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const override
 	{
 		return m_pBackend->ReadUIOPropertyVec(addr, propName);
 	}
 
-	Expected<int32_t> GetUIOID(const uint64_t& addr) const
+	Expected<int32_t> GetUIOID(const uint64_t& addr) const override
 	{
 		return m_pBackend->GetUIOID(addr);
 	}
@@ -1245,7 +1245,7 @@ public:
 
 	DISABLE_COPY_ASSIGN_MOVE(XDMAPio)
 
-	~XDMAPio()
+	~XDMAPio() override
 	{
 		std::lock_guard<std::mutex> lock(m_rwMtx);
 
@@ -1255,42 +1255,42 @@ public:
 		close(m_fd);
 	}
 
-	uint8_t Read8(const uint64_t& addr)
+	uint8_t Read8(const uint64_t& addr) override
 	{
 		return read<uint8_t>(addr);
 	}
 
-	uint16_t Read16(const uint64_t& addr)
+	uint16_t Read16(const uint64_t& addr) override
 	{
 		return read<uint16_t>(addr);
 	}
 
-	uint32_t Read32(const uint64_t& addr)
+	uint32_t Read32(const uint64_t& addr) override
 	{
 		return read<uint32_t>(addr);
 	}
 
-	uint64_t Read64(const uint64_t& addr)
+	uint64_t Read64(const uint64_t& addr) override
 	{
 		return read<uint64_t>(addr);
 	}
 
-	void Write8(const uint64_t& addr, const uint8_t& data)
+	void Write8(const uint64_t& addr, const uint8_t& data) override
 	{
 		write<uint8_t>(addr, data);
 	}
 
-	void Write16(const uint64_t& addr, const uint16_t& data)
+	void Write16(const uint64_t& addr, const uint16_t& data) override
 	{
 		write<uint16_t>(addr, data);
 	}
 
-	void Write32(const uint64_t& addr, const uint32_t& data)
+	void Write32(const uint64_t& addr, const uint32_t& data) override
 	{
 		write<uint32_t>(addr, data);
 	}
 
-	void Write64(const uint64_t& addr, const uint64_t& data)
+	void Write64(const uint64_t& addr, const uint64_t& data) override
 	{
 		write<uint64_t>(addr, data);
 	}
