@@ -80,6 +80,8 @@ namespace utils
 template<typename T>
 class ReverseRange
 {
+	T &m_x;
+
 public:
 	ReverseRange(T &x) :
 		m_x(x) {}
@@ -93,9 +95,6 @@ public:
 	{
 		return m_x.rend();
 	}
-
-private:
-	T &m_x;
 };
 
 template<typename T>
