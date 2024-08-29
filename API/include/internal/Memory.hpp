@@ -59,7 +59,7 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("Memory") << "ERROR: Memory Buffer is Invalid.";
+			ss << CLASS_TAG_AUTO << "ERROR: Memory Buffer is Invalid.";
 			throw MemoryException(ss.str());
 		}
 
@@ -71,7 +71,7 @@ public:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("Memory") << "ERROR: Memory Buffer is Invalid.";
+			ss << CLASS_TAG_AUTO << "ERROR: Memory Buffer is Invalid.";
 			throw MemoryException(ss.str());
 		}
 
@@ -140,14 +140,14 @@ public:
 		if (size == 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("MemoryManager") << "Trying to allocate zero size memory.";
+			ss << CLASS_TAG_AUTO << "Trying to allocate zero size memory.";
 			throw MemoryException(ss.str());
 		}
 
 		if (size > m_spaceLeft)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("MemoryManager") << "Not enough memory left to allocate " << std::dec << size << " byte.";
+			ss << CLASS_TAG_AUTO << "Not enough memory left to allocate " << std::dec << size << " byte.";
 			throw MemoryException(ss.str());
 		}
 
@@ -187,7 +187,7 @@ public:
 		if (addr == INV_NULL)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("MemoryManager") << "Not enough contiguous memory available to allocate " << std::dec << size << " byte.";
+			ss << CLASS_TAG_AUTO << "Not enough contiguous memory available to allocate " << std::dec << size << " byte.";
 			throw MemoryException(ss.str());
 		}
 

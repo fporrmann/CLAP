@@ -31,6 +31,7 @@
 #include <sstream>
 
 #include "StdStub.hpp"
+#include "Utils.hpp"
 
 namespace clap
 {
@@ -198,6 +199,12 @@ static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 #define CLAP_LOG_WARNING logging::g_none
 #define CLAP_LOG_ERROR   logging::g_none
 #endif
+
+#define CLAP_CLASS_LOG_DEBUG   CLAP_LOG_DEBUG << CLASS_TAG_AUTO
+#define CLAP_CLASS_LOG_VERBOSE CLAP_LOG_VERBOSE << CLASS_TAG_AUTO
+#define CLAP_CLASS_LOG_INFO    CLAP_LOG_INFO << CLASS_TAG_AUTO
+#define CLAP_CLASS_LOG_WARNING CLAP_LOG_WARNING << CLASS_TAG_AUTO
+#define CLAP_CLASS_LOG_ERROR   CLAP_LOG_ERROR << CLASS_TAG_AUTO
 
 /// Info log messages that will not be disabled by the DISABLE_LOGGING macro
 #define CLAP_LOG_INFO_ALWAYS logging::g_info

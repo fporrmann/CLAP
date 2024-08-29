@@ -147,11 +147,11 @@ public:
 	void InitInterrupt([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr)
 	{
 #ifdef _WIN32
-		CLAP_LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		CLAP_CLASS_LOG_ERROR << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_pInterrupt->Init(devNum, interruptNum, pReg);
 		// Check for existing interrupts and clear them
-		CLAP_LOG_DEBUG << CLASS_TAG("WatchDog") << "Clearing existing interrupts ..." << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Clearing existing interrupts ..." << std::endl;
 		while (m_pInterrupt->WaitForInterrupt(1))
 			;
 
@@ -161,7 +161,7 @@ public:
 	void UnsetInterrupt()
 	{
 #ifdef _WIN32
-		CLAP_LOG_ERROR << CLASS_TAG("WatchDog") << "Error: Interrupts are not supported on Windows." << std::endl;
+		CLAP_CLASS_LOG_ERROR << "Error: Interrupts are not supported on Windows." << std::endl;
 #else
 		m_pInterrupt->Unset();
 #endif
@@ -189,7 +189,7 @@ public:
 		if (!m_pInterrupt->IsSet() && m_pStatus == nullptr)
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG("WatchDog") << "Error: Trying to start WatchDog thread with neither the interrupt nor the status register set.";
+			ss << CLASS_TAG_AUTO << "Error: Trying to start WatchDog thread with neither the interrupt nor the status register set.";
 			throw WatchDogException(ss.str());
 		}
 
@@ -219,7 +219,7 @@ public:
 #ifndef EMBEDDED_XILINX
 		using namespace std::chrono_literals;
 
-		CLAP_LOG_DEBUG << CLASS_TAG("WatchDog") << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
 
 		if (!m_threadRunning)
 			return true;

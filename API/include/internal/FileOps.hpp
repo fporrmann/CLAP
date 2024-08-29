@@ -57,7 +57,7 @@ static inline DeviceHandle OpenDevice(const std::string &name, FlagType flags = 
 	if (!DEVICE_HANDLE_VALID(fd))
 	{
 		std::stringstream ss;
-		ss << CLASS_TAG("") << "Unable to open device " << name << "; errno: " << err;
+		ss << FUNCTION_TAG << "Unable to open device " << name << "; errno: " << err;
 		throw CLAPException(ss.str());
 	}
 

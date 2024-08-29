@@ -59,7 +59,7 @@ public:
 
 	void RegisterInterrupt(const uint32_t& interruptNum, void* pObj)
 	{
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalGic") << "Registering interrupt " << interruptNum << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Registering interrupt " << interruptNum << std::endl;
 		XScuGic_SetPriorityTriggerType(&m_gic, interruptNum, 0xA0, 0x3);
 
 		// Connect a device driver handler that will be called when an interrupt for the device occurs, the device driver handler performs the specific interrupt processing for the device
@@ -67,7 +67,7 @@ public:
 		if (result != XST_SUCCESS)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalGic") << "failed to connect interrupt handler";
+			ss << CLASS_TAG_AUTO << "failed to connect interrupt handler";
 			throw CLAPException(ss.str());
 		}
 
@@ -91,7 +91,7 @@ private:
 		if (NULL == pGICConfig)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalGic") << "configuration lookup failed";
+			ss << CLASS_TAG_AUTO << "configuration lookup failed";
 			throw CLAPException(ss.str());
 		}
 
@@ -99,7 +99,7 @@ private:
 		if (result != XST_SUCCESS)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalGic") << "initialization failed";
+			ss << CLASS_TAG_AUTO << "initialization failed";
 			throw CLAPException(ss.str());
 		}
 
@@ -136,7 +136,7 @@ public:
 		m_intrNum = interruptNum;
 		m_pReg    = pReg;
 
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Registering Interrupt " << interruptNum << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Registering Interrupt " << interruptNum << std::endl;
 
 		void* tAddr = reinterpret_cast<void*>(this);
 
@@ -180,7 +180,7 @@ public:
 				callback(lastIntr);
 		}
 
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalUserInterrupt") << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 		m_intrPresent = true;
 	}
 
@@ -215,12 +215,12 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte) override
 	{
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "CLAP Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -269,19 +269,19 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG_AUTO << ", failed to read 0x" << std::hex << sizeInByte << " byte from offset 0x" << offset << " (read: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
 	{
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "CLAP Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -331,14 +331,9 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("BareMetalBackend") << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG_AUTO << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
-	}
-
-	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt) override
-	{
-		CLAP_LOG_DEBUG << CLASS_TAG("BareMetalBackend") << "ReadCtrl is currently not implemented by the BareMetal backend." << std::endl;
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const override
@@ -363,7 +358,7 @@ private:
 			default:
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("BareMetalBackend") << "Reading \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				ss << CLASS_TAG_AUTO << "Reading \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
 				throw UIOException(ss.str());
 			}
 			break;
@@ -393,7 +388,7 @@ private:
 			default:
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("BareMetalBackend") << "Writing \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
+				ss << CLASS_TAG_AUTO << "Writing \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
 				throw UIOException(ss.str());
 			}
 			break;

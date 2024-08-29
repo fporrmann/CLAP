@@ -247,14 +247,14 @@ public:
 		// Check if the target bit space exceeds the possible range
 		if (startBitUse > m_registerBitSize || (endBitUse > m_registerBitSize && endBitUse != SAME_AS_START_BIT))
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBitUse << "-" << endBitUse
-						   << ") exceeds the registers bit size (" << m_registerBitSize << ")" << std::endl;
+			CLAP_CLASS_LOG_ERROR << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBitUse << "-" << endBitUse
+								 << ") exceeds the registers bit size (" << m_registerBitSize << ")" << std::endl;
 			return;
 		}
 
 		if (startBitUse > endBitUse)
 		{
-			CLAP_LOG_WARNING << CLASS_TAG("") << "WARNING: Start bit (" << static_cast<uint32_t>(startBitUse) << ") is greater than end bit (" << static_cast<uint32_t>(endBitUse) << "), swapping the values" << std::endl;
+			CLAP_CLASS_LOG_WARNING << "WARNING: Start bit (" << static_cast<uint32_t>(startBitUse) << ") is greater than end bit (" << static_cast<uint32_t>(endBitUse) << "), swapping the values" << std::endl;
 			startBitUse = endBit;
 			endBitUse   = startBit;
 		}
@@ -266,15 +266,15 @@ public:
 		// Check if the the entire or a part of the bit range have already been registered
 		if ((m_regUsage & shiftVal) != 0)
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("") << "ERROR: Trying to register element: \"" << name << "\" whose bit space ("
-						   << static_cast<uint32_t>(startBitUse) << "-" << static_cast<uint32_t>(endBitUse)
-						   << ") has already been registered, either entirely or partially by:" << std::endl;
+			CLAP_CLASS_LOG_ERROR << "ERROR: Trying to register element: \"" << name << "\" whose bit space ("
+								 << static_cast<uint32_t>(startBitUse) << "-" << static_cast<uint32_t>(endBitUse)
+								 << ") has already been registered, either entirely or partially by:" << std::endl;
 
 			// Print the elements occupying the target bit space
 			for (const RegIntfPtr& pRElem : m_regElems)
 			{
 				if ((pRElem->GetShiftValue() & shiftVal) != 0)
-					CLAP_LOG_ERROR << pRElem->GetName() << " " << static_cast<uint32_t>(pRElem->GetStartBit()) << "-" << static_cast<uint32_t>(pRElem->GetEndBit()) << std::endl;
+					CLAP_CLASS_LOG_ERROR << pRElem->GetName() << " " << static_cast<uint32_t>(pRElem->GetStartBit()) << "-" << static_cast<uint32_t>(pRElem->GetEndBit()) << std::endl;
 			}
 
 			return;

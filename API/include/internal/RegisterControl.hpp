@@ -134,7 +134,7 @@ protected:
 		if constexpr (sizeof(T) > sizeof(uint64_t))
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+			ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 			throw std::runtime_error(ss.str());
 		}
 
@@ -164,7 +164,7 @@ protected:
 				return static_cast<T>(CLAP()->Read8(m_ctrlOffset + regOffset));
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 	}
@@ -188,7 +188,7 @@ protected:
 				break;
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG(className()) << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 
@@ -198,7 +198,7 @@ protected:
 			if (readData != regData)
 			{
 				std::stringstream ss("");
-				ss << CLASS_TAG(className()) << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
+				ss << CLASS_TAG_AUTO << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
 				throw std::runtime_error(ss.str());
 			}
 		}
@@ -210,7 +210,7 @@ protected:
 		if (res)
 		{
 			m_detectedInterruptID = static_cast<int32_t>(res.Value());
-			CLAP_LOG_INFO << CLASS_TAG(className()) << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+			CLAP_CLASS_LOG_INFO << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
 			return true;
 		}
 

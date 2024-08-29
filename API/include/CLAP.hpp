@@ -131,7 +131,7 @@ private:
 		if (m_pClap == nullptr)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAPManaged") << "CLAP/CLAPPio instance is not valid or has been destroyed";
+			ss << CLASS_TAG_AUTO << "CLAP/CLAPPio instance is not valid or has been destroyed";
 			throw CLAPException(ss.str());
 		}
 	}
@@ -240,6 +240,12 @@ private:
 			m_version   = (reg0x0 >> 0) & 0xF;
 			m_streaming = (reg0x0 >> 15) & 0x1;
 			m_polling   = (reg0x4 >> 26) & 0x1;
+			m_valid     = true;
+		}
+
+		operator bool() const
+		{
+			return m_valid;
 		}
 
 		const bool& IsStreaming() const
@@ -257,6 +263,7 @@ private:
 		}
 
 	private:
+		bool m_valid        = false;
 		uint8_t m_channelID = 0;
 		uint8_t m_version   = 0;
 		bool m_streaming    = false;
@@ -282,10 +289,12 @@ private:
 
 		readInfo();
 
-		CLAP_LOG_VERBOSE << "CLAP instance created" << std::endl;
-		CLAP_LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
-		CLAP_LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
-		CLAP_LOG_VERBOSE << m_info << std::endl;
+		CLAP_CLASS_LOG_VERBOSE << "CLAP instance created" << std::endl;
+		CLAP_CLASS_LOG_VERBOSE << "Device number: " << m_devNum << std::endl;
+		CLAP_CLASS_LOG_VERBOSE << "Backend: " << m_pBackend->GetBackendName() << std::endl;
+
+		if (m_info)
+			CLAP_CLASS_LOG_VERBOSE << std::endl << m_info << std::endl;
 	}
 
 public:
@@ -356,7 +365,7 @@ public:
 			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("CLAP") << "Specified memory region " << std::dec << memIdx << " does not exist.";
+				ss << CLASS_TAG_AUTO << "Specified memory region " << std::dec << memIdx << " does not exist.";
 				throw CLAPException(ss.str());
 			}
 
@@ -364,7 +373,7 @@ public:
 		}
 
 		std::stringstream ss;
-		ss << CLASS_TAG("CLAP") << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
+		ss << CLASS_TAG_AUTO << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
 		throw CLAPException(ss.str());
 	}
 
@@ -469,7 +478,7 @@ public:
 			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("CLAP") << "Specified memory region " << std::dec << memIdx << " does not exist.";
+				ss << CLASS_TAG_AUTO << "Specified memory region " << std::dec << memIdx << " does not exist.";
 				throw CLAPException(ss.str());
 			}
 
@@ -536,7 +545,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG_AUTO << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -555,14 +564,14 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG_AUTO << m_pBackend->GetName(internal::CLAPBackend::TYPE::READ) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
 		if (size > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << size << ")";
+			ss << CLASS_TAG_AUTO << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << size << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -580,7 +589,7 @@ public:
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << sizeInByte << ")";
+			ss << CLASS_TAG_AUTO << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired read size (" << sizeInByte << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -751,7 +760,7 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG_AUTO << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -770,14 +779,14 @@ public:
 		if (size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG_AUTO << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") exceeds the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
 		if (size > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
+			ss << CLASS_TAG_AUTO << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -797,14 +806,14 @@ public:
 		if (memOffset + size > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") and offset (0x" << memOffset << ") exceed the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
+			ss << CLASS_TAG_AUTO << m_pBackend->GetName(internal::CLAPBackend::TYPE::WRITE) << ", specified size (0x" << std::hex << size << ") and offset (0x" << memOffset << ") exceed the size of the given memory (0x" << std::hex << mem.GetSize() << ")";
 			throw CLAPException(ss.str());
 		}
 
 		if (size > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
+			ss << CLASS_TAG_AUTO << "Byte size of buffer provided (" << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << size << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -822,7 +831,7 @@ public:
 		if (sizeInByte > (buffer.size() * sizeof(T)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << sizeInByte << ")";
+			ss << CLASS_TAG_AUTO << "Byte size of buffer provided (" << std::dec << buffer.size() * sizeof(T) << ") is smaller than the desired write size (" << sizeInByte << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -1048,7 +1057,7 @@ private:
 		if (sizeof(T) > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired read size (" << sizeof(T) << ")";
+			ss << CLASS_TAG_AUTO << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired read size (" << sizeof(T) << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -1061,7 +1070,7 @@ private:
 		if (sizeof(T) > mem.GetSize())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired write size (" << sizeof(T) << ")";
+			ss << CLASS_TAG_AUTO << "Size of provided memory (" << std::dec << mem.GetSize() << ") is smaller than the desired write size (" << sizeof(T) << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -1073,14 +1082,14 @@ private:
 		if (!m_info.IsStreaming())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
+			ss << CLASS_TAG_AUTO << "The XDMA endpoint is not in streaming mode";
 			throw CLAPException(ss.str());
 		}
 
 		if (m_readFuture.valid())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Read stream is already running";
+			ss << CLASS_TAG_AUTO << "Read stream is already running";
 			throw CLAPException(ss.str());
 		}
 
@@ -1092,14 +1101,14 @@ private:
 		if (!m_info.IsStreaming())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "The XDMA endpoint is not in streaming mode";
+			ss << CLASS_TAG_AUTO << "The XDMA endpoint is not in streaming mode";
 			throw CLAPException(ss.str());
 		}
 
 		if (m_writeFuture.valid())
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Write stream is already running";
+			ss << CLASS_TAG_AUTO << "Write stream is already running";
 			throw CLAPException(ss.str());
 		}
 
@@ -1112,7 +1121,7 @@ private:
 		if (size % internal::XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
+			ss << CLASS_TAG_AUTO << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
 			throw CLAPException(ss.str());
 		}
 
@@ -1135,7 +1144,7 @@ private:
 		if (size % internal::XDMA_AXI_DATA_WIDTH != 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("CLAP") << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
+			ss << CLASS_TAG_AUTO << "Size (" << size << ") is not a multiple of the XDMA AXI data width (" << internal::XDMA_AXI_DATA_WIDTH << ").";
 			throw CLAPException(ss.str());
 		}
 
@@ -1184,9 +1193,15 @@ private:
 
 	void readInfo()
 	{
-		uint32_t reg0 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x0);
-		uint32_t reg4 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x4);
-		m_info        = XDMAInfo(reg0, reg4);
+		try
+		{
+			uint32_t reg0 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x0);
+			uint32_t reg4 = readCtrl32(internal::XDMA_CTRL_BASE + m_devNum * internal::XDMA_CTRL_SIZE + 0x4);
+			m_info        = XDMAInfo(reg0, reg4);
+		}
+		catch ([[maybe_unused]] const CLAPException& e)
+		{
+		}
 	}
 	// --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1224,7 +1239,7 @@ public:
 		if (m_fd < 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("") << "Unable to open device " << m_pioDeviceName << "; errno: " << err;
+			ss << CLASS_TAG_AUTO << "Unable to open device " << m_pioDeviceName << "; errno: " << err;
 			throw CLAPException(ss.str());
 		}
 
@@ -1235,7 +1250,7 @@ public:
 		if (m_pMapBase == MAP_FAILED)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "Failed to map memory into userspace, errno: " << err;
+			ss << CLASS_TAG_AUTO << "Failed to map memory into userspace, errno: " << err;
 			throw CLAPException(ss.str());
 		}
 #endif
@@ -1304,7 +1319,7 @@ private:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -1312,14 +1327,14 @@ private:
 		if (size > MAX_PIO_ACCESS_SIZE)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
+			ss << CLASS_TAG_AUTO << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
 			throw CLAPException(ss.str());
 		}
 
 		if (addr >= m_pioSize + m_pioOffset)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "Address: (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
+			ss << CLASS_TAG_AUTO << "Address: (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
 			throw CLAPException(ss.str());
 		}
 
@@ -1336,7 +1351,7 @@ private:
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "XDMAPio Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -1344,14 +1359,14 @@ private:
 		if (size > MAX_PIO_ACCESS_SIZE)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
+			ss << CLASS_TAG_AUTO << "Type size (" << std::dec << size << " byte) exceeds maximal allowed Pio size (" << MAX_PIO_ACCESS_SIZE << " byte)";
 			throw CLAPException(ss.str());
 		}
 
 		if (addr >= m_pioSize + m_pioOffset)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("XDMAPio") << "Address (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
+			ss << CLASS_TAG_AUTO << "Address (0x" << std::hex << addr << ") exceeds Pio address range (0x" << m_pioOffset << "-0x" << m_pioSize + m_pioOffset << ")";
 			throw CLAPException(ss.str());
 		}
 

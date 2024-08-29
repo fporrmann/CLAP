@@ -83,7 +83,7 @@ public:
 				callback(lastIntr);
 		}
 
-		CLAP_LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 
 		return true;
 	}
@@ -99,7 +99,7 @@ public:
 #else
 		WaitForInterrupt();
 #endif
-		CLAP_LOG_DEBUG << CLASS_TAG("AxiIntrCtrlUserInterrupt") << "Interrupt triggered on " << m_devName << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Interrupt triggered on " << m_devName << std::endl;
 	}
 
 private:
@@ -234,7 +234,7 @@ public:
 
 		if (!m_watchDog.Start(true))
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("AxiInterruptController") << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
+			CLAP_CLASS_LOG_ERROR << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
 			return false;
 		}
 
@@ -244,7 +244,7 @@ public:
 	void Stop()
 	{
 		if (!m_running) return;
-		CLAP_LOG_INFO << CLASS_TAG("AxiInterruptController") << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
+		CLAP_CLASS_LOG_INFO << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
 		stop();
 
 		m_watchDog.Stop();
@@ -269,7 +269,7 @@ public:
 
 		uint32_t intrs = m_intrStatusReg.GetInterrupts();
 
-		CLAP_LOG_DEBUG << CLASS_TAG("AxiInterruptController") << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
 
 		try
 		{

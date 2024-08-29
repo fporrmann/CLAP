@@ -142,7 +142,7 @@ public:
 			// Start the watchdog
 			if (!m_watchDogMM2S.Start())
 			{
-				CLAP_LOG_ERROR << CLASS_TAG("VDMA") << "Trying to start VDMA (MM2S) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+				CLAP_CLASS_LOG_ERROR << "Trying to start VDMA (MM2S) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 				return;
 			}
 
@@ -166,7 +166,7 @@ public:
 			// Start the watchdog
 			if (!m_watchDogS2MM.Start())
 			{
-				CLAP_LOG_ERROR << CLASS_TAG("VDMA") << "Trying to start VDMA (S2MM) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+				CLAP_CLASS_LOG_ERROR << "Trying to start VDMA (S2MM) at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 				return;
 			}
 

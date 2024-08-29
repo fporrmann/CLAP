@@ -27,11 +27,20 @@
 #pragma once
 
 #include <cmath>
+#include <cxxabi.h>
 #include <exception>
 #include <sstream>
 
 #ifndef CLASS_TAG
 #define CLASS_TAG(_C_) "[" << _C_ << "::" << __func__ << "] "
+#endif
+
+#ifndef CLASS_TAG_AUTO
+#define CLASS_TAG_AUTO "[" << clap::utils::ClassName(*this) << "::" << __func__ << "] "
+#endif
+
+#ifndef FUNCTION_TAG
+#define FUNCTION_TAG "[" << __func__ << "] "
 #endif
 
 #ifndef DISABLE_COPY_ASSIGN_MOVE
@@ -196,6 +205,32 @@ static inline std::string Hex2Str(const uint64_t &val)
 	std::stringstream ss;
 	ss << std::hex << val;
 	return ss.str();
+}
+
+static inline std::vector<std::string> SplitString(const std::string &s, const char &delimiter = ' ')
+{
+	std::vector<std::string> split;
+	std::string item;
+	std::istringstream stream(s);
+
+	while (std::getline(stream, item, delimiter))
+		split.push_back(item);
+
+	return split;
+}
+
+template<typename T>
+static inline std::string ClassName(T &ref)
+{
+	int status;
+	char *pName = abi::__cxa_demangle(typeid(ref).name(), NULL, NULL, &status);
+	std::string name(pName);
+	free(pName);
+
+	// Remove potential namespace prefix
+	name = SplitString(name, ':').back();
+
+	return name;
 }
 
 } // namespace utils

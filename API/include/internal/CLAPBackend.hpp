@@ -64,7 +64,11 @@ public:
 
 	virtual void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte)        = 0;
 	virtual void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) = 0;
-	virtual void ReadCtrl(const uint64_t& addr, uint64_t& data, const std::size_t& byteCnt) = 0;
+
+	virtual void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt)
+	{
+		throw CLAPException("ReadCtrl not implemented");
+	}
 
 	virtual Expected<uint64_t> ReadUIOProperty([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
 	{
@@ -130,13 +134,13 @@ protected:
 		{
 			if (reading)
 			{
-				CLAP_LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-								 << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
+				CLAP_CLASS_LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
+									   << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 			else
 			{
-				CLAP_LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-								 << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
+				CLAP_CLASS_LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
+									   << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
 			}
 		}
 	}

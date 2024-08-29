@@ -79,7 +79,7 @@ public:
 		if (!DEVICE_HANDLE_VALID(m_fd))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Unable to open device " << m_devName << "; errno: " << errsv;
+			ss << CLASS_TAG_AUTO << "Unable to open device " << m_devName << "; errno: " << errsv;
 			throw UserInterruptException(ss.str());
 		}
 
@@ -105,7 +105,7 @@ public:
 		if (!IsSet())
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Error: Trying to wait for uninitialized user interrupt";
+			ss << CLASS_TAG_AUTO << "Error: Trying to wait for uninitialized user interrupt";
 			throw UserInterruptException(ss.str());
 		}
 
@@ -126,7 +126,7 @@ public:
 			if (rc < 0)
 			{
 				std::stringstream ss;
-				ss << CLASS_TAG("PetaLinuxUserInterrupt") << m_devName << ", call to read failed (rc: " << rc << ") errno: " << errsv;
+				ss << CLASS_TAG_AUTO << m_devName << ", call to read failed (rc: " << rc << ") errno: " << errsv;
 				throw UserInterruptException(ss.str());
 			}
 
@@ -140,11 +140,11 @@ public:
 					callback(lastIntr);
 			}
 
-			CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
+			CLAP_CLASS_LOG_DEBUG << "Interrupt present on " << m_devName << ", events: " << events << ", Interrupt Mask: " << (m_pReg ? std::to_string(m_pReg->GetLastInterrupt()) : "No Status Register Specified") << std::endl;
 			return true;
 		}
 		// else
-		// 	CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxUserInterrupt") << "No Interrupt present on " << m_devName << std::endl;
+		// 	CLAP_CLASS_LOG_DEBUG << "No Interrupt present on " << m_devName << std::endl;
 
 		return false;
 	}
@@ -166,7 +166,7 @@ private:
 		if (nb != static_cast<ssize_t>(sizeof(unmask)))
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxUserInterrupt") << "Error: Unable to unmask interrupt on " << m_devName;
+			ss << CLASS_TAG_AUTO << "Error: Unable to unmask interrupt on " << m_devName;
 			throw UserInterruptException(ss.str());
 		}
 	}
@@ -195,7 +195,7 @@ public:
 
 		if (!initUIO())
 		{
-			CLAP_LOG_INFO << CLASS_TAG("PetaLinuxBackend") << "UIO not available, falling back to /dev/mem" << std::endl;
+			CLAP_CLASS_LOG_INFO << "UIO not available, falling back to /dev/mem" << std::endl;
 			m_nameRead  = m_devMem;
 			m_nameWrite = m_devMem;
 			m_fd        = OpenDevice(m_devMem);
@@ -205,14 +205,14 @@ public:
 
 	void Read(const uint64_t& addr, void* pData, const uint64_t& sizeInByte) override
 	{
-		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_CLASS_LOG_DEBUG << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_readMutex);
 
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "CLAP Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -231,7 +231,7 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_nameRead << ", failed to read 0x" << std::hex << sizeInByte << " byte from addr 0x" << addr << " (read: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG_AUTO << m_nameRead << ", failed to read 0x" << std::hex << sizeInByte << " byte from addr 0x" << addr << " (read: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
 
@@ -240,14 +240,14 @@ public:
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
 	{
-		// CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+		// CLAP_CLASS_LOG_DEBUG << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
 
 		std::lock_guard<std::mutex> lock(m_writeMutex);
 
 		if (!m_valid)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "CLAP Instance is not valid, an error probably occurred during device initialization.";
+			ss << CLASS_TAG_AUTO << "CLAP Instance is not valid, an error probably occurred during device initialization.";
 			throw CLAPException(ss.str());
 		}
 
@@ -266,16 +266,11 @@ public:
 		if (count != sizeInByte)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << m_nameWrite << ", failed to write 0x" << std::hex << sizeInByte << " byte to addr 0x" << addr << " (wrote: 0x" << count << " byte)" << std::dec;
+			ss << CLASS_TAG_AUTO << m_nameWrite << ", failed to write 0x" << std::hex << sizeInByte << " byte to addr 0x" << addr << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
 
 		logTransferTime(addr, sizeInByte, timer, false);
-	}
-
-	void ReadCtrl([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] uint64_t& data, [[maybe_unused]] const std::size_t& byteCnt) override
-	{
-		CLAP_LOG_DEBUG << CLASS_TAG("PetaLinuxBackend") << "ReadCtrl is currently not implemented by the PetaLinux backend." << std::endl;
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const override
@@ -304,7 +299,7 @@ private:
 		if (!dev)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
+			ss << CLASS_TAG_AUTO << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
 			throw CLAPException(ss.str());
 		}
 
@@ -317,7 +312,7 @@ private:
 		if (!dev)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
+			ss << CLASS_TAG_AUTO << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec;
 			throw CLAPException(ss.str());
 		}
 
@@ -397,7 +392,7 @@ private:
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
 		if (!dev)
 		{
-			CLAP_LOG_ERROR << CLASS_TAG("PetaLinuxBackend") << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
+			CLAP_CLASS_LOG_ERROR << "Failed to find UIO device for address 0x" << std::hex << addr << std::dec << std::endl;
 			return MakeUnexpected();
 		}
 
