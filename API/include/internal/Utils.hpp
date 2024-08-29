@@ -44,10 +44,11 @@
 #endif
 
 #ifndef DISABLE_COPY_ASSIGN_MOVE
-#define DISABLE_COPY_ASSIGN_MOVE(_C_)                                          \
-	_C_(_C_ const &)            = delete; /* disable copy constructor */       \
-	_C_ &operator=(_C_ const &) = delete; /* disable assignment constructor */ \
-	_C_(_C_ &&)                 = delete;
+#define DISABLE_COPY_ASSIGN_MOVE(_C_)                                               \
+	_C_(const _C_ &)            = delete; /* disable copy constructor */            \
+	_C_ &operator=(const _C_ &) = delete; /* disable copy assignment constructor */ \
+	_C_(_C_ &&)                 = delete; /* disable move constructor*/             \
+	_C_ &operator=(_C_ &&)      = delete; /* disable move assignment constructor*/
 #endif
 
 #ifndef DEFINE_EXCEPTION
