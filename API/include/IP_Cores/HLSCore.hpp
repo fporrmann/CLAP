@@ -87,12 +87,11 @@ public:
 
 public:
 	HLSCore(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name) :
-		RegisterControlBase(pClap, ctrlOffset),
+		RegisterControlBase(pClap, ctrlOffset, name),
 		m_apCtrl(),
 		m_intrCtrl(),
 		m_intrStat(),
-		m_watchDog(name, pClap->MakeUserInterrupt()),
-		m_name(name)
+		m_watchDog(name, pClap->MakeUserInterrupt())
 	{
 		registerReg<uint8_t>(m_apCtrl, ADDR_AP_CTRL);
 		registerReg<uint8_t>(m_intrCtrl, ADDR_IER);
@@ -109,13 +108,13 @@ public:
 
 		if (!m_watchDog.Start())
 		{
-			CLAP_CLASS_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 			return false;
 		}
 
 		if (!m_apCtrl.Start())
 		{
-			CLAP_CLASS_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
 			m_watchDog.Stop();
 			return false;
 		}
@@ -149,7 +148,7 @@ public:
 
 		if (intrID == internal::MINUS_ONE)
 		{
-			CLAP_CLASS_LOG_ERROR << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
 			return;
 		}
 
@@ -362,6 +361,5 @@ private:
 	InterruptEnableRegister m_intrCtrl;
 	InterruptStatusRegister m_intrStat;
 	internal::WatchDog m_watchDog;
-	std::string m_name;
 };
 } // namespace clap

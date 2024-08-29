@@ -36,6 +36,12 @@
 #include <cxxabi.h>
 #include <vector>
 
+#define CLAP_IP_CORE_LOG_DEBUG   CLAP_CLASS_LOG_DEBUG   << nameTag()
+#define CLAP_IP_CORE_LOG_VERBOSE CLAP_CLASS_LOG_VERBOSE << nameTag()
+#define CLAP_IP_CORE_LOG_INFO    CLAP_CLASS_LOG_INFO    << nameTag()
+#define CLAP_IP_CORE_LOG_WARNING CLAP_CLASS_LOG_WARNING << nameTag()
+#define CLAP_IP_CORE_LOG_ERROR   CLAP_CLASS_LOG_ERROR   << nameTag()
+
 // TODO: Move this to a more appropriate place
 enum class DMAChannel
 {
@@ -70,8 +76,9 @@ class RegisterControlBase : public CLAPManaged
 	DISABLE_COPY_ASSIGN_MOVE(RegisterControlBase)
 
 public:
-	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset) :
+	RegisterControlBase(CLAPBasePtr pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
 		CLAPManaged(std::move(pClap)),
+		m_name(name),
 		m_ctrlOffset(ctrlOffset),
 		m_registers()
 	{
@@ -105,6 +112,16 @@ public:
 		return detectInterruptID();
 	}
 
+	void SetName(const std::string& name)
+	{
+		m_name = name;
+	}
+
+	const std::string& GetName() const
+	{
+		return m_name;
+	}
+
 	// Callback function, called by the register when the Update() method is called
 	template<typename T>
 	static void UpdateCallBack(Register<T>* pReg, const uint64_t& offset, const Direction& dir, void* pObj)
@@ -117,15 +134,6 @@ public:
 	}
 
 protected:
-	std::string className() const
-	{
-		int status;
-		char* pName = abi::__cxa_demangle(typeid(*this).name(), NULL, NULL, &status);
-		std::string name(pName);
-		free(pName);
-		return name;
-	}
-
 	// Register a register to the list of known registers and
 	// setup its update callback function
 	template<typename T>
@@ -134,7 +142,7 @@ protected:
 		if constexpr (sizeof(T) > sizeof(uint64_t))
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+			ss << CLASS_TAG_AUTO << nameTag() << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 			throw std::runtime_error(ss.str());
 		}
 
@@ -164,7 +172,7 @@ protected:
 				return static_cast<T>(CLAP()->Read8(m_ctrlOffset + regOffset));
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG_AUTO << nameTag() << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 	}
@@ -188,7 +196,7 @@ protected:
 				break;
 			default:
 				std::stringstream ss("");
-				ss << CLASS_TAG_AUTO << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
+				ss << CLASS_TAG_AUTO << nameTag() << "Registers with a size > " << sizeof(uint64_t) << " byte are currently not supported";
 				throw std::runtime_error(ss.str());
 		}
 
@@ -198,7 +206,7 @@ protected:
 			if (readData != regData)
 			{
 				std::stringstream ss("");
-				ss << CLASS_TAG_AUTO << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
+				ss << CLASS_TAG_AUTO << nameTag() << "Register write validation failed. Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
 				throw std::runtime_error(ss.str());
 			}
 		}
@@ -210,7 +218,7 @@ protected:
 		if (res)
 		{
 			m_detectedInterruptID = static_cast<int32_t>(res.Value());
-			CLAP_CLASS_LOG_INFO << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
+			CLAP_IP_CORE_LOG_INFO << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
 			return true;
 		}
 
@@ -224,7 +232,16 @@ protected:
 		return CLAP()->GetDevNum();
 	}
 
+	std::string nameTag() const
+	{
+		if(m_name.empty())
+			return "";
+
+		return "[" + m_name + "] ";
+	}
+
 protected:
+	std::string m_name;
 	uint64_t m_ctrlOffset;
 	std::vector<RegisterIntf*> m_registers;
 	int32_t m_detectedInterruptID = -1;

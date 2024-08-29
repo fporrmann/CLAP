@@ -234,7 +234,7 @@ public:
 
 		if (!m_watchDog.Start(true))
 		{
-			CLAP_CLASS_LOG_ERROR << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Trying to start Controller at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
 			return false;
 		}
 
@@ -244,7 +244,7 @@ public:
 	void Stop()
 	{
 		if (!m_running) return;
-		CLAP_CLASS_LOG_INFO << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
+		CLAP_IP_CORE_LOG_INFO << "Stopping Controller at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
 		stop();
 
 		m_watchDog.Stop();
@@ -269,7 +269,7 @@ public:
 
 		uint32_t intrs = m_intrStatusReg.GetInterrupts();
 
-		CLAP_CLASS_LOG_DEBUG << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
+		CLAP_IP_CORE_LOG_DEBUG << "CoreInterruptTriggered: " << std::hex << intrs << std::endl;
 
 		try
 		{
