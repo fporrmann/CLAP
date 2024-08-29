@@ -205,6 +205,13 @@ class RegisterIntf
 	DISABLE_COPY_ASSIGN_MOVE(RegisterIntf)
 
 public:
+	enum class RegUpdate
+	{
+		Update,
+		NoUpdate
+	};
+
+public:
 	RegisterIntf() {}
 
 	virtual ~RegisterIntf() {}
@@ -320,10 +327,10 @@ public:
 	}
 
 	// Print the register in a register address map
-	void Print(bool update = false)
+	void Print(const RegUpdate& update = RegUpdate::Update)
 	{
 		// If the update flag is set, update the register before printing
-		if (update) Update();
+		if (update == RegUpdate::Update) Update();
 
 		// Search for the max name length
 		const RegIntfPtr maxElem = *std::max_element(m_regElems.begin(), m_regElems.end(), [](const RegIntfPtr lhs, const RegIntfPtr rhs) { return lhs->GetName().length() < rhs->GetName().length(); });
@@ -463,13 +470,6 @@ protected:
 
 class Bit32Register : public Register<uint32_t>
 {
-public:
-	enum class RegUpdate
-	{
-		Update,
-		NoUpdate
-	};
-
 public:
 	explicit Bit32Register(const std::string& name) :
 		Register(name)
