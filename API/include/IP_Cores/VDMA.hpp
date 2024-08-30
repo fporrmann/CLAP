@@ -74,8 +74,8 @@ public:
 	};
 
 public:
-	VDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset),
+	VDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
+		RegisterControlBase(pClap, ctrlOffset, name),
 		m_watchDogMM2S("VDMA_MM2S", pClap->MakeUserInterrupt()),
 		m_watchDogS2MM("VDMA_S2MM", pClap->MakeUserInterrupt())
 	{

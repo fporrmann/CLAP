@@ -92,13 +92,13 @@ private:
 	};
 
 public:
-	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const ResetOnInit& resetOnInit) :
-		AxiGPIO(pClap, ctrlOffset, DualChannel::No, resetOnInit)
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const ResetOnInit& resetOnInit, const std::string& name = "") :
+		AxiGPIO(pClap, ctrlOffset, DualChannel::No, resetOnInit, name)
 	{
 	}
 
-	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const DualChannel& dualChannel = DualChannel::No, const ResetOnInit& resetOnInit = ResetOnInit::Yes) :
-		RegisterControlBase(pClap, ctrlOffset),
+	AxiGPIO(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const DualChannel& dualChannel = DualChannel::No, const ResetOnInit& resetOnInit = ResetOnInit::Yes, const std::string& name = "") :
+		RegisterControlBase(pClap, ctrlOffset, name),
 		m_watchDog("AxiGPIO", pClap->MakeUserInterrupt()),
 		m_isDualChannel((dualChannel == DualChannel::Yes))
 	{

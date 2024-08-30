@@ -174,8 +174,8 @@ class AxiInterruptController : public internal::RegisterControlBase
 	};
 
 public:
-	AxiInterruptController(const CLAPPtr& pClap, const uint64_t& ctrlOffset) :
-		RegisterControlBase(pClap, ctrlOffset),
+	AxiInterruptController(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
+		RegisterControlBase(pClap, ctrlOffset, name),
 		m_watchDog("AxiInterruptController", pClap->MakeUserInterrupt()),
 		m_mutex()
 	{

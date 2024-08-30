@@ -84,8 +84,8 @@ public:
 	};
 
 public:
-	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& mm2sPresent = true, const bool& s2mmPresent = true) :
-		RegisterControlBase(pClap, ctrlOffset),
+	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& mm2sPresent = true, const bool& s2mmPresent = true, const std::string& name = "") :
+		RegisterControlBase(pClap, ctrlOffset, name),
 		m_watchDogMM2S("AxiDMA_MM2S", pClap->MakeUserInterrupt()),
 		m_watchDogS2MM("AxiDMA_S2MM", pClap->MakeUserInterrupt()),
 		m_mm2sPresent(mm2sPresent),
