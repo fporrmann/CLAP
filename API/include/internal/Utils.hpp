@@ -30,6 +30,7 @@
 #include <cxxabi.h>
 #include <exception>
 #include <sstream>
+#include <vector>
 
 #ifndef CLASS_TAG
 #define CLASS_TAG(_C_) "[" << _C_ << "::" << __func__ << "] "
