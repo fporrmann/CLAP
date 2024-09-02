@@ -36,11 +36,19 @@
 #include <cxxabi.h>
 #include <vector>
 
-#define CLAP_IP_CORE_LOG_DEBUG   CLAP_CLASS_LOG_DEBUG   << nameTag()
+#ifdef CLAP_IP_CORE_LOG_ALT_STYLE
+#define CLAP_IP_CORE_LOG_DEBUG   CLAP_CLASS_LOG_WITH_NAME_DEBUG(nameTag())
+#define CLAP_IP_CORE_LOG_VERBOSE CLAP_CLASS_LOG_WITH_NAME_VERBOSE(nameTag())
+#define CLAP_IP_CORE_LOG_INFO    CLAP_CLASS_LOG_WITH_NAME_INFO(nameTag())
+#define CLAP_IP_CORE_LOG_WARNING CLAP_CLASS_LOG_WITH_NAME_WARNING(nameTag())
+#define CLAP_IP_CORE_LOG_ERROR   CLAP_CLASS_LOG_WITH_NAME_ERROR(nameTag())
+#else
+#define CLAP_IP_CORE_LOG_DEBUG   CLAP_CLASS_LOG_DEBUG << nameTag()
 #define CLAP_IP_CORE_LOG_VERBOSE CLAP_CLASS_LOG_VERBOSE << nameTag()
-#define CLAP_IP_CORE_LOG_INFO    CLAP_CLASS_LOG_INFO    << nameTag()
+#define CLAP_IP_CORE_LOG_INFO    CLAP_CLASS_LOG_INFO << nameTag()
 #define CLAP_IP_CORE_LOG_WARNING CLAP_CLASS_LOG_WARNING << nameTag()
-#define CLAP_IP_CORE_LOG_ERROR   CLAP_CLASS_LOG_ERROR   << nameTag()
+#define CLAP_IP_CORE_LOG_ERROR   CLAP_CLASS_LOG_ERROR << nameTag()
+#endif
 
 // TODO: Move this to a more appropriate place
 enum class DMAChannel
@@ -234,7 +242,7 @@ protected:
 
 	std::string nameTag() const
 	{
-		if(m_name.empty())
+		if (m_name.empty())
 			return "";
 
 		return "[" + m_name + "] ";

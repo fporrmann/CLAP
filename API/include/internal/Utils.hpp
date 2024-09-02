@@ -39,6 +39,10 @@
 #define CLASS_TAG_AUTO "[" << clap::utils::ClassName(*this) << "::" << __func__ << "] "
 #endif
 
+#ifndef CLASS_TAG_AUTO_WITH_NAME
+#define CLASS_TAG_AUTO_WITH_NAME(_N_) "[" << clap::utils::ClassName(*this) << "::" << _N_ << "::" << __func__ << "] "
+#endif
+
 #ifndef FUNCTION_TAG
 #define FUNCTION_TAG "[" << __func__ << "] "
 #endif
