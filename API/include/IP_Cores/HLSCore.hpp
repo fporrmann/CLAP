@@ -108,13 +108,13 @@ public:
 
 		if (!m_watchDog.Start())
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Tried to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
 			return false;
 		}
 
 		if (!m_apCtrl.Start())
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Trying to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Tried to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is currently not idle, stopping startup ..." << std::endl;
 			m_watchDog.Stop();
 			return false;
 		}

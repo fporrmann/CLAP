@@ -220,7 +220,7 @@ public:
 
 		if (m_watchDog && !m_watchDog.Start(true))
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Trying to start GPIO at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Tried to start GPIO at: 0x" << std::hex << m_ctrlOffset << " which is already running, stopping startup ..." << std::endl;
 			return false;
 		}
 

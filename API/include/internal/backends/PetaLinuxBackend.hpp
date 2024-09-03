@@ -105,7 +105,7 @@ public:
 		if (!IsSet())
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG_AUTO << "Error: Trying to wait for uninitialized user interrupt";
+			ss << CLASS_TAG_AUTO << "Error: Tried to wait for uninitialized user interrupt";
 			throw UserInterruptException(ss.str());
 		}
 

@@ -189,7 +189,7 @@ public:
 		if (!m_pInterrupt->IsSet() && m_pStatus == nullptr)
 		{
 			std::stringstream ss("");
-			ss << CLASS_TAG_AUTO << "Error: Trying to start WatchDog thread with neither the interrupt nor the status register set.";
+			ss << CLASS_TAG_AUTO << "Error: Tried to start WatchDog thread with neither the interrupt nor the status register set.";
 			throw WatchDogException(ss.str());
 		}
 

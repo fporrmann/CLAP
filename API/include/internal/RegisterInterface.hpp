@@ -138,7 +138,7 @@ public:
 		if (m_pValue == nullptr)
 		{
 			std::stringstream ss("");
-			ss << "ERROR: Trying to create RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") without a valid pointer";
+			ss << "ERROR: Tried to create RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") without a valid pointer";
 			throw std::runtime_error(ss.str());
 		}
 	}
@@ -178,7 +178,7 @@ private:
 		if (m_pValue == nullptr)
 		{
 			std::stringstream ss("");
-			ss << "ERROR: Trying to use RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") whoes pointer is invalid";
+			ss << "ERROR: Tried to use RegElem (" << m_name << ": " << static_cast<uint32_t>(m_startBit) << "-" << static_cast<uint32_t>(m_endBit) << ") whoes pointer is invalid";
 			throw std::runtime_error(ss.str());
 		}
 	}
@@ -254,7 +254,7 @@ public:
 		// Check if the target bit space exceeds the possible range
 		if (startBitUse > m_registerBitSize || (endBitUse > m_registerBitSize && endBitUse != SAME_AS_START_BIT))
 		{
-			CLAP_CLASS_LOG_ERROR << "ERROR: Trying to register element: \"" << name << "\" whose bit space (" << startBitUse << "-" << endBitUse
+			CLAP_CLASS_LOG_ERROR << "ERROR: Tried to register element: \"" << name << "\" whose bit space (" << startBitUse << "-" << endBitUse
 								 << ") exceeds the registers bit size (" << m_registerBitSize << ")" << std::endl;
 			return;
 		}
@@ -273,7 +273,7 @@ public:
 		// Check if the the entire or a part of the bit range have already been registered
 		if ((m_regUsage & shiftVal) != 0)
 		{
-			CLAP_CLASS_LOG_ERROR << "ERROR: Trying to register element: \"" << name << "\" whose bit space ("
+			CLAP_CLASS_LOG_ERROR << "ERROR: Tried to register element: \"" << name << "\" whose bit space ("
 								 << static_cast<uint32_t>(startBitUse) << "-" << static_cast<uint32_t>(endBitUse)
 								 << ") has already been registered, either entirely or partially by:" << std::endl;
 

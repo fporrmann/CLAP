@@ -140,7 +140,7 @@ public:
 		if (size == 0)
 		{
 			std::stringstream ss;
-			ss << CLASS_TAG_AUTO << "Trying to allocate zero size memory.";
+			ss << CLASS_TAG_AUTO << "Tried to allocate zero size memory.";
 			throw MemoryException(ss.str());
 		}
 
