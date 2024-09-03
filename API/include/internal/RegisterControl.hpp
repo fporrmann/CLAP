@@ -33,7 +33,6 @@
 #include "Types.hpp"
 
 #include <cstdint>
-#include <cxxabi.h>
 #include <vector>
 
 #ifdef CLAP_IP_CORE_LOG_ALT_STYLE
