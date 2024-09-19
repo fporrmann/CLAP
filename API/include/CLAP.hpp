@@ -327,6 +327,16 @@ public:
 		m_pBackend->AddPollAddr(addr);
 	}
 
+	void SetLogByteThreshold(const uint64_t& threshold)
+	{
+		m_pBackend->SetLogByteThreshold(threshold);
+	}
+
+	const uint64_t& GetLogByteThreshold() const
+	{
+		return m_pBackend->GetLogByteThreshold();
+	}
+
 	/// @brief Adds a memory region to the CLAP instance
 	/// @param type Type of memory
 	/// @param baseAddr Base address of the memory region

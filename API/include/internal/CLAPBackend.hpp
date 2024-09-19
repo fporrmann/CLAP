@@ -123,12 +123,26 @@ public:
 		m_pollAddrs.erase(std::remove_if(m_pollAddrs.begin(), m_pollAddrs.end(), [addr](const uint64_t& a) { return a == addr; }), m_pollAddrs.end());
 	}
 
+	void SetLogByteThreshold(const uint64_t& threshold)
+	{
+		m_logByteThreshold = threshold;
+	}
+
+	const uint64_t& GetLogByteThreshold() const
+	{
+		return m_logByteThreshold;
+	}
+
 protected:
 	void logTransferTime(const uint64_t& addr, const uint64_t& sizeInByte, const Timer& timer, const bool& reading)
 	{
+		if(sizeInByte <= m_logByteThreshold)
+			return;
+
 		// Get the time in seconds, if the time is 0.0, set it to 1ns to avoid division by 0
 		const double tSec = (timer.GetElapsedTime() == 0.0 ? 1.0e-9 : timer.GetElapsedTime());
 
+		// TODO: Maybe remove this check and only use the threshold
 		// Only log if the address is not in the poll list
 		if (std::find(m_pollAddrs.begin(), m_pollAddrs.end(), addr) == m_pollAddrs.end())
 		{
@@ -153,6 +167,8 @@ protected:
 	std::string m_backendName = "CLAP";
 
 	std::vector<uint64_t> m_pollAddrs = {};
+
+	uint64_t m_logByteThreshold = 8;
 };
 } // namespace internal
 } // namespace clap
