@@ -213,7 +213,7 @@ protected:
 			if (readData != regData)
 			{
 				std::stringstream ss("");
-				ss << CLASS_TAG_AUTO << nameTag() << "Register write validation failed. Address: 0x" << m_ctrlOffset + regOffset << " Expected: 0x" << std::hex << regData << ", Read: 0x" << readData << std::dec;
+				ss << CLASS_TAG_AUTO << nameTag() << "Register write validation failed. Address: 0x" << std::hex << m_ctrlOffset + regOffset << " Expected: 0x" << regData << ", Read: 0x" << readData << std::dec;
 				throw std::runtime_error(ss.str());
 			}
 		}
