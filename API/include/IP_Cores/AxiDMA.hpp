@@ -323,9 +323,15 @@ public:
 	void Reset(const DMAChannel& channel)
 	{
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
+		{
+			Stop(DMAChannel::MM2S);
 			m_mm2sCtrlReg.DoReset();
+		}
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
+		{
+			Stop(DMAChannel::S2MM);
 			m_s2mmCtrlReg.DoReset();
+		}
 	}
 
 	////////////////////////////////////////

@@ -128,6 +128,11 @@ public:
 		m_apCtrl.Reset();
 	}
 
+	void Reset()
+	{
+		Stop();
+	}
+
 	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
 	{
 		return m_watchDog.WaitForFinish(timeoutMS);
