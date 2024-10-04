@@ -104,8 +104,6 @@ public:
 
 	bool Start()
 	{
-		m_apCtrl.Reset();
-
 		if (!m_watchDog.Start())
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Tried to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
@@ -131,6 +129,8 @@ public:
 	void Reset()
 	{
 		Stop();
+		m_intrCtrl.Reset();
+		m_intrStat.Reset();
 	}
 
 	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
@@ -276,6 +276,7 @@ private:
 		{
 			RegisterElement<bool>(&m_ap_done, "ap_done", 0);
 			RegisterElement<bool>(&m_ap_ready, "ap_ready", 1);
+			reset();
 		}
 
 		void EnableInterrupts(const APInterrupts& intr = AP_INTR_ALL)
@@ -293,6 +294,11 @@ private:
 			return (m_ap_done || m_ap_ready);
 		}
 
+		void Reset()
+		{
+			reset();
+		}
+
 	private:
 		void setInterrupts(bool enable, const APInterrupts& intr)
 		{
@@ -301,6 +307,13 @@ private:
 			if (intr & AP_INTR_READY)
 				m_ap_ready = enable;
 
+			Update(internal::Direction::WRITE);
+		}
+
+		void reset()
+		{
+			m_ap_done  = false;
+			m_ap_ready = false;
 			Update(internal::Direction::WRITE);
 		}
 
@@ -321,8 +334,7 @@ private:
 			RegisterElement<bool>(&m_ap_ready, "ap_ready", 1);
 
 			// Do an initial clear to discard old interrupts
-			clearInterrupts();
-			m_lastInterrupt = 0;
+			reset();
 		}
 
 		void ClearInterrupts() override
@@ -333,6 +345,11 @@ private:
 		uint32_t GetInterrupts() override
 		{
 			return getInterrupts();
+		}
+
+		void Reset()
+		{
+			reset();
 		}
 
 		void ResetInterrupts(const APInterrupts& intr)
@@ -360,6 +377,14 @@ private:
 		{
 			m_lastInterrupt = getInterrupts();
 			ResetInterrupts(AP_INTR_ALL);
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			m_lastInterrupt = 0;
+			m_ap_done       = false;
+			m_ap_ready      = false;
 		}
 
 	private:

@@ -87,6 +87,11 @@ public:
 		return ap_idle;
 	}
 
+	void Reset()
+	{
+		reset();
+	}
+
 private:
 	void getStatus() override
 	{
@@ -106,6 +111,19 @@ private:
 			m_done    = true;
 			m_running = false;
 		}
+	}
+
+	void reset()
+	{
+		m_done       = false;
+		m_running    = false;
+		ap_start     = false;
+		auto_restart = false;
+
+		Update(Direction::WRITE);
+
+		// Call base class reset
+		HasStatus::Reset();
 	}
 
 private:
