@@ -268,9 +268,15 @@ public:
 	{
 		// Unset the RunStop bit
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
+		{
 			m_mm2sCtrlReg.Stop();
+			m_watchDogMM2S.Stop();
+		}
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
+		{
 			m_s2mmCtrlReg.Stop();
+			m_watchDogS2MM.Stop();
+		}
 	}
 
 	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)

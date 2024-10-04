@@ -130,6 +130,7 @@ public:
 
 	void Reset()
 	{
+		Stop();
 		m_gpio1Data.Reset(m_dataDefaultValues[0]);
 		m_gpio1Tri.Reset(m_triDefaultValues[0]);
 		m_gpio2Data.Reset(m_dataDefaultValues[1]);
@@ -235,7 +236,7 @@ public:
 		CLAP_IP_CORE_LOG_INFO << "Stopping GPIO at: 0x" << std::hex << m_ctrlOffset << std::dec << " ... " << std::flush;
 
 		m_watchDog.Stop();
-		m_watchDog.UnsetInterrupt();
+		// m_watchDog.UnsetInterrupt();
 
 		m_running = false;
 

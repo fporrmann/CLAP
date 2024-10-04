@@ -202,6 +202,7 @@ public:
 
 	void Reset()
 	{
+		Stop();
 		m_intrAckReg.AcknowledgeAllInterrupts();
 		m_intrStatusReg.Reset();
 		m_intrPendingReg.Reset();
@@ -248,7 +249,7 @@ public:
 		stop();
 
 		m_watchDog.Stop();
-		m_watchDog.UnsetInterrupt();
+		// m_watchDog.UnsetInterrupt();
 
 		m_running = false;
 
