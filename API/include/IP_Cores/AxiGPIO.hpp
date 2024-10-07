@@ -39,6 +39,22 @@
 
 // TODO: Implement non-interrupt status check
 
+#define AXI_GPIO_INVALID_CHANNEL_EXCEPTION                             \
+	{                                                                  \
+		std::stringstream ss("");                                      \
+		ss << CLAP_IP_EXCEPTION_TAG << "Invalid channel: " << channel; \
+		throw std::runtime_error(ss.str());                            \
+	}
+
+#define AXI_GPIO_INVALID_PORT_EXCEPTION                           \
+	{                                                             \
+		std::stringstream ss("");                                 \
+		ss << CLAP_IP_EXCEPTION_TAG << "Specified Port: " << port \
+		   << " is outside of the channels (" << channel << ") "  \
+		   << "range of enabled ports: " << m_gpioWidth[channel]; \
+		throw std::runtime_error(ss.str());                       \
+	}
+
 namespace clap
 {
 class AxiGPIO : public internal::RegisterControlBase
@@ -245,24 +261,26 @@ public:
 
 	void SetGPIOState(const Channel& channel, const uint32_t& port, const PortStates& state)
 	{
-		if (port > m_gpioWidth[channel]) return;
+		if (port > m_gpioWidth[channel]) AXI_GPIO_INVALID_PORT_EXCEPTION
 
 		if (channel == CHANNEL_1)
 			m_gpio1Tri.SetBitAt(port, state);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Tri.SetBitAt(port, state);
+
+		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 	}
 
 	uint8_t GetGPIOBit(const Channel& channel, const uint32_t& port)
 	{
-		if (port > m_gpioWidth[channel]) return -1;
+		if (port > m_gpioWidth[channel]) AXI_GPIO_INVALID_PORT_EXCEPTION
 
 		if (channel == CHANNEL_1)
 			return m_gpio1Data.GetBitAt(port);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			return m_gpio2Data.GetBitAt(port);
 
-		return -1;
+		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 	}
 
 	uint32_t GetGPIOBits(const Channel& channel)
@@ -272,17 +290,19 @@ public:
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			return m_gpio2Data.ToUint32();
 
-		return 0;
+		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 	}
 
 	void SetGPIOBit(const Channel& channel, const uint32_t& port, const bool& value)
 	{
-		if (port > m_gpioWidth[channel]) return;
+		if (port > m_gpioWidth[channel]) AXI_GPIO_INVALID_PORT_EXCEPTION
 
 		if (channel == CHANNEL_1)
 			m_gpio1Data.SetBitAt(port, value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBitAt(port, value);
+
+		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 	}
 
 	void SetGPIOBits(const Channel& channel, const uint32_t& value)
@@ -291,6 +311,8 @@ public:
 			m_gpio1Data.SetBits(value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBits(value);
+
+		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 	}
 
 	void InterruptTriggered([[maybe_unused]] const uint32_t& mask)
@@ -331,6 +353,10 @@ private:
 		{
 			oldValue = m_gpio2Data.GetBits(internal::Bit32Register::RegUpdate::NoUpdate);
 			newValue = m_gpio2Data.GetBits();
+		}
+		else
+		{
+			AXI_GPIO_INVALID_CHANNEL_EXCEPTION
 		}
 
 		std::transform(std::begin(oldValue), std::end(oldValue), std::begin(newValue), std::begin(changes), std::bit_xor<bool>());
