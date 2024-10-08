@@ -301,8 +301,10 @@ public:
 			m_gpio1Data.SetBitAt(port, value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBitAt(port, value);
-
-		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		else
+		{
+			AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		}
 	}
 
 	void SetGPIOBits(const Channel& channel, const uint32_t& value)
@@ -311,8 +313,10 @@ public:
 			m_gpio1Data.SetBits(value);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Data.SetBits(value);
-
-		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		else
+		{
+			AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		}
 	}
 
 	void InterruptTriggered([[maybe_unused]] const uint32_t& mask)
