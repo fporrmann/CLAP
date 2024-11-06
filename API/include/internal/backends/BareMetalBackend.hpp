@@ -35,6 +35,7 @@
 #include "../UserInterruptBase.hpp"
 #include "../Utils.hpp"
 
+#include <xil_cache.h>
 #include <xscugic.h>
 
 namespace clap
@@ -334,6 +335,8 @@ public:
 			ss << CLASS_TAG_AUTO << ", failed to write 0x" << std::hex << sizeInByte << " byte to offset 0x" << offset << " (wrote: 0x" << count << " byte)" << std::dec;
 			throw CLAPException(ss.str());
 		}
+
+		Xil_DCacheFlushRange(static_cast<UINTPTR>(addr), sizeInByte);
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const override

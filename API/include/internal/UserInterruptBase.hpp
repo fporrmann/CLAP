@@ -94,11 +94,22 @@ public:
 		m_callbacks.clear();
 	}
 
+	void SetInstantForward(const bool& instantForward)
+	{
+		m_instantForward = instantForward;
+	}
+
+	const bool& GetInstantForward() const
+	{
+		return m_instantForward;
+	}
+
 protected:
 	std::string m_devName                 = "";
 	HasInterrupt* m_pReg                  = nullptr;
 	std::vector<IntrCallback> m_callbacks = {};
 	uint32_t m_interruptNum               = 0;
+	bool m_instantForward                 = false;
 };
 } // namespace internal
 } // namespace clap

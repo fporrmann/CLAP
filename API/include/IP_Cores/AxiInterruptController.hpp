@@ -97,7 +97,8 @@ public:
 #ifndef EMBEDDED_XILINX
 		m_cv.notify_all();
 #else
-		WaitForInterrupt();
+		if (m_instantForward)
+			WaitForInterrupt();
 #endif
 		CLAP_CLASS_LOG_DEBUG << "Interrupt triggered on " << m_devName << std::endl;
 	}
