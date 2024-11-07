@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 		axiDMA.UseInterruptController(axiInterruptController);
 
 		if (axiDMA.AutoDetectInterruptID())
-			axiDMA.EnableInterrupts();
+			axiDMA.EnableInterrupts(clap::USE_AUTO_DETECT, clap::USE_AUTO_DETECT);
 		else
 			axiDMA.EnableInterrupts(0, 1);
 
