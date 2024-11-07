@@ -443,6 +443,16 @@ public:
 		return m_dataWidths[ch2Id(channel)];
 	}
 
+	void SetHasDRE(const bool& dre, const DMAChannel& channel = DMAChannel::MM2S)
+	{
+		m_dreSupport[ch2Id(channel)] = dre;
+	}
+
+	const bool& GetHasDRE(const DMAChannel& channel) const
+	{
+		return m_dreSupport[ch2Id(channel)];
+	}
+
 	////////////////////////////////////////
 
 	////////////////////////////////////////
@@ -499,39 +509,36 @@ public:
 		return false;
 	}
 
-	bool StartSGTransfer(const int32_t& numPkts, const int32_t maxPktLen, const int32_t& bdsPerPkt, Memory& memBDTx, Memory& memBDRx, Memory& memDataIn, Memory& memDataOut)
+	void StartSG(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBDTx, const Memory& memBDRx, const Memory& memDataIn, const Memory& memDataOut)
 	{
-		if (!m_watchDogMM2S.Start(true))
+		StartSG(DMAChannel::MM2S, numPkts, maxPktByteLen, bdsPerPkt, memBDTx, memDataIn);
+		StartSG(DMAChannel::S2MM, numPkts, maxPktByteLen, bdsPerPkt, memBDRx, memDataOut);
+	}
+
+	bool StartSG(const DMAChannel& channel, const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBD, const Memory& memData)
+	{
+		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Watchdog for MM2S already running!" << std::endl;
-			return false;
+			if (!m_watchDogMM2S.Start(true))
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Watchdog for MM2S already running!" << std::endl;
+				return false;
+			}
+
+			return startSGTransferMM2S(numPkts, maxPktByteLen, bdsPerPkt, memBD, memData);
+		}
+		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
+		{
+			if (!m_watchDogS2MM.Start(true))
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Watchdog for S2MM already running!" << std::endl;
+				return false;
+			}
+
+			return startSGTransferS2MM(numPkts, maxPktByteLen, memBD, memData);
 		}
 
-		if (!m_watchDogS2MM.Start(true))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Watchdog for S2MM already running!" << std::endl;
-			return false;
-		}
-
-		if (!txSetup(memBDTx, numPkts, 100))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed TX setup" << std::endl;
-			return false;
-		}
-
-		if (!rxSetup(memBDRx, memDataOut, numPkts, maxPktLen, 100))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed RX setup" << std::endl;
-			return false;
-		}
-
-		if (!sendPacket(numPkts, maxPktLen, bdsPerPkt, memDataIn))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed send packet" << std::endl;
-			return false;
-		}
-
-		return true;
+		return false;
 	}
 
 private:
@@ -782,64 +789,62 @@ private:
 			for (SGDescriptor* d : descriptors)
 				delete d;
 
-			if (CyclicBd) delete CyclicBd;
+			if (cyclicBd) delete cyclicBd;
 		}
 
 		void Reset()
 		{
-			if (CyclicBd) delete CyclicBd;
+			if (cyclicBd) delete cyclicBd;
 
 			for (SGDescriptor* d : descriptors)
 				delete d;
 
 			descriptors.clear();
 
-			RunState        = 0;
-			HasStsCntrlStrm = 0;
-			HasDRE          = 0;
-			DataWidth       = 0;
-			Addr_ext        = 0;
+			runState        = 0;
+			hasStsCntrlStrm = 0;
+			hasDRE          = 0;
+			dataWidth       = 0;
 			maxTransferLen  = 0;
 
-			Separation = 0;
-			freeHead   = nullptr;
-			PreHead    = nullptr;
-			HwTail     = nullptr;
-			BdaRestart = nullptr;
-			CyclicBd   = nullptr;
-			freeCnt    = 0;
-			PreCnt     = 0;
-			HwCnt      = 0;
-			AllCnt     = 0;
-			ringIndex  = 0;
-			Cyclic     = 0;
+			freeHead  = nullptr;
+			preHead   = nullptr;
+			hwTail    = nullptr;
+			bdRestart = nullptr;
+			cyclicBd  = nullptr;
+
+			freeCnt   = 0;
+			preCnt    = 0;
+			hwCnt     = 0;
+			allCnt    = 0;
+			ringIndex = 0;
+			cyclic    = 0;
 		}
 
 		SGDescriptors descriptors = {};
 
 		DMAChannel channel = DMAChannel::MM2S;
 
-		int32_t RunState        = 0;
-		int32_t HasStsCntrlStrm = 0;
-		int32_t HasDRE          = 0;
-		int32_t DataWidth       = 0;
-		int32_t Addr_ext        = 0;
+		int32_t runState        = 0;
+		int32_t hasStsCntrlStrm = 0;
+		int32_t hasDRE          = 0;
+		int32_t dataWidth       = 0;
 		uint32_t maxTransferLen = 0;
 
-		uint64_t Separation    = 0;
-		SGDescriptor* freeHead = nullptr;
-		SGDescriptor* PreHead  = nullptr;
-		SGDescriptor* HwTail   = nullptr;
+		SGDescriptor* freeHead  = nullptr;
+		SGDescriptor* preHead   = nullptr;
+		SGDescriptor* hwTail    = nullptr;
+		SGDescriptor* bdRestart = nullptr;
+		SGDescriptor* cyclicBd  = nullptr;
 
-		SGDescriptor* BdaRestart = nullptr;
-		SGDescriptor* CyclicBd   = nullptr;
-		int32_t freeCnt          = 0;
-		int32_t PreCnt           = 0;
-		int32_t HwCnt            = 0;
+		uint32_t freeCnt   = 0;
+		uint32_t preCnt    = 0;
+		int32_t hwCnt      = 0;
+		int32_t allCnt     = 0;
+		uint32_t ringIndex = 0;
+		uint32_t cyclic    = 0;
 
-		int32_t AllCnt    = 0;
-		int32_t ringIndex = 0;
-		int32_t Cyclic    = 0;
+		const uint64_t separation = AXI_DMA_BD_MINIMUM_ALIGNMENT;
 
 		bool IsRxChannel() const
 		{
@@ -847,7 +852,35 @@ private:
 		}
 	};
 
-	uint32_t initBdRing(BdRing& bdRing, const uint64_t& addr, const int32_t& bdCount)
+	bool startSGTransferMM2S(const uint8_t& numPkts, const uint32_t& maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBD, const Memory& memData)
+	{
+		if (!txSetup(memBD, numPkts, 100))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Failed TX setup" << std::endl;
+			return false;
+		}
+
+		if (!sendPacket(numPkts, maxPktByteLen, bdsPerPkt, memData))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Failed send packet" << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool startSGTransferS2MM(const uint8_t& numPkts, const uint32_t& maxPktByteLen, const Memory& memBD, const Memory& memData)
+	{
+		if (!rxSetup(memBD, memData, numPkts, maxPktByteLen, 100))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Failed RX setup" << std::endl;
+			return false;
+		}
+
+		return true;
+	}
+
+	bool initBdRing(BdRing& bdRing, const uint64_t& addr, const uint32_t& bdCount)
 	{
 		CLAP_IP_CORE_LOG_DEBUG << "Creating BD ring for channel " << bdRing.channel << " with " << bdCount << " BDs" << std::endl;
 
@@ -861,21 +894,19 @@ private:
 
 		if (bdRing.channel == DMAChannel::MM2S)
 		{
-			bdRing.HasDRE    = 0; // TODO: This needs to be evaluated based on the DRE property (unaligned transfers)
-			bdRing.DataWidth = GetDataWidth(DMAChannel::MM2S);
+			bdRing.hasDRE    = GetHasDRE(DMAChannel::MM2S);
+			bdRing.dataWidth = GetDataWidth(DMAChannel::MM2S);
 		}
 		else
 		{
-			bdRing.HasDRE    = 0; // TODO: This needs to be evaluated based on the DRE property (unaligned transfers)
-			bdRing.DataWidth = GetDataWidth(DMAChannel::S2MM);
+			bdRing.hasDRE    = GetHasDRE(DMAChannel::S2MM);
+			bdRing.dataWidth = GetDataWidth(DMAChannel::S2MM);
 		}
 
 		Expected<uint32_t> maxTransferLen = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,sg-length-width");
 
 		// -1 to get a 0xXFFFFF value
 		bdRing.maxTransferLen = (1 << (maxTransferLen ? maxTransferLen.Value() : 23)) - 1;
-
-		bdRing.Separation = AXI_DMA_BD_MINIMUM_ALIGNMENT;
 
 		if (addr % AXI_DMA_BD_MINIMUM_ALIGNMENT)
 		{
@@ -885,17 +916,17 @@ private:
 
 		std::vector<SGDescriptor*> desc;
 
-		for (int32_t i = 0; i < bdCount; i++)
+		for (uint32_t i = 0; i < bdCount; i++)
 		{
-			SGDescriptor* d = new SGDescriptor(m_pClap, addr + (i * bdRing.Separation), "SGDescriptor #" + std::to_string(i));
+			SGDescriptor* d = new SGDescriptor(m_pClap, addr + (i * bdRing.separation), "SGDescriptor #" + std::to_string(i));
 
 			if (i < bdCount - 1)
-				d->SetNextDescAddr(addr + ((i + 1) * bdRing.Separation));
+				d->SetNextDescAddr(addr + ((i + 1) * bdRing.separation));
 			else
 				d->SetNextDescAddr(addr);
 
-			d->SetHasStsCtrlStrm(bdRing.HasStsCntrlStrm);
-			d->SetHasDRE((bdRing.HasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.DataWidth);
+			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
+			d->SetHasDRE((bdRing.hasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.dataWidth);
 
 			desc.push_back(d);
 		}
@@ -904,16 +935,16 @@ private:
 			desc[i]->SetNextDesc(desc[(i + 1) % desc.size()]);
 
 		bdRing.descriptors = desc;
-		bdRing.RunState    = AXIDMA_CHANNEL_HALTED;
+		bdRing.runState    = AXIDMA_CHANNEL_HALTED;
 
-		bdRing.AllCnt   = bdCount;
+		bdRing.allCnt   = bdCount;
 		bdRing.freeCnt  = bdCount;
 		bdRing.freeHead = desc.front();
-		bdRing.PreHead  = desc.front();
-		bdRing.HwTail   = desc.front();
+		bdRing.preHead  = desc.front();
+		bdRing.hwTail   = desc.front();
 
-		bdRing.BdaRestart = desc.front();
-		bdRing.CyclicBd   = nullptr;
+		bdRing.bdRestart = desc.front();
+		bdRing.cyclicBd  = nullptr;
 
 		return true;
 	}
@@ -922,7 +953,7 @@ private:
 	{
 		if (counter == 0)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "setCoalesce: invalid  coalescing threshold " << static_cast<uint32_t>(counter) << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "setCoalesce: invalid coalescing threshold " << static_cast<uint32_t>(counter) << std::endl;
 			return false;
 		}
 
@@ -942,7 +973,7 @@ private:
 
 	bool updateCDesc(BdRing& bdRing)
 	{
-		int32_t ringIndex = bdRing.ringIndex;
+		uint32_t ringIndex = bdRing.ringIndex;
 
 		StatusRegister* pStatusReg = nullptr;
 		uint64_t descPtrOffset     = 0;
@@ -958,18 +989,18 @@ private:
 			descPtrOffset = S2MM_CURDESC;
 		}
 
-		if (bdRing.AllCnt == 0)
+		if (bdRing.allCnt == 0)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "startBdRing: no bds" << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "updateCDesc: no bds" << std::endl;
 			return false;
 		}
 
-		if (bdRing.RunState == AXIDMA_CHANNEL_NOT_HALTED)
+		if (bdRing.runState == AXIDMA_CHANNEL_NOT_HALTED)
 			return true;
 
 		if (!pStatusReg->IsStarted())
 		{
-			SGDescriptor* pDesc = bdRing.BdaRestart;
+			SGDescriptor* pDesc = bdRing.bdRestart;
 
 			if (!pDesc->IsComplete())
 			{
@@ -989,9 +1020,9 @@ private:
 				{
 					pDesc = pDesc->GetNextDesc();
 
-					if (pDesc == bdRing.BdaRestart)
+					if (pDesc == bdRing.bdRestart)
 					{
-						CLAP_IP_CORE_LOG_ERROR << "startBdRingHW: Cannot find valid cdesc" << std::endl;
+						CLAP_IP_CORE_LOG_ERROR << "updateCDesc: Cannot find valid cdesc" << std::endl;
 						return false;
 					}
 
@@ -1017,7 +1048,7 @@ private:
 
 	bool startBdRingHW(BdRing& bdRing)
 	{
-		int32_t ringIndex = bdRing.ringIndex;
+		uint32_t ringIndex = bdRing.ringIndex;
 
 		StatusRegister* pStatusReg = nullptr;
 		ControlRegister* pCtrlReg  = nullptr;
@@ -1041,29 +1072,29 @@ private:
 
 		if (pStatusReg->IsStarted())
 		{
-			bdRing.RunState = AXIDMA_CHANNEL_NOT_HALTED;
+			bdRing.runState = AXIDMA_CHANNEL_NOT_HALTED;
 
-			if (bdRing.HwCnt > 0)
+			if (bdRing.hwCnt > 0)
 			{
-				if (bdRing.Cyclic)
+				if (bdRing.cyclic)
 				{
-					writeRegister(tailDescOffset, bdRing.CyclicBd->Addr());
+					writeRegister(tailDescOffset, bdRing.cyclicBd->Addr());
 					return true;
 				}
 
-				if (!bdRing.HwTail->IsComplete())
+				if (!bdRing.hwTail->IsComplete())
 				{
 					if (bdRing.IsRxChannel())
 					{
 						if (!ringIndex)
-							writeRegister(tailDescOffset, bdRing.HwTail->Addr());
+							writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 						else
 						{
 							throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
 						}
 					}
 					else
-						writeRegister(tailDescOffset, bdRing.HwTail->Addr());
+						writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 				}
 			}
 
@@ -1090,15 +1121,9 @@ private:
 		return true;
 	}
 
-	bool bdRingAlloc(BdRing& bdRing, const int32_t& numBd, SGDescriptor** ppBdSet)
+	bool bdRingAlloc(BdRing& bdRing, const uint32_t& numBd, SGDescriptor** ppBdSet)
 	{
 		CLAP_IP_CORE_LOG_DEBUG << "Allocating " << numBd << " BDs" << std::endl;
-
-		if (numBd <= 0)
-		{
-			CLAP_IP_CORE_LOG_ERROR << "bdRingAlloc: negative BD number " << numBd << std::endl;
-			return false;
-		}
 
 		if (bdRing.freeCnt < numBd)
 		{
@@ -1108,16 +1133,16 @@ private:
 
 		*ppBdSet = bdRing.freeHead;
 
-		for (int32_t i = 0; i < numBd; i++)
+		for (uint32_t i = 0; i < numBd; i++)
 			bdRing.freeHead = bdRing.freeHead->GetNextDesc();
 
 		bdRing.freeCnt -= numBd;
-		bdRing.PreCnt += numBd;
+		bdRing.preCnt += numBd;
 
 		return true;
 	}
 
-	bool bdRingToHw(BdRing& bdRing, const int32_t& numBd, SGDescriptor* pBdSet)
+	bool bdRingToHw(BdRing& bdRing, const uint32_t& numBd, SGDescriptor* pBdSet)
 	{
 		uint64_t tailDescOffset = 0;
 
@@ -1126,25 +1151,18 @@ private:
 		else
 			tailDescOffset = S2MM_TAILDESC;
 
-		int32_t ringIndex = bdRing.ringIndex;
+		uint32_t ringIndex = bdRing.ringIndex;
 
-		if (numBd < 0)
-		{
-			CLAP_IP_CORE_LOG_ERROR << "bdRingToHw: negative BD number " << numBd << std::endl;
-			return false;
-		}
+		if (numBd == 0) return true;
 
-		if (numBd == 0)
-			return true;
-
-		if ((bdRing.PreCnt < numBd) || (bdRing.PreHead != pBdSet))
+		if ((bdRing.preCnt < numBd) || (bdRing.preHead != pBdSet))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "BD ring has problems:" << std::endl;
-			if (bdRing.PreCnt < numBd)
-				CLAP_IP_CORE_LOG_ERROR << "PreCnt (" << bdRing.PreCnt << ") < numBd (" << numBd << ")" << std::endl;
+			if (bdRing.preCnt < numBd)
+				CLAP_IP_CORE_LOG_ERROR << "preCnt (" << bdRing.preCnt << ") < numBd (" << numBd << ")" << std::endl;
 
-			if (bdRing.PreHead != pBdSet)
-				CLAP_IP_CORE_LOG_ERROR << std::hex << "PreHead (0x" << bdRing.PreHead << ") != pBdSet (0x" << pBdSet << ")" << std::dec << std::endl;
+			if (bdRing.preHead != pBdSet)
+				CLAP_IP_CORE_LOG_ERROR << std::hex << "preHead (0x" << bdRing.preHead << ") != pBdSet (0x" << pBdSet << ")" << std::dec << std::endl;
 
 			return false;
 		}
@@ -1160,7 +1178,7 @@ private:
 			return false;
 		}
 
-		for (int32_t i = 0; i < numBd - 1; i++)
+		for (uint32_t i = 0; i < numBd - 1; i++)
 		{
 			if ((pCurBd->GetLength() & bdRing.maxTransferLen) == 0)
 			{
@@ -1191,32 +1209,32 @@ private:
 		bdSts &= ~XAXIDMA_BD_STS_COMPLETE_MASK;
 		pCurBd->SetStatus(bdSts);
 
-		for (int32_t i = 0; i < numBd; i++)
-			bdRing.PreHead = bdRing.PreHead->GetNextDesc();
+		for (uint32_t i = 0; i < numBd; i++)
+			bdRing.preHead = bdRing.preHead->GetNextDesc();
 
-		bdRing.PreCnt -= numBd;
-		bdRing.HwTail = pCurBd;
-		bdRing.HwCnt += numBd;
+		bdRing.preCnt -= numBd;
+		bdRing.hwTail = pCurBd;
+		bdRing.hwCnt += numBd;
 
-		if (bdRing.RunState == AXIDMA_CHANNEL_NOT_HALTED)
+		if (bdRing.runState == AXIDMA_CHANNEL_NOT_HALTED)
 		{
-			if (bdRing.Cyclic)
+			if (bdRing.cyclic)
 			{
-				writeRegister(tailDescOffset, bdRing.CyclicBd->Addr());
+				writeRegister(tailDescOffset, bdRing.cyclicBd->Addr());
 				return true;
 			}
 
 			if (bdRing.IsRxChannel())
 			{
 				if (!ringIndex)
-					writeRegister(tailDescOffset, bdRing.HwTail->Addr());
+					writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 				else
 				{
 					throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
 				}
 			}
 			else
-				writeRegister(tailDescOffset, bdRing.HwTail->Addr());
+				writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 		}
 
 		return true;
@@ -1224,8 +1242,6 @@ private:
 
 	bool txSetup(const Memory& mem, const uint8_t& numPkts, const uint8_t& irqDelay)
 	{
-		DisableInterrupts(DMAChannel::MM2S);
-
 		uint32_t bdCount = ROUND_UP_DIV(mem.GetSize(), AXI_DMA_BD_MINIMUM_ALIGNMENT);
 
 		if (!initBdRing(m_bdRingTx, mem.GetBaseAddr(), bdCount))
@@ -1240,8 +1256,6 @@ private:
 			return false;
 		}
 
-		EnableInterrupts(DMAChannel::MM2S);
-
 		if (!startBdRing(m_bdRingTx))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Failed start BD ring" << std::endl;
@@ -1251,10 +1265,8 @@ private:
 		return true;
 	}
 
-	bool rxSetup(const Memory& memBd, const Memory& memRx, const uint8_t& numPkts, const uint32_t& maxPktLen, const uint8_t& irqDelay)
+	bool rxSetup(const Memory& memBd, const Memory& memRx, const uint8_t& numPkts, const uint32_t& maxPktByteLen, const uint8_t& irqDelay)
 	{
-		DisableInterrupts(DMAChannel::S2MM);
-
 		uint32_t bdCount = ROUND_UP_DIV(memBd.GetSize(), AXI_DMA_BD_MINIMUM_ALIGNMENT);
 
 		if (!initBdRing(m_bdRingRx, memBd.GetBaseAddr(), bdCount))
@@ -1283,9 +1295,9 @@ private:
 				return false;
 			}
 
-			if (!pBdCur->SetLength(maxPktLen, m_bdRingRx.maxTransferLen))
+			if (!pBdCur->SetLength(maxPktByteLen, m_bdRingRx.maxTransferLen))
 			{
-				CLAP_IP_CORE_LOG_ERROR << "Rx set length " << maxPktLen << " on BD " << pBdCur->GetName() << " failed" << std::endl;
+				CLAP_IP_CORE_LOG_ERROR << "Rx set length " << maxPktByteLen << " on BD " << pBdCur->GetName() << " failed" << std::endl;
 				return false;
 			}
 
@@ -1293,7 +1305,7 @@ private:
 
 			pBdCur->SetId(i); // Arbitrary ID
 
-			pRxBuffer += maxPktLen;
+			pRxBuffer += maxPktByteLen;
 			pBdCur = pBdCur->GetNextDesc();
 		}
 
@@ -1309,8 +1321,6 @@ private:
 			return false;
 		}
 
-		EnableInterrupts(DMAChannel::S2MM);
-
 		if (!startBdRing(m_bdRingRx))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Failed start BD ring" << std::endl;
@@ -1320,15 +1330,20 @@ private:
 		return true;
 	}
 
-	bool sendPacket(const int32_t& numPkts, const int32_t maxPktLen, const int32_t& bdsPerPkt, Memory& mem)
+	bool readPackets()
+	{
+		return true;
+	}
+
+	bool sendPacket(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& mem)
 	{
 		const uint32_t numBDs = numPkts * bdsPerPkt;
 
-		CLAP_IP_CORE_LOG_DEBUG << "Sending " << numPkts << " packets of " << maxPktLen << " bytes, with " << bdsPerPkt << " BDs per packet" << std::endl;
+		CLAP_IP_CORE_LOG_DEBUG << "Sending " << numPkts << " packets of " << maxPktByteLen << " bytes, with " << bdsPerPkt << " BDs per packet" << std::endl;
 
-		if (static_cast<uint32_t>(maxPktLen) * bdsPerPkt > m_bdRingTx.maxTransferLen)
+		if (static_cast<uint32_t>(maxPktByteLen) * bdsPerPkt > m_bdRingTx.maxTransferLen)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Invalid total per packet transfer length for the packet " << maxPktLen * bdsPerPkt << "/" << m_bdRingTx.maxTransferLen << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Invalid total per packet transfer length for the packet " << maxPktByteLen * bdsPerPkt << "/" << m_bdRingTx.maxTransferLen << std::endl;
 			return false;
 		}
 
@@ -1343,9 +1358,9 @@ private:
 		uint64_t bufferAddr  = mem.GetBaseAddr();
 		SGDescriptor* pBdCur = pBd;
 
-		for (int32_t i = 0; i < numPkts; i++)
+		for (uint32_t i = 0; i < numPkts; i++)
 		{
-			for (int32_t Pkts = 0; Pkts < bdsPerPkt; Pkts++)
+			for (uint32_t pkt = 0; pkt < bdsPerPkt; pkt++)
 			{
 				uint32_t crBits = 0;
 
@@ -1355,22 +1370,22 @@ private:
 					return false;
 				}
 
-				if (!pBdCur->SetLength(maxPktLen, m_bdRingTx.maxTransferLen))
+				if (!pBdCur->SetLength(maxPktByteLen, m_bdRingTx.maxTransferLen))
 				{
-					CLAP_IP_CORE_LOG_ERROR << "Tx set length " << maxPktLen << " on BD " << pBdCur << " failed" << std::endl;
+					CLAP_IP_CORE_LOG_ERROR << "Tx set length " << maxPktByteLen << " on BD " << pBdCur << " failed" << std::endl;
 					return false;
 				}
 
-				if (Pkts == 0)
+				if (pkt == 0)
 					crBits |= XAXIDMA_BD_CTRL_TXSOF_MASK;
 
-				if (Pkts == (bdsPerPkt - 1))
+				if (pkt == (bdsPerPkt - 1))
 					crBits |= XAXIDMA_BD_CTRL_TXEOF_MASK;
 
 				pBdCur->SetControlBits(crBits);
 				pBdCur->SetId(i);
 
-				bufferAddr += maxPktLen;
+				bufferAddr += maxPktByteLen;
 				pBdCur = pBdCur->GetNextDesc();
 			}
 		}
@@ -1541,16 +1556,39 @@ private:
 
 	void detectDataWidth(const DMAChannel& channel)
 	{
-		const uint64_t offset = (channel == DMAChannel::MM2S ? REGISTER_MAP::MM2S_DMACR : REGISTER_MAP::S2MM_DMACR);
-
-		const std::string addr = utils::Hex2Str(m_ctrlOffset + offset);
-
-		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, "/dma-channel@" + addr + "/xlnx,datawidth");
+		Expected<uint64_t> res = CLAP()->ReadUIOProperty(m_ctrlOffset, buildPropertyString(channel, "xlnx,datawidth"));
 		if (res)
 		{
 			SetDataWidthBits(static_cast<uint32_t>(res.Value()), channel);
 			CLAP_IP_CORE_LOG_INFO << "Detected data width: " << m_dataWidths[ch2Id(channel)] << " byte for channel " << channel << std::endl;
 		}
+	}
+
+	void detectHasDRE()
+	{
+		if (m_mm2sPresent)
+			detectHasDRE(DMAChannel::MM2S);
+		if (m_s2mmPresent)
+			detectHasDRE(DMAChannel::S2MM);
+	}
+
+	void detectHasDRE(const DMAChannel& channel)
+	{
+		const bool exists = CLAP()->CheckUIOPropertyExists(m_ctrlOffset, buildPropertyString(channel, "xlnx,include-dre"));
+		if (exists)
+		{
+			SetHasDRE(exists, channel);
+			CLAP_IP_CORE_LOG_INFO << "Detected DRE: " << m_dreSupport[ch2Id(channel)] << " for channel " << channel << std::endl;
+		}
+	}
+
+	std::string buildPropertyString(const DMAChannel& channel, const std::string& propName)
+	{
+		const uint64_t offset = (channel == DMAChannel::MM2S ? REGISTER_MAP::MM2S_DMACR : REGISTER_MAP::S2MM_DMACR);
+
+		const std::string addr = utils::Hex2Str(m_ctrlOffset + offset);
+
+		return std::string("/dma-channel@" + addr + "/" + propName);
 	}
 
 	void updateMaxTransferLength()
@@ -1804,6 +1842,8 @@ private:
 	std::array<uint32_t, 2> m_maxTransferLengths = { 0x3FFC, 0x3FFC }; // Default AXI DMA max transfer length is 16K
 
 	std::array<uint32_t, 2> m_dataWidths = { 4, 4 }; // Default AXI DMA data width is 32 bits
+
+	std::array<bool, 2> m_dreSupport = { false, false }; // By default unaligned transfers are not enabled
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};
