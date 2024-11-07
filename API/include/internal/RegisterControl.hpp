@@ -228,7 +228,18 @@ protected:
 		Expected<uint32_t> res = CLAP()->GetUIOID(m_ctrlOffset);
 		if (res)
 		{
-			m_detectedInterruptID = static_cast<int32_t>(res.Value());
+			const bool intrPrntPrsnt = CLAP()->CheckUIOPropertyExists(m_ctrlOffset, "interrupt-parent");
+			if (intrPrntPrsnt)
+				m_detectedInterruptID = static_cast<int32_t>(res.Value());
+			else
+			{
+				Expected<std::vector<uint64_t>> intrs = CLAP()->ReadUIOPropertyVec(m_ctrlOffset, "interrupts");
+				if (intrs && intrs.Value().size() >= 2)
+					m_detectedInterruptID = intrs.Value()[0];
+				else
+					return false;
+			}
+
 			CLAP_IP_CORE_LOG_INFO << "Detected interrupt ID: " << m_detectedInterruptID << std::endl;
 			return true;
 		}
