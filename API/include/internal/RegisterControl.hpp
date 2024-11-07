@@ -275,7 +275,7 @@ protected:
 	std::string m_name;
 	uint64_t m_ctrlOffset;
 	std::vector<RegisterIntf*> m_registers;
-	int32_t m_detectedInterruptID = -1;
+	int32_t m_detectedInterruptID = INTR_UNDEFINED;
 };
 } // namespace internal
 } // namespace clap

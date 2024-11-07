@@ -131,7 +131,7 @@ public:
 				throw UserInterruptException(ss.str());
 			}
 
-			uint32_t lastIntr = -1;
+			uint32_t lastIntr = UNSET_INTR_MASK;
 			if (m_pReg)
 				lastIntr = m_pReg->GetLastInterrupt();
 
@@ -160,7 +160,7 @@ private:
 		m_fd = INVALID_HANDLE;
 
 #ifndef _WIN32
-		m_pollFd.fd = -1;
+		m_pollFd.fd = INVALID_HANDLE;
 #endif
 		m_pReg = nullptr;
 	}

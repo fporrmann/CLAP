@@ -73,7 +73,7 @@ public:
 
 		m_interruptOccured = false;
 
-		uint32_t lastIntr = MINUS_ONE;
+		uint32_t lastIntr = UNSET_INTR_MASK;
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
@@ -229,7 +229,7 @@ public:
 
 		uint32_t intrID = eventNo;
 
-		if (m_detectedInterruptID != -1)
+		if (m_detectedInterruptID != INTR_UNDEFINED)
 			intrID = static_cast<uint32_t>(m_detectedInterruptID);
 
 		m_watchDog.InitInterrupt(getDevNum(), intrID);

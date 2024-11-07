@@ -350,10 +350,10 @@ public:
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			uint32_t intrID = eventNo;
-			if (m_mm2sIntrDetected != -1)
+			if (m_mm2sIntrDetected != INTR_UNDEFINED)
 				intrID = static_cast<uint32_t>(m_mm2sIntrDetected);
 
-			if (intrID == internal::MINUS_ONE)
+			if (intrID == USE_AUTO_DETECT)
 			{
 				CLAP_IP_CORE_LOG_ERROR << "Interrupt ID was not automatically detected and no interrupt ID specified for MM2S channel - Unable to setup interrupts for channel MM2S" << std::endl;
 				return;
@@ -366,10 +366,10 @@ public:
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			uint32_t intrID = eventNo;
-			if (m_s2mmIntrDetected != -1)
+			if (m_s2mmIntrDetected != INTR_UNDEFINED)
 				intrID = static_cast<uint32_t>(m_s2mmIntrDetected);
 
-			if (intrID == internal::MINUS_ONE)
+			if (intrID == USE_AUTO_DETECT)
 			{
 				CLAP_IP_CORE_LOG_ERROR << "Interrupt ID was not automatically detected and no interrupt ID specified for S2MM channel - Unable to setup interrupts for channel S2MM" << std::endl;
 				return;
@@ -1849,7 +1849,7 @@ private:
 	bool m_mm2sPresent = false;
 	bool m_s2mmPresent = false;
 
-	int32_t m_mm2sIntrDetected = -1;
-	int32_t m_s2mmIntrDetected = -1;
+	int32_t m_mm2sIntrDetected = INTR_UNDEFINED;
+	int32_t m_s2mmIntrDetected = INTR_UNDEFINED;
 };
 } // namespace clap

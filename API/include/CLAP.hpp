@@ -1394,7 +1394,7 @@ private:
 	std::string m_pioDeviceName;
 	std::size_t m_pioSize;
 	std::size_t m_pioOffset;
-	int32_t m_fd     = -1;
+	int32_t m_fd     = INVALID_HANDLE;
 	void* m_pMapBase = nullptr;
 	bool m_valid     = false;
 	std::mutex m_rwMtx;

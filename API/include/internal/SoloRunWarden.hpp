@@ -59,7 +59,7 @@ private:
 	SoloRunWarden()
 	{
 		int lockFile = open(LOCK_FILE.c_str(), O_CREAT | O_EXCL | O_RDWR, 0666);
-		if (lockFile == -1)
+		if (lockFile == INVALID_HANDLE)
 		{
 			// file already exists
 			std::ifstream lockFileIn(LOCK_FILE);

@@ -151,13 +151,13 @@ public:
 	{
 		uint32_t intrID = eventNo;
 
-		if (eventNo == USE_AUTO_DETECT && m_detectedInterruptID == -1)
+		if (eventNo == USE_AUTO_DETECT && m_detectedInterruptID == INTR_UNDEFINED)
 			AutoDetectInterruptID();
 
-		if (m_detectedInterruptID != -1)
+		if (m_detectedInterruptID != INTR_UNDEFINED)
 			intrID = static_cast<uint32_t>(m_detectedInterruptID);
 
-		if (intrID == internal::MINUS_ONE)
+		if (intrID == USE_AUTO_DETECT)
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Interrupt ID was not automatically detected and no interrupt ID specified - Unable to setup interrupts for HLS Core: \"" << m_name << "\" at: 0x" << std::hex << m_ctrlOffset << std::dec << std::endl;
 			return;

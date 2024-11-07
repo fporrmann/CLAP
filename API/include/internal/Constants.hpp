@@ -46,7 +46,8 @@ inline constexpr std::size_t XDMA_AXI_DATA_WIDTH     = XDMA_AXI_DATA_WIDTH_BIT /
 inline constexpr uint64_t XDMA_CTRL_BASE = 0x0;
 inline constexpr uint64_t XDMA_CTRL_SIZE = 0x100;
 
-inline constexpr uint32_t MINUS_ONE = 0xFFFFFFFF;
+inline constexpr int32_t MINUS_ONE_S = -1;
+inline constexpr uint32_t MINUS_ONE_U = 0xFFFFFFFF;
 
 /*
  * man 2 write:
@@ -58,6 +59,8 @@ inline constexpr uint32_t MINUS_ONE = 0xFFFFFFFF;
 inline constexpr uint32_t RW_MAX_SIZE = 0x7ffff000;
 } // namespace internal
 
-inline constexpr uint32_t USE_AUTO_DETECT = internal::MINUS_ONE;
+inline constexpr uint32_t USE_AUTO_DETECT = internal::MINUS_ONE_U;
+inline constexpr int32_t INTR_UNDEFINED  = internal::MINUS_ONE_S;
+inline constexpr uint32_t UNSET_INTR_MASK = 0;
 
 } // namespace clap

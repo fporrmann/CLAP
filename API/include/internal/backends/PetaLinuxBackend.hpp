@@ -130,7 +130,7 @@ public:
 				throw UserInterruptException(ss.str());
 			}
 
-			uint32_t lastIntr = -1;
+			uint32_t lastIntr = UNSET_INTR_MASK;
 			if (m_pReg)
 				lastIntr = m_pReg->GetLastInterrupt();
 
@@ -154,7 +154,7 @@ private:
 	{
 		CloseDevice(m_fd);
 
-		m_pollFd.fd = -1;
+		m_pollFd.fd = INVALID_HANDLE;
 		m_pReg      = nullptr;
 	}
 
@@ -434,7 +434,7 @@ private:
 
 private:
 	const std::string m_devMem = "/dev/mem";
-	int32_t m_fd               = -1;
+	int32_t m_fd               = INVALID_HANDLE;
 	std::mutex m_readMutex;
 	std::mutex m_writeMutex;
 	Mode m_mode                          = Mode::DevMem;

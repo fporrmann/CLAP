@@ -171,7 +171,7 @@ public:
 		if (m_pReg)
 			m_pReg->ClearInterrupts();
 
-		uint32_t lastIntr = -1;
+		uint32_t lastIntr = UNSET_INTR_MASK;
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
@@ -188,17 +188,17 @@ public:
 private:
 	void unset()
 	{
-		if (m_isSet && m_intrNum != MINUS_ONE)
+		if (m_isSet && m_intrNum != INTR_UNDEFINED)
 			BareMetalGic::GetInstance().UnregisterInterrupt(m_intrNum);
 
 		m_isSet   = false;
-		m_intrNum = MINUS_ONE;
+		m_intrNum = INTR_UNDEFINED;
 		m_pReg    = nullptr;
 	}
 
 private:
 	bool m_isSet        = false;
-	uint32_t m_intrNum  = -1;
+	uint32_t m_intrNum  = INTR_UNDEFINED;
 	bool m_runCallbacks = true;
 	bool m_intrPresent  = false;
 };

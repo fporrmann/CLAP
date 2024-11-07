@@ -194,7 +194,7 @@ public:
 		m_devTreePropPath(path + UIO_OF_NODE_PATH),
 		m_id(id)
 	{
-		if (m_id == MINUS_ONE || m_name.empty() || m_path.empty())
+		if (m_id == MINUS_ONE_U || m_name.empty() || m_path.empty())
 		{
 			m_valid = false;
 			return;
