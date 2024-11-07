@@ -33,6 +33,10 @@
 #include "StdStub.hpp"
 #include "Utils.hpp"
 
+#ifdef CLAP_USE_XIL_PRINTF
+#include <xil_printf.h>
+#endif
+
 namespace clap
 {
 namespace logging
@@ -79,7 +83,13 @@ public:
 		std::lock_guard<std::mutex> lock(s_logMutex);
 
 		if (m_lvl >= m_verbosity)
+		{
+#ifdef CLAP_USE_XIL_PRINTF
+			xil_printf("%s\r", message.str().c_str());
+#else
 			m_outStream << message.str();
+#endif
+		}
 
 		message.flush();
 	}
