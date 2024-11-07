@@ -76,6 +76,8 @@ class AxiDMA : public internal::RegisterControlBase
 	static inline const std::string MM2S_INTR_NAME = "mm2s_introut";
 	static inline const std::string S2MM_INTR_NAME = "s2mm_introut";
 
+	static inline const uint32_t SG_IRQ_DELAY = 100;
+
 public:
 	enum DMAInterrupts
 	{
@@ -95,7 +97,7 @@ public:
 		m_s2mmPresent(s2mmPresent)
 	{
 		if (!m_mm2sPresent && !m_s2mmPresent)
-			throw std::runtime_error("AxiDMA: At least one channel must be present");
+			BUILD_IP_EXCEPTION(CLAPException, "At least one channel must be present");
 
 		if (m_mm2sPresent)
 		{
@@ -117,6 +119,7 @@ public:
 
 		detectBufferLengthRegWidth();
 		detectDataWidth();
+		detectHasDRE();
 	}
 
 	////////////////////////////////////////
@@ -289,8 +292,9 @@ public:
 			return true;
 		}
 
-		CLAP_IP_CORE_LOG_WARNING << "Channel " << channel << " not present, cannot wait for finish" << std::endl;
-		return true;
+		std::stringstream ss;
+		ss << CLAP_IP_EXCEPTION_TAG << "Channel " << channel << " not present, cannot wait for finish";
+		throw CLAPException(ss.str());
 	}
 
 	////////////////////////////////////////
@@ -509,36 +513,28 @@ public:
 		return false;
 	}
 
-	void StartSG(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBDTx, const Memory& memBDRx, const Memory& memDataIn, const Memory& memDataOut)
+	void StartSG(const Memory& memBDTx, const Memory& memBDRx, const Memory& memDataIn, const Memory& memDataOut, const uint32_t maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
-		StartSG(DMAChannel::MM2S, numPkts, maxPktByteLen, bdsPerPkt, memBDTx, memDataIn);
-		StartSG(DMAChannel::S2MM, numPkts, maxPktByteLen, bdsPerPkt, memBDRx, memDataOut);
+		StartSG(DMAChannel::MM2S, memBDTx, memDataIn, maxPktByteLen, numPkts, bdsPerPkt);
+		StartSG(DMAChannel::S2MM, memBDRx, memDataOut, maxPktByteLen, numPkts, bdsPerPkt);
 	}
 
-	bool StartSG(const DMAChannel& channel, const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBD, const Memory& memData)
+	void StartSG(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
 			if (!m_watchDogMM2S.Start(true))
-			{
-				CLAP_IP_CORE_LOG_ERROR << "Watchdog for MM2S already running!" << std::endl;
-				return false;
-			}
+				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for MM2S already running!");
 
-			return startSGTransferMM2S(numPkts, maxPktByteLen, bdsPerPkt, memBD, memData);
+			startSGTransferMM2S(memBD, memData, maxPktByteLen, numPkts, bdsPerPkt);
 		}
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			if (!m_watchDogS2MM.Start(true))
-			{
-				CLAP_IP_CORE_LOG_ERROR << "Watchdog for S2MM already running!" << std::endl;
-				return false;
-			}
+				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for S2MM already running!");
 
-			return startSGTransferS2MM(numPkts, maxPktByteLen, memBD, memData);
+			startSGTransferS2MM(memBD, memData, maxPktByteLen, numPkts);
 		}
-
-		return false;
 	}
 
 private:
@@ -596,6 +592,22 @@ private:
 			writeRegister(0x34, m_id);
 			writeRegister(0x38, m_hasStsCtrlStrm);
 			writeRegister(0x3C, m_hasDRE);
+		}
+
+		void Print() const
+		{
+			std::cout << "NextDescAddr: 0x" << std::hex << m_nextDescAddr << std::dec << std::endl;
+			std::cout << "BufferAddr: 0x" << std::hex << m_bufferAddr << std::dec << std::endl;
+			std::cout << "Control: 0x" << std::hex << m_control << std::dec << std::endl;
+			std::cout << "Status: 0x" << std::hex << m_status << std::dec << std::endl;
+			std::cout << "App0: 0x" << std::hex << m_app0 << std::dec << std::endl;
+			std::cout << "App1: 0x" << std::hex << m_app1 << std::dec << std::endl;
+			std::cout << "App2: 0x" << std::hex << m_app2 << std::dec << std::endl;
+			std::cout << "App3: 0x" << std::hex << m_app3 << std::dec << std::endl;
+			std::cout << "App4: 0x" << std::hex << m_app4 << std::dec << std::endl;
+			std::cout << "ID: 0x" << std::hex << m_id << std::dec << std::endl;
+			std::cout << "HasStsCtrlStrm: 0x" << std::hex << m_hasStsCtrlStrm << std::dec << std::endl;
+			std::cout << "HasDRE: 0x" << std::hex << m_hasDRE << std::dec << std::endl;
 		}
 
 		const uint64_t& Addr() const
@@ -852,32 +864,19 @@ private:
 		}
 	};
 
-	bool startSGTransferMM2S(const uint8_t& numPkts, const uint32_t& maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& memBD, const Memory& memData)
+	void startSGTransferMM2S(const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts, const uint32_t& bdsPerPkt)
 	{
-		if (!txSetup(memBD, numPkts, 100))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed TX setup" << std::endl;
-			return false;
-		}
+		if (!txSetup(memBD, numPkts, SG_IRQ_DELAY))
+			BUILD_IP_EXCEPTION(CLAPException, "TXSetup failed");
 
 		if (!sendPacket(numPkts, maxPktByteLen, bdsPerPkt, memData))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed send packet" << std::endl;
-			return false;
-		}
-
-		return true;
+			BUILD_IP_EXCEPTION(CLAPException, "SendPacket failed");
 	}
 
-	bool startSGTransferS2MM(const uint8_t& numPkts, const uint32_t& maxPktByteLen, const Memory& memBD, const Memory& memData)
+	void startSGTransferS2MM(const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts)
 	{
-		if (!rxSetup(memBD, memData, numPkts, maxPktByteLen, 100))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed RX setup" << std::endl;
-			return false;
-		}
-
-		return true;
+		if (!rxSetup(memBD, memData, numPkts, maxPktByteLen, SG_IRQ_DELAY))
+			BUILD_IP_EXCEPTION(CLAPException, "RXSetup failed");
 	}
 
 	bool initBdRing(BdRing& bdRing, const uint64_t& addr, const uint32_t& bdCount)
@@ -1009,7 +1008,7 @@ private:
 					if (!ringIndex)
 						writeRegister(descPtrOffset, pDesc->Addr());
 					else
-						throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
+						BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 				}
 				else
 					writeRegister(descPtrOffset, pDesc->Addr());
@@ -1033,7 +1032,7 @@ private:
 							if (!ringIndex)
 								writeRegister(descPtrOffset, pDesc->Addr());
 							else
-								throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
+								BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 						}
 						else
 							writeRegister(descPtrOffset, pDesc->Addr());
@@ -1089,9 +1088,7 @@ private:
 						if (!ringIndex)
 							writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 						else
-						{
-							throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
-						}
+							BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 					}
 					else
 						writeRegister(tailDescOffset, bdRing.hwTail->Addr());
@@ -1100,6 +1097,9 @@ private:
 
 			return true;
 		}
+
+		CLAP_IP_CORE_LOG_ERROR << "startBdRingHW: Failed to start hardware -- Try resetting the AxiDMA IP before starting" << std::endl;
+		pStatusReg->Print();
 
 		return false;
 	}
@@ -1229,9 +1229,7 @@ private:
 				if (!ringIndex)
 					writeRegister(tailDescOffset, bdRing.hwTail->Addr());
 				else
-				{
-					throw std::runtime_error("[ERROR] AXI DMA -- Multi channel support is currently not implemented");
-				}
+					BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 			}
 			else
 				writeRegister(tailDescOffset, bdRing.hwTail->Addr());

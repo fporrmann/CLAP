@@ -53,6 +53,15 @@
 #define CLAP_IP_EXCEPTION_TAG CLASS_TAG_AUTO << nameTag()
 #endif
 
+#ifndef BUILD_IP_EXCEPTION
+#define BUILD_IP_EXCEPTION(__EXPT__, __MSG__)   \
+	{                                           \
+		std::stringstream ss;                   \
+		ss << CLAP_IP_EXCEPTION_TAG << __MSG__; \
+		throw __EXPT__(ss.str());               \
+	}
+#endif
+
 // TODO: Move this to a more appropriate place
 enum class DMAChannel
 {
