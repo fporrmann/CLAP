@@ -416,6 +416,14 @@ private:
 		return res64;
 	}
 
+	bool CheckUIOPropertyExists(const uint64_t& addr, const std::string& propName) const override
+	{
+		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);
+		if (!dev) return false;
+
+		return dev.CheckPropertyExists(propName);
+	}
+
 	Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const override
 	{
 		const UioDev<UIOAddrType>& dev = m_uioManager.FindUioDevByAddr(addr);

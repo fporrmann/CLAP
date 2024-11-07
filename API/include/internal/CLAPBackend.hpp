@@ -85,6 +85,11 @@ public:
 		return MakeUnexpected();
 	}
 
+	virtual bool CheckUIOPropertyExists([[maybe_unused]] const uint64_t& addr, [[maybe_unused]] const std::string& propName) const
+	{
+		return false;
+	}
+
 	virtual Expected<int32_t> GetUIOID([[maybe_unused]] const uint64_t& addr) const
 	{
 		return MakeUnexpected();

@@ -158,6 +158,7 @@ public:
 	virtual Expected<uint64_t> ReadUIOProperty(const uint64_t& addr, const std::string& propName) const                 = 0;
 	virtual Expected<std::string> ReadUIOStringProperty(const uint64_t& addr, const std::string& propName) const        = 0;
 	virtual Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const = 0;
+	virtual bool CheckUIOPropertyExists(const uint64_t& addr, const std::string& propName) const            = 0;
 	virtual Expected<int32_t> GetUIOID(const uint64_t& addr) const                                                      = 0;
 
 	virtual void AddPollAddress(const uint64_t& addr) = 0;
@@ -962,6 +963,11 @@ public:
 	Expected<std::vector<uint64_t>> ReadUIOPropertyVec(const uint64_t& addr, const std::string& propName) const override
 	{
 		return m_pBackend->ReadUIOPropertyVec(addr, propName);
+	}
+
+	bool CheckUIOPropertyExists(const uint64_t& addr, const std::string& propName) const override
+	{
+		return m_pBackend->CheckUIOPropertyExists(addr, propName);
 	}
 
 	Expected<int32_t> GetUIOID(const uint64_t& addr) const override

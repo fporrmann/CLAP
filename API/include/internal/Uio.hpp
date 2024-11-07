@@ -28,6 +28,7 @@
 
 #include <arpa/inet.h>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -49,6 +50,8 @@ using UIOAddrType = uint64_t;
 #else
 using UIOAddrType = uint32_t;
 #endif
+
+namespace fs = std::filesystem;
 
 // TODO:
 //  - Handle multiple maps
@@ -415,6 +418,11 @@ public:
 			val = ntohl(val);
 
 		return resValues;
+	}
+
+	bool CheckPropertyExists(const std::string& property) const
+	{
+		return fs::exists(m_devTreePropPath + property);
 	}
 
 	const std::string& GetName() const
