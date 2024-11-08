@@ -513,13 +513,13 @@ public:
 		return false;
 	}
 
-	void StartSG(const Memory& memBDTx, const Memory& memBDRx, const Memory& memDataIn, const Memory& memDataOut, const uint32_t maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
+	void StartSG(const Memory& memBDTx, const Memory& memBDRx, const Memory& memDataIn, const Memory& memDataOut, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
 		StartSG(DMAChannel::MM2S, memBDTx, memDataIn, maxPktByteLen, numPkts, bdsPerPkt);
 		StartSG(DMAChannel::S2MM, memBDRx, memDataOut, maxPktByteLen, numPkts, bdsPerPkt);
 	}
 
-	void StartSG(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
+	void StartSG(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
 		{
