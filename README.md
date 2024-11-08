@@ -260,8 +260,8 @@ For Baremetal it is currently required to increase the size of the **STACK**, **
 ```c
 STACK_SIZE     = 0x10000;
 HEAP_SIZE      = 0x20000;
-// Only present on 32-bit systems
-IRQ_STACK_SIZE =  0x1000;
+// Only present on 32-bit systems -- Might need to be increased further, depending on the application
+IRQ_STACK_SIZE =  0x2000;
 ```
 
 Furthermore, the `EMBEDDED_XILINX` define has to be set before including the CLAP API. This can be done by either adding the following to the compiler flags:
@@ -274,4 +274,16 @@ Or by adding the following to the source code before the first CLAP include:
 
 ```c
 #define EMBEDDED_XILINX
+```
+
+Using the `CLAP_USE_XIL_PRINTF` define, the logging system can be forced to use the Xilinx `xil_printf` function instead of `std::cout`. This can be useful when `std::cout` is not available in the Baremetal environment. Similar to the `EMBEDDED_XILINX` define, it can be set either via the compiler flags:
+
+```c
+-D CLAP_USE_XIL_PRINTF
+```
+
+Or by adding the following to the source code before the first CLAP include:
+
+```c
+#define CLAP_USE_XIL_PRINTF
 ```
