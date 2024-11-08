@@ -188,17 +188,17 @@ public:
 private:
 	void unset()
 	{
-		if (m_isSet && m_intrNum != INTR_UNDEFINED)
+		if (m_isSet && m_intrNum != MINUS_ONE_U)
 			BareMetalGic::GetInstance().UnregisterInterrupt(m_intrNum);
 
 		m_isSet   = false;
-		m_intrNum = INTR_UNDEFINED;
+		m_intrNum = MINUS_ONE_U;
 		m_pReg    = nullptr;
 	}
 
 private:
 	bool m_isSet        = false;
-	uint32_t m_intrNum  = INTR_UNDEFINED;
+	uint32_t m_intrNum  = MINUS_ONE_U;
 	bool m_runCallbacks = true;
 	bool m_intrPresent  = false;
 };
