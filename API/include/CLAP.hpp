@@ -1399,7 +1399,7 @@ private:
 	bool m_valid     = false;
 	std::mutex m_rwMtx;
 
-	static const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
+	static inline const std::size_t MAX_PIO_ACCESS_SIZE = sizeof(uint64_t);
 };
 #endif // XDMAPio
 

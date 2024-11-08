@@ -538,9 +538,9 @@ public:
 	}
 
 private:
-	static const uint32_t AXI_DMA_BD_MINIMUM_ALIGNMENT = 0x40;
-	static const uint32_t AXI_DMA_BD_HAS_DRE_SHIFT     = 8;
-	static const uint32_t AXI_DMA_BD_MAX_LENGTH_MASK   = 0x3FFFFFF;
+	static inline const uint32_t AXI_DMA_BD_MINIMUM_ALIGNMENT = 0x40;
+	static inline const uint32_t AXI_DMA_BD_HAS_DRE_SHIFT     = 8;
+	static inline const uint32_t AXI_DMA_BD_MAX_LENGTH_MASK   = 0x3FFFFFF;
 
 #define XAXIDMA_BD_CTRL_TXSOF_MASK   0x08000000
 #define XAXIDMA_BD_CTRL_TXEOF_MASK   0x04000000
