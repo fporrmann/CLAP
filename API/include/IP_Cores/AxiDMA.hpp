@@ -1356,6 +1356,8 @@ private:
 		uint64_t bufferAddr  = mem.GetBaseAddr();
 		SGDescriptor* pBdCur = pBd;
 
+		uint64_t remainingSize = mem.GetSize();
+
 		for (uint32_t i = 0; i < numPkts; i++)
 		{
 			for (uint32_t pkt = 0; pkt < bdsPerPkt; pkt++)
@@ -1368,9 +1370,12 @@ private:
 					return false;
 				}
 
-				if (!pBdCur->SetLength(maxPktByteLen, m_bdRingTx.maxTransferLen))
+				uint64_t bdLength = std::min(remainingSize, static_cast<uint64_t>(maxPktByteLen));
+				remainingSize -= bdLength;
+
+				if (!pBdCur->SetLength(bdLength, m_bdRingTx.maxTransferLen))
 				{
-					CLAP_IP_CORE_LOG_ERROR << "Tx set length " << maxPktByteLen << " on BD " << pBdCur << " failed" << std::endl;
+					CLAP_IP_CORE_LOG_ERROR << "Tx set length " << bdLength << " on BD " << pBdCur << " failed" << std::endl;
 					return false;
 				}
 
@@ -1383,7 +1388,7 @@ private:
 				pBdCur->SetControlBits(crBits);
 				pBdCur->SetId(i);
 
-				bufferAddr += maxPktByteLen;
+				bufferAddr += bdLength;
 				pBdCur = pBdCur->GetNextDesc();
 			}
 		}
