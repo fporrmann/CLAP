@@ -360,9 +360,34 @@ private:
 				break;
 			default:
 			{
-				std::stringstream ss;
-				ss << CLASS_TAG_AUTO << "Reading \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
-				throw UIOException(ss.str());
+				uint64_t bytesLeft = bytes;
+				uint64_t cAddr     = addr;
+				uint8_t* cData     = reinterpret_cast<uint8_t*>(pData);
+
+				while (bytesLeft > 0)
+				{
+					if (bytesLeft >= 4)
+					{
+						readSingle<uint32_t>(cAddr, reinterpret_cast<uint32_t*>(cData));
+						cAddr += 4;
+						cData += 4;
+						bytesLeft -= 4;
+					}
+					else if (bytesLeft >= 2)
+					{
+						readSingle<uint16_t>(cAddr, reinterpret_cast<uint16_t*>(cData));
+						cAddr += 2;
+						cData += 2;
+						bytesLeft -= 2;
+					}
+					else
+					{
+						readSingle<uint8_t>(cAddr, reinterpret_cast<uint8_t*>(cData));
+						cAddr += 1;
+						cData += 1;
+						bytesLeft -= 1;
+					}
+				}
 			}
 			break;
 		}
@@ -390,9 +415,34 @@ private:
 				break;
 			default:
 			{
-				std::stringstream ss;
-				ss << CLASS_TAG_AUTO << "Writing \"" << bytes << "\" unaligned bytes is not supported" << std::endl;
-				throw UIOException(ss.str());
+				uint64_t bytesLeft = bytes;
+				uint64_t cAddr     = addr;
+				const uint8_t* cData = reinterpret_cast<const uint8_t*>(pData);
+
+				while (bytesLeft > 0)
+				{
+					if (bytesLeft >= 4)
+					{
+						writeSingle<uint32_t>(cAddr, *reinterpret_cast<const uint32_t*>(cData));
+						cAddr += 4;
+						cData += 4;
+						bytesLeft -= 4;
+					}
+					else if (bytesLeft >= 2)
+					{
+						writeSingle<uint16_t>(cAddr, *reinterpret_cast<const uint16_t*>(cData));
+						cAddr += 2;
+						cData += 2;
+						bytesLeft -= 2;
+					}
+					else
+					{
+						writeSingle<uint8_t>(cAddr, *cData);
+						cAddr += 1;
+						cData += 1;
+						bytesLeft -= 1;
+					}
+				}
 			}
 			break;
 		}
