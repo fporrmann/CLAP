@@ -902,10 +902,8 @@ private:
 			bdRing.dataWidth = GetDataWidth(DMAChannel::S2MM);
 		}
 
-		Expected<uint32_t> maxTransferLen = CLAP()->ReadUIOProperty(m_ctrlOffset, "xlnx,sg-length-width");
-
 		// -1 to get a 0xXFFFFF value
-		bdRing.maxTransferLen = (1 << (maxTransferLen ? maxTransferLen.Value() : 23)) - 1;
+		bdRing.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
 
 		if (addr % AXI_DMA_BD_MINIMUM_ALIGNMENT)
 		{
