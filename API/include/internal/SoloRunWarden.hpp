@@ -52,6 +52,11 @@ public:
 		return instance;
 	}
 
+	static bool Cleanup()
+	{
+		return unlink(LOCK_FILE.c_str()) == 0;
+	}
+
 	SoloRunWarden(SoloRunWarden const&)  = delete;
 	void operator=(SoloRunWarden const&) = delete;
 
@@ -78,7 +83,7 @@ private:
 				CLAP_CLASS_LOG_WARNING << "Warning: Lock file exists but process is not running - deleting lock file and continuing" << std::endl;
 
 				// Process is not running
-				if (unlink(LOCK_FILE.c_str()) != 0)
+				if (!Cleanup())
 				{
 					CLAP_CLASS_LOG_ERROR << "Error: Unable to delete lock file (" << LOCK_FILE << ") - Please delete it manually and restart the application" << std::endl;
 					exit(1);
@@ -100,20 +105,22 @@ private:
 		lockFileOut << getpid();
 		lockFileOut.close();
 
+#ifndef CLAP_DISABLE_SRW_SIG_HANDLER
 		// Catch SIGINT and SIGTERM to delete the lock file before exiting
 		signal(SIGINT, signalHandler);
 		signal(SIGTERM, signalHandler);
+#endif
 	}
 
 	~SoloRunWarden()
 	{
-		unlink(LOCK_FILE.c_str());
+		Cleanup();
 	}
 
 private:
 	static void signalHandler([[maybe_unused]] int signal)
 	{
-		unlink(LOCK_FILE.c_str());
+		Cleanup();
 		exit(0);
 	}
 };
