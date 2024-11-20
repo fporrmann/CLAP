@@ -159,7 +159,7 @@ LoggerBuffer operator<<(Logger& logger, T&& message)
 	return buf;
 }
 
-#ifdef DISABLE_LOGGING
+#ifdef CLAP_DISABLE_LOGGING
 static Logger g_none(Verbosity::VB_DEBUG, Verbosity::VB_NONE);
 #else
 static Logger g_debug(Verbosity::VB_DEBUG);
@@ -185,7 +185,7 @@ static inline Verbosity ToVerbosity(const int32_t& val)
 
 static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {
-#ifndef DISABLE_LOGGING
+#ifndef CLAP_DISABLE_LOGGING
 	g_debug.SetVerbosity(v);
 	g_verbose.SetVerbosity(v);
 	g_info.SetVerbosity(v);
@@ -196,7 +196,7 @@ static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 
 } // namespace logging
 
-#ifndef DISABLE_LOGGING
+#ifndef CLAP_DISABLE_LOGGING
 #define CLAP_LOG_DEBUG   logging::g_debug
 #define CLAP_LOG_VERBOSE logging::g_verbose
 #define CLAP_LOG_INFO    logging::g_info
@@ -222,7 +222,7 @@ static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 #define CLAP_CLASS_LOG_WITH_NAME_WARNING(_N_) CLAP_LOG_WARNING << CLASS_TAG_AUTO_WITH_NAME(_N_)
 #define CLAP_CLASS_LOG_WITH_NAME_ERROR(_N_)   CLAP_LOG_ERROR << CLASS_TAG_AUTO_WITH_NAME(_N_)
 
-/// Info log messages that will not be disabled by the DISABLE_LOGGING macro
+/// Info log messages that will not be disabled by the CLAP_DISABLE_LOGGING macro
 #define CLAP_LOG_INFO_ALWAYS logging::g_info
 
 } // namespace clap
