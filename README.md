@@ -294,5 +294,5 @@ Or by adding the following to the source code before the first CLAP include:
 - `EMBEDDED_XILINX`: When defined, the API is compiled for a Baremetal environment on a Xilinx FPGA.
 - `CLAP_USE_XIL_PRINTF`: When defined, the API uses `xil_printf` instead of `std::cout` for logging.
 - `CLAP_DISABLE_SRW_SIG_HANDLER`: When defined, the SoloRunWarden does not install signal handlers for the SIGINT and SIGTERM signals. This can be useful when the application already has signal handlers installed for these signals.
-- `CLAP_DISABLE_LOGGING`: When defined, all logging targets, except for `CLAP_LOG_INFO_ALWAYS` are disabled. This can be useful when the application does not require any of the internal logging, except for very specific messages.
+- `CLAP_DISABLE_LOGGING`: When defined, all logging is disabled. This can be useful when the application does not require any of the internal logging.
 - `CLAP_IP_CORE_LOG_ALT_STYLE`: When defined, the logging style of the IP core is changed to a more compact style, integrating the IP core name into the log message. This can be useful when the application requires a more compact log output.

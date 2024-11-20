@@ -159,15 +159,68 @@ LoggerBuffer operator<<(Logger& logger, T&& message)
 	return buf;
 }
 
+class LoggerContainer
+{
+public:
+	LoggerContainer()  = default;
+	~LoggerContainer() = default;
+
+	Logger& GetLogger(const Verbosity& v)
+	{
 #ifdef CLAP_DISABLE_LOGGING
-static Logger g_none(Verbosity::VB_DEBUG, Verbosity::VB_NONE);
+		return m_none;
 #else
-static Logger g_debug(Verbosity::VB_DEBUG);
-static Logger g_verbose(Verbosity::VB_VERBOSE);
-static Logger g_info(Verbosity::VB_INFO);
-static Logger g_warning(Verbosity::VB_WARNING, Verbosity::VB_INFO, std::cerr);
-static Logger g_error(Verbosity::VB_ERROR, Verbosity::VB_INFO, std::cerr);
+		switch (v)
+		{
+			case Verbosity::VB_DEBUG:
+				return m_debug;
+			case Verbosity::VB_VERBOSE:
+				return m_verbose;
+			case Verbosity::VB_INFO:
+				return m_info;
+			case Verbosity::VB_WARNING:
+				return m_warning;
+			case Verbosity::VB_ERROR:
+				return m_error;
+			default:
+				return m_info;
+		}
 #endif
+	}
+
+	void SetVerbosity(const Verbosity& v)
+	{
+#ifndef CLAP_DISABLE_LOGGING
+		m_debug.SetVerbosity(v);
+		m_verbose.SetVerbosity(v);
+		m_info.SetVerbosity(v);
+		m_warning.SetVerbosity(v);
+		m_error.SetVerbosity(v);
+#endif
+	}
+
+private:
+#ifdef CLAP_DISABLE_LOGGING
+	Logger m_none = Logger(Verbosity::VB_DEBUG, Verbosity::VB_NONE);
+#else
+	Logger m_debug = Logger(Verbosity::VB_DEBUG);
+	Logger m_verbose = Logger(Verbosity::VB_VERBOSE);
+	Logger m_info = Logger(Verbosity::VB_INFO);
+	Logger m_warning = Logger(Verbosity::VB_WARNING, Verbosity::VB_INFO, std::cerr);
+	Logger m_error = Logger(Verbosity::VB_ERROR, Verbosity::VB_INFO, std::cerr);
+#endif
+};
+
+static inline LoggerContainer& GetLoggers()
+{
+	static LoggerContainer loggers;
+	return loggers;
+}
+
+static inline Logger& GetLogger(const Verbosity& v)
+{
+	return GetLoggers().GetLogger(v);
+}
 
 template<typename T>
 constexpr typename std::underlying_type<T>::type ToUnderlying(const T& t) noexcept
@@ -186,28 +239,24 @@ static inline Verbosity ToVerbosity(const int32_t& val)
 static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {
 #ifndef CLAP_DISABLE_LOGGING
-	g_debug.SetVerbosity(v);
-	g_verbose.SetVerbosity(v);
-	g_info.SetVerbosity(v);
-	g_warning.SetVerbosity(v);
-	g_error.SetVerbosity(v);
+	GetLoggers().SetVerbosity(v);
 #endif
 }
 
 } // namespace logging
 
 #ifndef CLAP_DISABLE_LOGGING
-#define CLAP_LOG_DEBUG   logging::g_debug
-#define CLAP_LOG_VERBOSE logging::g_verbose
-#define CLAP_LOG_INFO    logging::g_info
-#define CLAP_LOG_WARNING logging::g_warning
-#define CLAP_LOG_ERROR   logging::g_error
+#define CLAP_LOG_DEBUG   logging::GetLogger(logging::Verbosity::VB_DEBUG)
+#define CLAP_LOG_VERBOSE logging::GetLogger(logging::Verbosity::VB_VERBOSE)
+#define CLAP_LOG_INFO    logging::GetLogger(logging::Verbosity::VB_INFO)
+#define CLAP_LOG_WARNING logging::GetLogger(logging::Verbosity::VB_WARNING)
+#define CLAP_LOG_ERROR   logging::GetLogger(logging::Verbosity::VB_ERROR)
 #else
-#define CLAP_LOG_DEBUG   logging::g_none
-#define CLAP_LOG_VERBOSE logging::g_none
-#define CLAP_LOG_INFO    logging::g_none
-#define CLAP_LOG_WARNING logging::g_none
-#define CLAP_LOG_ERROR   logging::g_none
+#define CLAP_LOG_DEBUG   logging::GetLogger(logging::Verbosity::VB_NONE)
+#define CLAP_LOG_VERBOSE logging::GetLogger(logging::Verbosity::VB_NONE)
+#define CLAP_LOG_INFO    logging::GetLogger(logging::Verbosity::VB_NONE)
+#define CLAP_LOG_WARNING logging::GetLogger(logging::Verbosity::VB_NONE)
+#define CLAP_LOG_ERROR   logging::GetLogger(logging::Verbosity::VB_NONE)
 #endif
 
 #define CLAP_CLASS_LOG_DEBUG   CLAP_LOG_DEBUG << CLASS_TAG_AUTO
@@ -221,8 +270,5 @@ static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 #define CLAP_CLASS_LOG_WITH_NAME_INFO(_N_)    CLAP_LOG_INFO << CLASS_TAG_AUTO_WITH_NAME(_N_)
 #define CLAP_CLASS_LOG_WITH_NAME_WARNING(_N_) CLAP_LOG_WARNING << CLASS_TAG_AUTO_WITH_NAME(_N_)
 #define CLAP_CLASS_LOG_WITH_NAME_ERROR(_N_)   CLAP_LOG_ERROR << CLASS_TAG_AUTO_WITH_NAME(_N_)
-
-/// Info log messages that will not be disabled by the CLAP_DISABLE_LOGGING macro
-#define CLAP_LOG_INFO_ALWAYS logging::g_info
 
 } // namespace clap
