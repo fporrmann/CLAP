@@ -211,13 +211,13 @@ private:
 #endif
 };
 
-static inline LoggerContainer& GetLoggers()
+inline LoggerContainer& GetLoggers()
 {
 	static LoggerContainer loggers;
 	return loggers;
 }
 
-static inline Logger& GetLogger(const Verbosity& v)
+inline Logger& GetLogger(const Verbosity& v)
 {
 	return GetLoggers().GetLogger(v);
 }
@@ -228,7 +228,7 @@ constexpr typename std::underlying_type<T>::type ToUnderlying(const T& t) noexce
 	return static_cast<typename std::underlying_type<T>::type>(t);
 }
 
-static inline Verbosity ToVerbosity(const int32_t& val)
+inline Verbosity ToVerbosity(const int32_t& val)
 {
 	if (val < ToUnderlying(Verbosity::VB_DEBUG) || val > ToUnderlying(Verbosity::VB_ERROR))
 		return Verbosity::VB_INFO;
@@ -236,7 +236,7 @@ static inline Verbosity ToVerbosity(const int32_t& val)
 	return static_cast<Verbosity>(val);
 }
 
-static inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
+inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {
 #ifndef CLAP_DISABLE_LOGGING
 	GetLoggers().SetVerbosity(v);

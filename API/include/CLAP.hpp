@@ -1419,7 +1419,7 @@ inline CLAPManaged::~CLAPManaged()
 }
 } // namespace internal
 
-void Cleanup()
+inline void Cleanup()
 {
 	internal::SoloRunWarden::Cleanup();
 }

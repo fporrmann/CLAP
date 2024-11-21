@@ -44,7 +44,7 @@ namespace internal
 {
 namespace backends
 {
-static inline void interruptHandler(void* p);
+inline void interruptHandler(void* p);
 
 class BareMetalGic
 {
@@ -456,7 +456,7 @@ private:
 	}
 };
 
-static inline void interruptHandler(void* p)
+inline void interruptHandler(void* p)
 {
 	BareMetalUserInterrupt* pObj = reinterpret_cast<BareMetalUserInterrupt*>(p);
 	pObj->interruptHandler();

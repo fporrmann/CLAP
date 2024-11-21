@@ -325,7 +325,7 @@ private:
 };
 } // namespace internal
 
-static inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
+inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
 {
 	internal::g_pollSleepTimeMS = timeMS;
 }

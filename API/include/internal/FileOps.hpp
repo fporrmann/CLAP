@@ -49,7 +49,7 @@ namespace clap
 {
 namespace internal
 {
-static inline DeviceHandle OpenDevice(const std::string &name, FlagType flags = DEFAULT_OPEN_FLAGS)
+inline DeviceHandle OpenDevice(const std::string &name, FlagType flags = DEFAULT_OPEN_FLAGS)
 {
 	DeviceHandle fd = OPEN_DEVICE(name.c_str(), flags);
 	int32_t err     = errno;
@@ -64,7 +64,7 @@ static inline DeviceHandle OpenDevice(const std::string &name, FlagType flags = 
 	return fd;
 }
 
-static inline void CloseDevice(DeviceHandle &fd)
+inline void CloseDevice(DeviceHandle &fd)
 {
 	if (!DEVICE_HANDLE_VALID(fd)) return;
 

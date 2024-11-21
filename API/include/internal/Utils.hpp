@@ -122,7 +122,7 @@ static ReverseRange<T> ReverseIterate(T &x)
 /// -------------------------------------------------------------------- ///
 
 template<typename T>
-static inline std::string ToStringWithPrecision(const T val, const uint32_t &n = 6)
+inline std::string ToStringWithPrecision(const T val, const uint32_t &n = 6)
 {
 	std::ostringstream out;
 	out.precision(n);
@@ -130,7 +130,7 @@ static inline std::string ToStringWithPrecision(const T val, const uint32_t &n =
 	return out.str();
 }
 
-static inline uint32_t CalcOrder(double val)
+inline uint32_t CalcOrder(double val)
 {
 	uint32_t cnt = 0;
 
@@ -143,7 +143,7 @@ static inline uint32_t CalcOrder(double val)
 	return cnt;
 }
 
-static inline std::string GetPrefix(const uint32_t &order)
+inline std::string GetPrefix(const uint32_t &order)
 {
 	switch (order)
 	{
@@ -171,7 +171,7 @@ static inline std::string GetPrefix(const uint32_t &order)
 	return "UNKNOWN ORDER: " + std::to_string(order);
 }
 
-static inline std::string SpeedWidthSuffix(double val)
+inline std::string SpeedWidthSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
@@ -184,7 +184,7 @@ static inline std::string SpeedWidthSuffix(double val)
 	return str;
 }
 
-static inline std::string SizeWithSuffix(double val)
+inline std::string SizeWithSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
@@ -196,24 +196,24 @@ static inline std::string SizeWithSuffix(double val)
 	return str;
 }
 
-static inline std::string SizeWithSuffix(const uint64_t &val)
+inline std::string SizeWithSuffix(const uint64_t &val)
 {
 	return SizeWithSuffix(static_cast<double>(val));
 }
 
-static inline std::string SizeWithSuffix(const int64_t &val)
+inline std::string SizeWithSuffix(const int64_t &val)
 {
 	return SizeWithSuffix(static_cast<double>(val));
 }
 
-static inline std::string Hex2Str(const uint64_t &val)
+inline std::string Hex2Str(const uint64_t &val)
 {
 	std::stringstream ss;
 	ss << std::hex << val;
 	return ss.str();
 }
 
-static inline std::vector<std::string> SplitString(const std::string &s, const char &delimiter = ' ')
+inline std::vector<std::string> SplitString(const std::string &s, const char &delimiter = ' ')
 {
 	std::vector<std::string> split;
 	std::string item;
@@ -226,7 +226,7 @@ static inline std::vector<std::string> SplitString(const std::string &s, const c
 }
 
 template<typename T>
-static inline std::string ClassName(T &ref)
+inline std::string ClassName(T &ref)
 {
 	int status;
 	char *pName = abi::__cxa_demangle(typeid(ref).name(), NULL, NULL, &status);
