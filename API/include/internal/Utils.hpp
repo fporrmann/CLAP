@@ -26,11 +26,32 @@
 
 #pragma once
 
+#include <chrono>
 #include <cmath>
 #include <cxxabi.h>
 #include <exception>
 #include <sstream>
+#include <thread>
 #include <vector>
+
+#ifdef EMBEDDED_XILINX
+namespace
+{
+#ifndef CLAP_SKIP_SLEEP_H_INC
+#include <sleep.h>
+#endif
+
+void xSleep(const std::chrono::seconds &s)
+{
+	sleep(s.count());
+}
+
+void xUSleep(const std::chrono::microseconds &us)
+{
+	usleep(us.count());
+}
+}
+#endif
 
 #ifndef CLASS_TAG
 #define CLASS_TAG(_C_) "[" << _C_ << "::" << __func__ << "] "
@@ -237,6 +258,48 @@ inline std::string ClassName(T &ref)
 	name = SplitString(name, ':').back();
 
 	return name;
+}
+
+inline void Sleep(const std::chrono::seconds &s)
+{
+#ifdef EMBEDDED_XILINX
+	xSleep(s);
+#else
+	std::this_thread::sleep_for(s);
+#endif
+}
+
+inline void SleepMS(const std::chrono::milliseconds &ms)
+{
+#ifdef EMBEDDED_XILINX
+	xUSleep(std::chrono::duration_cast<std::chrono::microseconds>(ms));
+#else
+	std::this_thread::sleep_for(ms);
+#endif
+}
+
+inline void SleepUS(const std::chrono::microseconds &us)
+{
+#ifdef EMBEDDED_XILINX
+	xUSleep(us);
+#else
+	std::this_thread::sleep_for(us);
+#endif
+}
+
+inline void Sleep(const uint32_t &s)
+{
+	Sleep(std::chrono::seconds(s));
+}
+
+inline void SleepMS(const uint32_t &ms)
+{
+	SleepMS(std::chrono::milliseconds(ms));
+}
+
+inline void SleepUS(const uint32_t &us)
+{
+	SleepUS(std::chrono::microseconds(us));
 }
 
 } // namespace utils

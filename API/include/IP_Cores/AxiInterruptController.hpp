@@ -113,14 +113,14 @@ private:
 		if (timeout == WAIT_INFINITE)
 		{
 			while (!m_interruptOccured)
-				usleep(1);
+				utils::SleepUS(1);
 		}
 		else
 		{
 			uint64_t ticks = 0;
 			while (!m_interruptOccured && ticks < timeoutTicks)
 			{
-				usleep(1);
+				utils::SleepUS(1);
 				ticks++;
 			}
 

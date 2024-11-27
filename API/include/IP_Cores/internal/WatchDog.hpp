@@ -85,7 +85,7 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 			else if (pStatus)
 			{
 				while (!pThreadDone->load(std::memory_order_acquire) && !pStatus->PollDone())
-					std::this_thread::sleep_for(std::chrono::milliseconds(g_pollSleepTimeMS));
+					utils::SleepMS(g_pollSleepTimeMS);
 			}
 
 			const bool forceTerminate = pThreadDone->load(std::memory_order_acquire);
@@ -247,12 +247,12 @@ public:
 		if (m_pInterrupt->IsSet())
 		{
 			while (!m_pInterrupt->WaitForInterrupt())
-				usleep(1);
+				utils::SleepUS(1);
 		}
 		else if (m_pStatus != nullptr)
 		{
 			while (!m_pStatus->PollDone())
-				usleep(1);
+				utils::SleepUS(1);
 		}
 
 		m_callback();
