@@ -57,8 +57,6 @@ int main()
 
 //		axiGPIO1.SetGPIOBit(clap::AxiGPIO::CHANNEL_2, 0, true);
 
-		// Wait for 10 seconds
-		//std::this_thread::sleep_for(std::chrono::seconds(10));
 		while(!intrDone);
 
 		std::cout << "-------AFTER INTR-------" << std::endl;

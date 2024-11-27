@@ -37,6 +37,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 	clap::CLAPBuffer<uint32_t> zeroData(testDataSize, 0);
 
+	//clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
 	try
 	{
 		// Create an XDMA object
