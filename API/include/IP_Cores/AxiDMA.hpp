@@ -1617,8 +1617,8 @@ private:
 
 	void updateMaxTransferLength()
 	{
-		m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] = (1 << m_bufLenRegWidth) - m_dataWidths[ch2Id(DMAChannel::MM2S)];
-		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) - m_dataWidths[ch2Id(DMAChannel::S2MM)];
+		m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::MM2S)];
+		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::S2MM)];
 	}
 
 	uint32_t ch2Id(const DMAChannel& channel) const
