@@ -71,6 +71,15 @@ class AxiDMA : public internal::RegisterControlBase
 		const DMAChannel channel;
 		const T addr;
 		const uint32_t length;
+
+		// Assignment operator
+		TransferChunk& operator=(const TransferChunk& other)
+		{
+			const_cast<DMAChannel&>(channel) = other.channel;
+			const_cast<T&>(addr)             = other.addr;
+			const_cast<uint32_t&>(length)    = other.length;
+			return *this;
+		}
 	};
 
 	enum class SGState
@@ -92,6 +101,14 @@ public:
 		INTR_ON_ERROR    = 1 << 2,
 		INTR_ALL         = (1 << 3) - 1 // All bits set
 	};
+
+	struct ChunkResult
+	{
+		const uint32_t expectedLength;
+		const uint32_t actualLength;
+	};
+
+	using ChunkResults = std::vector<ChunkResult>;
 
 public:
 	AxiDMA(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const bool& mm2sPresent = true, const bool& s2mmPresent = true, const std::string& name = "") :
@@ -150,6 +167,8 @@ public:
 	{
 		CLAP_IP_CORE_LOG_DEBUG << "S2MM Transfer Finished" << std::endl;
 
+		m_s2mmChunkResults.push_back({ m_s2mmCurChunk.length, GetS2MMByteLength() });
+
 		// Check if there are more chunks to transfer
 		if (!m_s2mmChunks.empty())
 		{
@@ -194,7 +213,7 @@ public:
 	// Starts the specified channel
 	void Start(const DMAChannel& channel, const T& addr, const uint32_t& length)
 	{
-		if(IsSGEnabled())
+		if (IsSGEnabled())
 			BUILD_IP_EXCEPTION(CLAPException, "SG mode is enabled, normal transfers not possible, use the StartSG method instead");
 
 		CLAP_IP_CORE_LOG_DEBUG << "Starting DMA transfer on channel " << channel << " with address 0x" << std::hex << addr << std::dec << " and length " << length << " byte" << std::endl;
@@ -230,6 +249,8 @@ public:
 		{
 			uint32_t remainingLength = length;
 			T currentAddr            = addr;
+
+			m_s2mmChunkResults.clear();
 
 			do
 			{
@@ -496,6 +517,24 @@ public:
 	uint32_t GetS2MMByteLength()
 	{
 		return readRegister<uint32_t>(S2MM_LENGTH);
+	}
+
+	////////////////////////////////////////
+
+	////////////////////////////////////////
+
+	const ChunkResults& GetS2MMChunkResults() const
+	{
+		return m_s2mmChunkResults;
+	}
+
+	uint64_t GetS2MMTotalTransferredBytes() const
+	{
+		uint64_t total = 0;
+		for (const auto& res : m_s2mmChunkResults)
+			total += res.actualLength;
+
+		return total;
 	}
 
 	////////////////////////////////////////
@@ -1500,7 +1539,7 @@ private:
 			return;
 		}
 
-		const TransferChunk chunk = m_mm2sChunks.front();
+		m_mm2sCurChunk = m_mm2sChunks.front();
 		m_mm2sChunks.pop();
 
 		m_mm2sStatReg.Reset();
@@ -1508,9 +1547,9 @@ private:
 		// Set the RunStop bit
 		m_mm2sCtrlReg.Start();
 		// Set the source address
-		setMM2SSrcAddr(chunk.addr);
+		setMM2SSrcAddr(m_mm2sCurChunk.addr);
 		// Set the amount of bytes to transfer
-		setMM2SByteLength(chunk.length);
+		setMM2SByteLength(m_mm2sCurChunk.length);
 	}
 
 	void startS2MMTransfer()
@@ -1521,7 +1560,7 @@ private:
 			return;
 		}
 
-		const TransferChunk chunk = m_s2mmChunks.front();
+		m_s2mmCurChunk = m_s2mmChunks.front();
 		m_s2mmChunks.pop();
 
 		m_s2mmStatReg.Reset();
@@ -1529,9 +1568,9 @@ private:
 		// Set the RunStop bit
 		m_s2mmCtrlReg.Start();
 		// Set the destination address
-		setS2MMDestAddr(chunk.addr);
+		setS2MMDestAddr(m_s2mmCurChunk.addr);
 		// Set the amount of bytes to transfer
-		setS2MMByteLength(chunk.length);
+		setS2MMByteLength(m_s2mmCurChunk.length);
 	}
 
 	////////////////////////////////////////
@@ -1876,6 +1915,11 @@ private:
 
 	std::queue<TransferChunk> m_mm2sChunks = {};
 	std::queue<TransferChunk> m_s2mmChunks = {};
+
+	TransferChunk m_mm2sCurChunk = {};
+	TransferChunk m_s2mmCurChunk = {};
+
+	ChunkResults m_s2mmChunkResults = {};
 
 	bool m_mm2sPresent = false;
 	bool m_s2mmPresent = false;
