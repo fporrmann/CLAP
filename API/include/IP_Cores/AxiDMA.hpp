@@ -194,6 +194,9 @@ public:
 	// Starts the specified channel
 	void Start(const DMAChannel& channel, const T& addr, const uint32_t& length)
 	{
+		if(IsSGEnabled())
+			BUILD_IP_EXCEPTION(CLAPException, "SG mode is enabled, normal transfers not possible, use the StartSG method instead");
+
 		CLAP_IP_CORE_LOG_DEBUG << "Starting DMA transfer on channel " << channel << " with address 0x" << std::hex << addr << std::dec << " and length " << length << " byte" << std::endl;
 
 		if (channel == DMAChannel::MM2S && m_mm2sPresent)
@@ -1619,6 +1622,8 @@ private:
 	{
 		m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::MM2S)];
 		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::S2MM)];
+
+		CLAP_LOG_DEBUG << "Max transfer length: MM2S=" << m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] << ", S2MM=" << m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] << std::endl;
 	}
 
 	uint32_t ch2Id(const DMAChannel& channel) const
