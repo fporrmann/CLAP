@@ -523,6 +523,15 @@ public:
 
 	////////////////////////////////////////
 
+	const uint32_t& GetMaxTransferLength(const DMAChannel& channel) const
+	{
+		return m_maxTransferLengths[ch2Id(channel)];
+	}
+
+	////////////////////////////////////////
+
+	////////////////////////////////////////
+
 	const ChunkResults& GetS2MMChunkResults() const
 	{
 		return m_s2mmChunkResults;
@@ -603,6 +612,22 @@ private:
 
 	class SGDescriptor : public internal::RegisterControlBase
 	{
+		enum REGISTER_MAP
+		{
+			SG_DESC_NXTDESC           = 0x00,
+			SG_DESC_BUFFER_ADDRESS    = 0x08,
+			SG_DESC_CONTROL           = 0x18,
+			SG_DESC_STATUS            = 0x1C,
+			SG_DESC_APP0              = 0x20,
+			SG_DESC_APP1              = 0x24,
+			SG_DESC_APP2              = 0x28,
+			SG_DESC_APP3              = 0x2C,
+			SG_DESC_APP4              = 0x30,
+			SG_DESC_ID                = 0x34,
+			SG_DESC_HAS_STS_CTRL_STRM = 0x38,
+			SG_DESC_HAS_DRE           = 0x3C
+		};
+
 	public:
 		SGDescriptor(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
 			RegisterControlBase(pClap, ctrlOffset, name)
@@ -629,18 +654,18 @@ private:
 			m_hasStsCtrlStrm = 0;
 			m_hasDRE         = 0;
 
-			writeRegister(0x00, m_nextDescAddr);
-			writeRegister(0x08, m_bufferAddr);
-			writeRegister(0x18, m_control);
-			writeRegister(0x1C, m_status);
-			writeRegister(0x20, m_app0);
-			writeRegister(0x24, m_app1);
-			writeRegister(0x28, m_app2);
-			writeRegister(0x2C, m_app3);
-			writeRegister(0x30, m_app4);
-			writeRegister(0x34, m_id);
-			writeRegister(0x38, m_hasStsCtrlStrm);
-			writeRegister(0x3C, m_hasDRE);
+			writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
+			writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
+			writeRegister(SG_DESC_CONTROL, m_control);
+			writeRegister(SG_DESC_STATUS, m_status);
+			writeRegister(SG_DESC_APP0, m_app0);
+			writeRegister(SG_DESC_APP1, m_app1);
+			writeRegister(SG_DESC_APP2, m_app2);
+			writeRegister(SG_DESC_APP3, m_app3);
+			writeRegister(SG_DESC_APP4, m_app4);
+			writeRegister(SG_DESC_ID, m_id);
+			writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
+			writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
 		}
 
 		void Print() const
@@ -667,25 +692,25 @@ private:
 		void SetNextDescAddr(const uint64_t& addr)
 		{
 			m_nextDescAddr = addr;
-			writeRegister(0, m_nextDescAddr);
+			writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
 		}
 
 		bool SetBufferAddr(const uint64_t& addr)
 		{
-			uint32_t hasDRE = GetHasDRE();
-			uint8_t wordLen = hasDRE & XAXIDMA_BD_WORDLEN_MASK;
+			GetHasDRE();
+			const uint8_t wordLen = m_hasDRE & XAXIDMA_BD_WORDLEN_MASK;
 
 			if (addr & (wordLen - 1))
 			{
-				if ((hasDRE & XAXIDMA_BD_HAS_DRE_MASK) == 0)
+				if ((m_hasDRE & XAXIDMA_BD_HAS_DRE_MASK) == 0)
 				{
-					CLAP_IP_CORE_LOG_ERROR << "Error set buf addr 0x" << std::hex << addr << std::dec << " with hasDRE=" << hasDRE << " and wordLen=" << (wordLen - 1) << std::endl;
+					CLAP_IP_CORE_LOG_ERROR << "Error set buf addr 0x" << std::hex << addr << std::dec << " with hasDRE=" << m_hasDRE << " and wordLen=" << (wordLen - 1) << std::endl;
 					return false;
 				}
 			}
 
 			m_bufferAddr = addr;
-			writeRegister(8, m_bufferAddr);
+			writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
 
 			return true;
 		}
@@ -693,12 +718,12 @@ private:
 		void SetControl(const uint32_t& ctrl)
 		{
 			m_control = ctrl;
-			writeRegister(0x18, m_control);
+			writeRegister(SG_DESC_CONTROL, m_control);
 		}
 
 		void SetControlBits(const uint32_t& bits)
 		{
-			m_control = readRegister<uint32_t>(0x18);
+			GetControl();
 
 			m_control &= ~XAXIDMA_BD_CTRL_ALL_MASK;
 			m_control |= (bits & XAXIDMA_BD_CTRL_ALL_MASK);
@@ -714,7 +739,7 @@ private:
 				return false;
 			}
 
-			m_control = readRegister<uint32_t>(0x18);
+			GetControl();
 			m_control &= ~AXI_DMA_BD_MAX_LENGTH_MASK;
 			m_control |= lenBytes;
 
@@ -726,82 +751,82 @@ private:
 		void SetStatus(const uint32_t& sts)
 		{
 			m_status = sts;
-			writeRegister(0x1C, m_status);
+			writeRegister(SG_DESC_STATUS, m_status);
 		}
 
 		void SetApp0(const uint32_t& app)
 		{
 			m_app0 = app;
-			writeRegister(0x20, m_app0);
+			writeRegister(SG_DESC_APP0, m_app0);
 		}
 
 		void SetApp1(const uint32_t& app)
 		{
 			m_app1 = app;
-			writeRegister(0x24, m_app1);
+			writeRegister(SG_DESC_APP1, m_app1);
 		}
 
 		void SetApp2(const uint32_t& app)
 		{
 			m_app2 = app;
-			writeRegister(0x28, m_app2);
+			writeRegister(SG_DESC_APP2, m_app2);
 		}
 
 		void SetApp3(const uint32_t& app)
 		{
 			m_app3 = app;
-			writeRegister(0x2C, m_app3);
+			writeRegister(SG_DESC_APP3, m_app3);
 		}
 
 		void SetApp4(const uint32_t& app)
 		{
 			m_app4 = app;
-			writeRegister(0x30, m_app4);
+			writeRegister(SG_DESC_APP4, m_app4);
 		}
 
 		void SetId(const uint32_t& id)
 		{
 			m_id = id;
-			writeRegister(0x34, m_id);
+			writeRegister(SG_DESC_ID, m_id);
 		}
 
 		void SetHasStsCtrlStrm(const uint32_t& sts)
 		{
 			m_hasStsCtrlStrm = sts;
-			writeRegister(0x38, m_hasStsCtrlStrm);
+			writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
 		}
 
 		void SetHasDRE(const uint32_t& dre)
 		{
 			m_hasDRE = dre;
-			writeRegister(0x3C, m_hasDRE);
+			writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
 		}
 
-		uint32_t GetControl()
+		const uint32_t& GetControl()
 		{
-			m_control = readRegister<uint32_t>(0x18);
+			m_control = readRegister<uint32_t>(SG_DESC_CONTROL);
 			return m_control;
 		}
 
 		uint32_t GetLength()
 		{
-			m_control = readRegister<uint32_t>(0x18);
+			GetControl();
 			return m_control & AXI_DMA_BD_MAX_LENGTH_MASK;
 		}
 
-		uint32_t GetStatus()
+		const uint32_t& GetStatus()
 		{
-			m_status = readRegister<uint32_t>(0x1C);
+			m_status = readRegister<uint32_t>(SG_DESC_STATUS);
 			return m_status;
 		}
 
-		uint32_t GetHasDRE()
+		const uint32_t& GetHasDRE()
 		{
-			m_hasDRE = readRegister<uint32_t>(0x3C);
+			m_hasDRE = readRegister<uint32_t>(SG_DESC_HAS_DRE);
 			return m_hasDRE;
 		}
 
-		class SGDescriptor* GetNextDesc()
+		class SGDescriptor* GetNextDesc() const
 		{
 			return m_pNextDesc;
 		}
