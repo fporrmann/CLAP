@@ -290,11 +290,17 @@ public:
 		{
 			m_mm2sCtrlReg.Stop();
 			m_watchDogMM2S.Stop();
+
+			if (m_mm2sStatReg.IsSGEnabled())
+				m_bdRingTx.Reset();
 		}
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			m_s2mmCtrlReg.Stop();
 			m_watchDogS2MM.Stop();
+
+			if (m_s2mmStatReg.IsSGEnabled())
+				m_bdRingRx.Reset();
 		}
 	}
 
@@ -347,11 +353,17 @@ public:
 		{
 			Stop(DMAChannel::MM2S);
 			m_mm2sCtrlReg.DoReset();
+
+			if (m_mm2sStatReg.IsSGEnabled())
+				m_bdRingTx.Reset();
 		}
 		else if (channel == DMAChannel::S2MM && m_s2mmPresent)
 		{
 			Stop(DMAChannel::S2MM);
 			m_s2mmCtrlReg.DoReset();
+
+			if (m_s2mmStatReg.IsSGEnabled())
+				m_bdRingRx.Reset();
 		}
 	}
 
@@ -1017,7 +1029,7 @@ private:
 			return false;
 		}
 
-		std::vector<SGDescriptor*> descs;
+		std::vector<SGDescriptor*> descs(bdCount, nullptr);
 
 		for (uint32_t i = 0; i < bdCount; i++)
 		{
@@ -1031,7 +1043,7 @@ private:
 			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
 			d->SetHasDRE((bdRing.hasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.dataWidth);
 
-			descs.push_back(d);
+			descs[i] = d;
 		}
 
 		for (std::size_t i = 0; i < descs.size(); i++)
