@@ -39,6 +39,267 @@
 
 namespace clap
 {
+#define XAXIDMA_BD_CTRL_TXSOF_MASK   0x08000000
+#define XAXIDMA_BD_CTRL_TXEOF_MASK   0x04000000
+#define XAXIDMA_BD_CTRL_ALL_MASK     0x0C000000
+#define XAXIDMA_BD_WORDLEN_MASK      0xFF
+#define XAXIDMA_BD_HAS_DRE_MASK      0xF00
+#define XAXIDMA_BD_STS_COMPLETE_MASK 0x80000000
+
+class SGDescriptor : public internal::RegisterControlBase
+{
+	static inline const uint32_t AXI_DMA_BD_MAX_LENGTH_MASK = 0x3FFFFFF;
+
+	enum REGISTER_MAP
+	{
+		SG_DESC_NXTDESC           = 0x00,
+		SG_DESC_BUFFER_ADDRESS    = 0x08,
+		SG_DESC_CONTROL           = 0x18,
+		SG_DESC_STATUS            = 0x1C,
+		SG_DESC_APP0              = 0x20,
+		SG_DESC_APP1              = 0x24,
+		SG_DESC_APP2              = 0x28,
+		SG_DESC_APP3              = 0x2C,
+		SG_DESC_APP4              = 0x30,
+		SG_DESC_ID                = 0x34,
+		SG_DESC_HAS_STS_CTRL_STRM = 0x38,
+		SG_DESC_HAS_DRE           = 0x3C
+	};
+
+public:
+	SGDescriptor(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
+		RegisterControlBase(pClap, ctrlOffset, name)
+	{
+		Reset();
+	}
+
+	DISABLE_COPY_ASSIGN_MOVE(SGDescriptor)
+
+	~SGDescriptor() {}
+
+	void Reset()
+	{
+		m_nextDescAddr   = 0;
+		m_bufferAddr     = 0;
+		m_control        = 0;
+		m_status         = 0;
+		m_app0           = 0;
+		m_app1           = 0;
+		m_app2           = 0;
+		m_app3           = 0;
+		m_app4           = 0;
+		m_id             = 0;
+		m_hasStsCtrlStrm = 0;
+		m_hasDRE         = 0;
+
+		writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
+		writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
+		writeRegister(SG_DESC_CONTROL, m_control);
+		writeRegister(SG_DESC_STATUS, m_status);
+		writeRegister(SG_DESC_APP0, m_app0);
+		writeRegister(SG_DESC_APP1, m_app1);
+		writeRegister(SG_DESC_APP2, m_app2);
+		writeRegister(SG_DESC_APP3, m_app3);
+		writeRegister(SG_DESC_APP4, m_app4);
+		writeRegister(SG_DESC_ID, m_id);
+		writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
+		writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
+	}
+
+	void Print() const
+	{
+		std::cout << "NextDescAddr: 0x" << std::hex << m_nextDescAddr << std::dec << std::endl;
+		std::cout << "BufferAddr: 0x" << std::hex << m_bufferAddr << std::dec << std::endl;
+		std::cout << "Control: 0x" << std::hex << m_control << std::dec << std::endl;
+		std::cout << "Status: 0x" << std::hex << m_status << std::dec << std::endl;
+		std::cout << "App0: 0x" << std::hex << m_app0 << std::dec << std::endl;
+		std::cout << "App1: 0x" << std::hex << m_app1 << std::dec << std::endl;
+		std::cout << "App2: 0x" << std::hex << m_app2 << std::dec << std::endl;
+		std::cout << "App3: 0x" << std::hex << m_app3 << std::dec << std::endl;
+		std::cout << "App4: 0x" << std::hex << m_app4 << std::dec << std::endl;
+		std::cout << "ID: 0x" << std::hex << m_id << std::dec << std::endl;
+		std::cout << "HasStsCtrlStrm: 0x" << std::hex << m_hasStsCtrlStrm << std::dec << std::endl;
+		std::cout << "HasDRE: 0x" << std::hex << m_hasDRE << std::dec << std::endl;
+	}
+
+	const uint64_t& Addr() const
+	{
+		return m_ctrlOffset;
+	}
+
+	void SetNextDescAddr(const uint64_t& addr)
+	{
+		m_nextDescAddr = addr;
+		writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
+	}
+
+	bool SetBufferAddr(const uint64_t& addr)
+	{
+		GetHasDRE();
+		const uint8_t wordLen = m_hasDRE & XAXIDMA_BD_WORDLEN_MASK;
+
+		if (addr & (wordLen - 1))
+		{
+			if ((m_hasDRE & XAXIDMA_BD_HAS_DRE_MASK) == 0)
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Error set buf addr 0x" << std::hex << addr << std::dec << " with hasDRE=" << m_hasDRE << " and wordLen=" << (wordLen - 1) << std::endl;
+				return false;
+			}
+		}
+
+		m_bufferAddr = addr;
+		writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
+
+		return true;
+	}
+
+	void SetControl(const uint32_t& ctrl)
+	{
+		m_control = ctrl;
+		writeRegister(SG_DESC_CONTROL, m_control);
+	}
+
+	void SetControlBits(const uint32_t& bits)
+	{
+		GetControl();
+
+		m_control &= ~XAXIDMA_BD_CTRL_ALL_MASK;
+		m_control |= (bits & XAXIDMA_BD_CTRL_ALL_MASK);
+
+		SetControl(m_control);
+	}
+
+	bool SetLength(const uint32_t& lenBytes, const uint32_t& maxLen)
+	{
+		if (lenBytes > maxLen)
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Length (" << lenBytes << ") exceeds maximum length (" << maxLen << ")" << std::endl;
+			return false;
+		}
+
+		GetControl();
+		m_control &= ~AXI_DMA_BD_MAX_LENGTH_MASK;
+		m_control |= lenBytes;
+
+		SetControl(m_control);
+
+		return true;
+	}
+
+	void SetStatus(const uint32_t& sts)
+	{
+		m_status = sts;
+		writeRegister(SG_DESC_STATUS, m_status);
+	}
+
+	void SetApp0(const uint32_t& app)
+	{
+		m_app0 = app;
+		writeRegister(SG_DESC_APP0, m_app0);
+	}
+
+	void SetApp1(const uint32_t& app)
+	{
+		m_app1 = app;
+		writeRegister(SG_DESC_APP1, m_app1);
+	}
+
+	void SetApp2(const uint32_t& app)
+	{
+		m_app2 = app;
+		writeRegister(SG_DESC_APP2, m_app2);
+	}
+
+	void SetApp3(const uint32_t& app)
+	{
+		m_app3 = app;
+		writeRegister(SG_DESC_APP3, m_app3);
+	}
+
+	void SetApp4(const uint32_t& app)
+	{
+		m_app4 = app;
+		writeRegister(SG_DESC_APP4, m_app4);
+	}
+
+	void SetId(const uint32_t& id)
+	{
+		m_id = id;
+		writeRegister(SG_DESC_ID, m_id);
+	}
+
+	void SetHasStsCtrlStrm(const uint32_t& sts)
+	{
+		m_hasStsCtrlStrm = sts;
+		writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
+	}
+
+	void SetHasDRE(const uint32_t& dre)
+	{
+		m_hasDRE = dre;
+		writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
+	}
+
+	const uint32_t& GetControl()
+	{
+		m_control = readRegister<uint32_t>(SG_DESC_CONTROL);
+		return m_control;
+	}
+
+	uint32_t GetLength()
+	{
+		GetControl();
+		return m_control & AXI_DMA_BD_MAX_LENGTH_MASK;
+	}
+
+	const uint32_t& GetStatus()
+	{
+		m_status = readRegister<uint32_t>(SG_DESC_STATUS);
+		return m_status;
+	}
+
+	const uint32_t& GetHasDRE()
+	{
+		m_hasDRE = readRegister<uint32_t>(SG_DESC_HAS_DRE);
+		return m_hasDRE;
+	}
+
+	class SGDescriptor* GetNextDesc() const
+	{
+		return m_pNextDesc;
+	}
+
+	void SetNextDesc(SGDescriptor* pDesc)
+	{
+		m_pNextDesc = pDesc;
+	}
+
+	bool IsComplete()
+	{
+		return GetStatus() & XAXIDMA_BD_STS_COMPLETE_MASK;
+	}
+
+private:
+	uint64_t m_nextDescAddr   = 0; // 0-7
+	uint64_t m_bufferAddr     = 0; // 8-F
+	uint32_t m_reserved1      = 0; // 10-13
+	uint32_t m_reserved2      = 0; // 14-17
+	uint32_t m_control        = 0; // 18-1B
+	uint32_t m_status         = 0; // 1C-1F
+	uint32_t m_app0           = 0; // 20-23
+	uint32_t m_app1           = 0; // 24-27
+	uint32_t m_app2           = 0; // 28-2B
+	uint32_t m_app3           = 0; // 2C-2F
+	uint32_t m_app4           = 0; // 30-33
+	uint32_t m_id             = 0; // 34-37
+	uint32_t m_hasStsCtrlStrm = 0; // 38-3B -- Whether the BD has status/control stream
+	uint32_t m_hasDRE         = 0; // 3C-3F -- Whether the BD has DRE (allows unaligned transfers)
+
+	class SGDescriptor* m_pNextDesc = nullptr;
+};
+
+using SGDescriptors = std::vector<SGDescriptor*>;
+
 template<typename T>
 class AxiDMA : public internal::RegisterControlBase
 {
@@ -143,6 +404,8 @@ public:
 		detectBufferLengthRegWidth();
 		detectDataWidth();
 		detectHasDRE();
+
+		initBDRings();
 	}
 
 	////////////////////////////////////////
@@ -610,269 +873,66 @@ public:
 		}
 	}
 
+	void StartSGExtDescs(const DMAChannel& channel, const SGDescriptors& descs)
+	{
+		if (channel == DMAChannel::MM2S)
+		{
+			if (m_bdRingTx.runState != SGState::Idle)
+				BUILD_IP_EXCEPTION(CLAPException, "DMA channel MM2S is still active");
+
+			m_bdRingTx.Init(descs, true);
+			if (!m_watchDogMM2S.Start(true))
+				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for MM2S already running!");
+
+			if (!startBdRing(m_bdRingTx))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed to start BD ring");
+
+			SGDescriptor* pBd     = descs.front();
+			const uint32_t numBDs = static_cast<uint32_t>(descs.size());
+
+			if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed to send packet, length: " << pBd->GetLength());
+		}
+		else if (channel == DMAChannel::S2MM)
+		{
+			BUILD_IP_EXCEPTION(CLAPException, "StartSGExtDescs for S2MM not implemented yet");
+		}
+	}
+
+	SGDescriptors PreInitSGDescs(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
+	{
+		if (channel == DMAChannel::MM2S)
+		{
+			const uint32_t bdCount = ROUND_UP_DIV(memBD.GetSize(), AXI_DMA_BD_MINIMUM_ALIGNMENT);
+			SGDescriptors descs    = initDescs(m_bdRingTx, memBD.GetBaseAddr(), bdCount);
+			if (configDescs(numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
+				return descs;
+			else
+			{
+				for (SGDescriptor* d : descs)
+					delete d;
+				descs.clear();
+				BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed");
+			}
+		}
+		else if (channel == DMAChannel::S2MM)
+		{
+			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs for S2MM not implemented yet");
+		}
+
+		BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed, invalid channel");
+	}
+
+	void CleanupSGDescs(SGDescriptors& descs)
+	{
+		for (SGDescriptor* d : descs)
+			delete d;
+		descs.clear();
+	}
+
 private:
 	static inline const uint32_t AXI_DMA_BD_MINIMUM_ALIGNMENT = 0x40;
 	static inline const uint32_t AXI_DMA_BD_HAS_DRE_SHIFT     = 8;
-	static inline const uint32_t AXI_DMA_BD_MAX_LENGTH_MASK   = 0x3FFFFFF;
-
-#define XAXIDMA_BD_CTRL_TXSOF_MASK   0x08000000
-#define XAXIDMA_BD_CTRL_TXEOF_MASK   0x04000000
-#define XAXIDMA_BD_CTRL_ALL_MASK     0x0C000000
-#define XAXIDMA_BD_WORDLEN_MASK      0xFF
-#define XAXIDMA_BD_HAS_DRE_MASK      0xF00
-#define XAXIDMA_BD_STS_COMPLETE_MASK 0x80000000
-
-	class SGDescriptor : public internal::RegisterControlBase
-	{
-		enum REGISTER_MAP
-		{
-			SG_DESC_NXTDESC           = 0x00,
-			SG_DESC_BUFFER_ADDRESS    = 0x08,
-			SG_DESC_CONTROL           = 0x18,
-			SG_DESC_STATUS            = 0x1C,
-			SG_DESC_APP0              = 0x20,
-			SG_DESC_APP1              = 0x24,
-			SG_DESC_APP2              = 0x28,
-			SG_DESC_APP3              = 0x2C,
-			SG_DESC_APP4              = 0x30,
-			SG_DESC_ID                = 0x34,
-			SG_DESC_HAS_STS_CTRL_STRM = 0x38,
-			SG_DESC_HAS_DRE           = 0x3C
-		};
-
-	public:
-		SGDescriptor(const CLAPPtr& pClap, const uint64_t& ctrlOffset, const std::string& name = "") :
-			RegisterControlBase(pClap, ctrlOffset, name)
-		{
-			Reset();
-		}
-
-		DISABLE_COPY_ASSIGN_MOVE(SGDescriptor)
-
-		~SGDescriptor() {}
-
-		void Reset()
-		{
-			m_nextDescAddr   = 0;
-			m_bufferAddr     = 0;
-			m_control        = 0;
-			m_status         = 0;
-			m_app0           = 0;
-			m_app1           = 0;
-			m_app2           = 0;
-			m_app3           = 0;
-			m_app4           = 0;
-			m_id             = 0;
-			m_hasStsCtrlStrm = 0;
-			m_hasDRE         = 0;
-
-			writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
-			writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
-			writeRegister(SG_DESC_CONTROL, m_control);
-			writeRegister(SG_DESC_STATUS, m_status);
-			writeRegister(SG_DESC_APP0, m_app0);
-			writeRegister(SG_DESC_APP1, m_app1);
-			writeRegister(SG_DESC_APP2, m_app2);
-			writeRegister(SG_DESC_APP3, m_app3);
-			writeRegister(SG_DESC_APP4, m_app4);
-			writeRegister(SG_DESC_ID, m_id);
-			writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
-			writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
-		}
-
-		void Print() const
-		{
-			std::cout << "NextDescAddr: 0x" << std::hex << m_nextDescAddr << std::dec << std::endl;
-			std::cout << "BufferAddr: 0x" << std::hex << m_bufferAddr << std::dec << std::endl;
-			std::cout << "Control: 0x" << std::hex << m_control << std::dec << std::endl;
-			std::cout << "Status: 0x" << std::hex << m_status << std::dec << std::endl;
-			std::cout << "App0: 0x" << std::hex << m_app0 << std::dec << std::endl;
-			std::cout << "App1: 0x" << std::hex << m_app1 << std::dec << std::endl;
-			std::cout << "App2: 0x" << std::hex << m_app2 << std::dec << std::endl;
-			std::cout << "App3: 0x" << std::hex << m_app3 << std::dec << std::endl;
-			std::cout << "App4: 0x" << std::hex << m_app4 << std::dec << std::endl;
-			std::cout << "ID: 0x" << std::hex << m_id << std::dec << std::endl;
-			std::cout << "HasStsCtrlStrm: 0x" << std::hex << m_hasStsCtrlStrm << std::dec << std::endl;
-			std::cout << "HasDRE: 0x" << std::hex << m_hasDRE << std::dec << std::endl;
-		}
-
-		const uint64_t& Addr() const
-		{
-			return m_ctrlOffset;
-		}
-
-		void SetNextDescAddr(const uint64_t& addr)
-		{
-			m_nextDescAddr = addr;
-			writeRegister(SG_DESC_NXTDESC, m_nextDescAddr);
-		}
-
-		bool SetBufferAddr(const uint64_t& addr)
-		{
-			GetHasDRE();
-			const uint8_t wordLen = m_hasDRE & XAXIDMA_BD_WORDLEN_MASK;
-
-			if (addr & (wordLen - 1))
-			{
-				if ((m_hasDRE & XAXIDMA_BD_HAS_DRE_MASK) == 0)
-				{
-					CLAP_IP_CORE_LOG_ERROR << "Error set buf addr 0x" << std::hex << addr << std::dec << " with hasDRE=" << m_hasDRE << " and wordLen=" << (wordLen - 1) << std::endl;
-					return false;
-				}
-			}
-
-			m_bufferAddr = addr;
-			writeRegister(SG_DESC_BUFFER_ADDRESS, m_bufferAddr);
-
-			return true;
-		}
-
-		void SetControl(const uint32_t& ctrl)
-		{
-			m_control = ctrl;
-			writeRegister(SG_DESC_CONTROL, m_control);
-		}
-
-		void SetControlBits(const uint32_t& bits)
-		{
-			GetControl();
-
-			m_control &= ~XAXIDMA_BD_CTRL_ALL_MASK;
-			m_control |= (bits & XAXIDMA_BD_CTRL_ALL_MASK);
-
-			SetControl(m_control);
-		}
-
-		bool SetLength(const uint32_t& lenBytes, const uint32_t& maxLen)
-		{
-			if (lenBytes > maxLen)
-			{
-				CLAP_IP_CORE_LOG_ERROR << "Length (" << lenBytes << ") exceeds maximum length (" << maxLen << ")" << std::endl;
-				return false;
-			}
-
-			GetControl();
-			m_control &= ~AXI_DMA_BD_MAX_LENGTH_MASK;
-			m_control |= lenBytes;
-
-			SetControl(m_control);
-
-			return true;
-		}
-
-		void SetStatus(const uint32_t& sts)
-		{
-			m_status = sts;
-			writeRegister(SG_DESC_STATUS, m_status);
-		}
-
-		void SetApp0(const uint32_t& app)
-		{
-			m_app0 = app;
-			writeRegister(SG_DESC_APP0, m_app0);
-		}
-
-		void SetApp1(const uint32_t& app)
-		{
-			m_app1 = app;
-			writeRegister(SG_DESC_APP1, m_app1);
-		}
-
-		void SetApp2(const uint32_t& app)
-		{
-			m_app2 = app;
-			writeRegister(SG_DESC_APP2, m_app2);
-		}
-
-		void SetApp3(const uint32_t& app)
-		{
-			m_app3 = app;
-			writeRegister(SG_DESC_APP3, m_app3);
-		}
-
-		void SetApp4(const uint32_t& app)
-		{
-			m_app4 = app;
-			writeRegister(SG_DESC_APP4, m_app4);
-		}
-
-		void SetId(const uint32_t& id)
-		{
-			m_id = id;
-			writeRegister(SG_DESC_ID, m_id);
-		}
-
-		void SetHasStsCtrlStrm(const uint32_t& sts)
-		{
-			m_hasStsCtrlStrm = sts;
-			writeRegister(SG_DESC_HAS_STS_CTRL_STRM, m_hasStsCtrlStrm);
-		}
-
-		void SetHasDRE(const uint32_t& dre)
-		{
-			m_hasDRE = dre;
-			writeRegister(SG_DESC_HAS_DRE, m_hasDRE);
-		}
-
-		const uint32_t& GetControl()
-		{
-			m_control = readRegister<uint32_t>(SG_DESC_CONTROL);
-			return m_control;
-		}
-
-		uint32_t GetLength()
-		{
-			GetControl();
-			return m_control & AXI_DMA_BD_MAX_LENGTH_MASK;
-		}
-
-		const uint32_t& GetStatus()
-		{
-			m_status = readRegister<uint32_t>(SG_DESC_STATUS);
-			return m_status;
-		}
-
-		const uint32_t& GetHasDRE()
-		{
-			m_hasDRE = readRegister<uint32_t>(SG_DESC_HAS_DRE);
-			return m_hasDRE;
-		}
-
-		class SGDescriptor* GetNextDesc() const
-		{
-			return m_pNextDesc;
-		}
-
-		void SetNextDesc(SGDescriptor* pDesc)
-		{
-			m_pNextDesc = pDesc;
-		}
-
-		bool IsComplete()
-		{
-			return GetStatus() & XAXIDMA_BD_STS_COMPLETE_MASK;
-		}
-
-	private:
-		uint64_t m_nextDescAddr   = 0; // 0-7
-		uint64_t m_bufferAddr     = 0; // 8-F
-		uint32_t m_reserved1      = 0; // 10-13
-		uint32_t m_reserved2      = 0; // 14-17
-		uint32_t m_control        = 0; // 18-1B
-		uint32_t m_status         = 0; // 1C-1F
-		uint32_t m_app0           = 0; // 20-23
-		uint32_t m_app1           = 0; // 24-27
-		uint32_t m_app2           = 0; // 28-2B
-		uint32_t m_app3           = 0; // 2C-2F
-		uint32_t m_app4           = 0; // 30-33
-		uint32_t m_id             = 0; // 34-37
-		uint32_t m_hasStsCtrlStrm = 0; // 38-3B -- Whether the BD has status/control stream
-		uint32_t m_hasDRE         = 0; // 3C-3F -- Whether the BD has DRE (allows unaligned transfers)
-
-		class SGDescriptor* m_pNextDesc = nullptr;
-	};
-
-	using SGDescriptors = std::vector<SGDescriptor*>;
 
 	struct BdRing
 	{
@@ -889,18 +949,17 @@ private:
 
 		void Reset()
 		{
-			for (SGDescriptor* d : descriptors)
-				delete d;
+			if (!extDescs)
+			{
+				for (SGDescriptor* d : descriptors)
+					delete d;
 
-			if (cyclicBd) delete cyclicBd;
+				if (cyclicBd) delete cyclicBd;
 
-			descriptors.clear();
+				descriptors.clear();
+			}
 
-			runState        = SGState::Idle;
-			hasStsCntrlStrm = 0;
-			hasDRE          = 0;
-			dataWidth       = 0;
-			maxTransferLen  = 0;
+			runState = SGState::Idle;
 
 			freeHead  = nullptr;
 			preHead   = nullptr;
@@ -916,20 +975,20 @@ private:
 			cyclic    = 0;
 		}
 
-		void Init(const SGDescriptors& descs, const uint32_t& bdCount)
+		void Init(const SGDescriptors& descs, const bool& extDescs = false)
 		{
 			descriptors = descs;
 			runState    = SGState::Idle;
 
-			allCnt  = bdCount;
-			freeCnt = bdCount;
+			freeCnt = allCnt = static_cast<uint32_t>(descs.size());
 
-			cyclicBd = nullptr;
+			cyclicBd       = nullptr;
+			this->extDescs = extDescs;
 
-			ReInit();
+			ReInit(extDescs);
 		}
 
-		void ReInit()
+		void ReInit(const bool& extDescs = false)
 		{
 			freeHead = descriptors.front();
 			preHead  = descriptors.front();
@@ -937,8 +996,8 @@ private:
 
 			bdRestart = descriptors.front();
 
-			freeCnt = allCnt;
-			preCnt  = 0;
+			freeCnt = (extDescs ? 0 : allCnt);
+			preCnt  = (extDescs ? allCnt : 0);
 			hwCnt   = 0;
 		}
 
@@ -970,8 +1029,22 @@ private:
 		uint32_t ringIndex = 0;
 		uint32_t cyclic    = 0;
 
-		const uint64_t separation = AXI_DMA_BD_MINIMUM_ALIGNMENT;
+		bool extDescs = false;
+
+		static const uint64_t SEPARATION = AXI_DMA_BD_MINIMUM_ALIGNMENT;
 	};
+
+	void initBDRings()
+	{
+		m_bdRingTx.hasDRE    = GetHasDRE(DMAChannel::MM2S);
+		m_bdRingTx.dataWidth = GetDataWidth(DMAChannel::MM2S);
+		m_bdRingRx.hasDRE    = GetHasDRE(DMAChannel::S2MM);
+		m_bdRingRx.dataWidth = GetDataWidth(DMAChannel::S2MM);
+
+		// -1 to get a 0xXFFFFF value
+		m_bdRingTx.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
+		m_bdRingRx.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
+	}
 
 	void startSGTransferMM2S(const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts, const uint32_t& bdsPerPkt)
 	{
@@ -1003,53 +1076,18 @@ private:
 
 		if (bdCount <= 0)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "initBdRing: non-positive BD  number " << bdCount << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "initBdRing: non-positive BD number " << bdCount << std::endl;
 			return false;
 		}
 
 		bdRing.Reset();
 
-		if (bdRing.channel == DMAChannel::MM2S)
-		{
-			bdRing.hasDRE    = GetHasDRE(DMAChannel::MM2S);
-			bdRing.dataWidth = GetDataWidth(DMAChannel::MM2S);
-		}
-		else
-		{
-			bdRing.hasDRE    = GetHasDRE(DMAChannel::S2MM);
-			bdRing.dataWidth = GetDataWidth(DMAChannel::S2MM);
-		}
+		SGDescriptors descs = initDescs(bdRing, addr, bdCount);
 
-		// -1 to get a 0xXFFFFF value
-		bdRing.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
-
-		if (addr % AXI_DMA_BD_MINIMUM_ALIGNMENT)
-		{
-			CLAP_IP_CORE_LOG_ERROR << "initBdRing: Physical address  0x" << std::hex << addr << " is not aligned to 0x" << AXI_DMA_BD_MINIMUM_ALIGNMENT << std::dec << std::endl;
+		if (descs.empty())
 			return false;
-		}
 
-		std::vector<SGDescriptor*> descs(bdCount, nullptr);
-
-		for (uint32_t i = 0; i < bdCount; i++)
-		{
-			SGDescriptor* d = new SGDescriptor(m_pClap, addr + (i * bdRing.separation), "SGDescriptor #" + std::to_string(i));
-
-			if (i < bdCount - 1)
-				d->SetNextDescAddr(addr + ((i + 1) * bdRing.separation));
-			else
-				d->SetNextDescAddr(addr);
-
-			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
-			d->SetHasDRE((bdRing.hasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.dataWidth);
-
-			descs[i] = d;
-		}
-
-		for (std::size_t i = 0; i < descs.size(); i++)
-			descs[i]->SetNextDesc(descs[(i + 1) % descs.size()]);
-
-		bdRing.Init(descs, bdCount);
+		bdRing.Init(descs);
 
 		return true;
 	}
@@ -1107,6 +1145,12 @@ private:
 		if (!pStatusReg->IsStarted())
 		{
 			SGDescriptor* pDesc = bdRing.bdRestart;
+
+			if (bdRing.extDescs)
+			{
+				writeRegister(descPtrOffset, pDesc->Addr());
+				return true;
+			}
 
 			if (!pDesc->IsComplete())
 			{
@@ -1447,16 +1491,77 @@ private:
 
 		SGDescriptor* pBd;
 
-		if (!bdRingAlloc(m_bdRingTx, numBDs, &pBd))
+		if (!m_bdRingTx.extDescs)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed BD alloc" << std::endl;
+			if (!bdRingAlloc(m_bdRingTx, numBDs, &pBd))
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Failed BD alloc" << std::endl;
+				return false;
+			}
+
+			configDescs(numPkts, maxPktByteLen, bdsPerPkt, mem, pBd);
+		}
+		else
+		{
+			pBd = m_bdRingTx.descriptors.front();
+		}
+
+		if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Failed to send packet, length: " << pBd->GetLength() << std::endl;
 			return false;
 		}
 
-		uint64_t bufferAddr  = mem.GetBaseAddr();
-		SGDescriptor* pBdCur = pBd;
+		return true;
+	}
 
+	////////////////////////////////////////
+	// SG
+	////////////////////////////////////////
+
+	SGDescriptors initDescs(BdRing& bdRing, const uint64_t& addr, const uint32_t& bdCount)
+	{
+		if (bdCount <= 0)
+		{
+			CLAP_IP_CORE_LOG_ERROR << "initDescs: non-positive BD number " << bdCount << std::endl;
+			return {};
+		}
+
+		if (addr % AXI_DMA_BD_MINIMUM_ALIGNMENT)
+		{
+			CLAP_IP_CORE_LOG_ERROR << "initDescs: Physical address  0x" << std::hex << addr << " is not aligned to 0x" << AXI_DMA_BD_MINIMUM_ALIGNMENT << std::dec << std::endl;
+			return {};
+		}
+
+		SGDescriptors descs(bdCount, nullptr);
+
+		for (uint32_t i = 0; i < bdCount; i++)
+		{
+			SGDescriptor* d = new SGDescriptor(m_pClap, addr + (i * BdRing::SEPARATION), "SGDescriptor #" + std::to_string(i));
+
+			if (i < bdCount - 1)
+				d->SetNextDescAddr(addr + ((i + 1) * BdRing::SEPARATION));
+			else
+				d->SetNextDescAddr(addr);
+
+			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
+			d->SetHasDRE((bdRing.hasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.dataWidth);
+
+			descs[i] = d;
+		}
+
+		for (std::size_t i = 0; i < descs.size(); i++)
+			descs[i]->SetNextDesc(descs[(i + 1) % descs.size()]);
+
+		return descs;
+	}
+
+	bool configDescs(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& mem, SGDescriptor* pBd)
+	{
+		uint64_t bufferAddr    = mem.GetBaseAddr();
 		uint64_t remainingSize = mem.GetSize();
+
+		SGDescriptor* pBdCur = pBd;
 
 		for (uint32_t i = 0; i < numPkts; i++)
 		{
@@ -1491,12 +1596,6 @@ private:
 				bufferAddr += bdLength;
 				pBdCur = pBdCur->GetNextDesc();
 			}
-		}
-
-		if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Failed to send packet, length: " << pBd->GetLength() << std::endl;
-			return false;
 		}
 
 		return true;
