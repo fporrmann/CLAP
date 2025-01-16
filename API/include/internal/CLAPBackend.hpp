@@ -43,6 +43,12 @@
 #include "Types.hpp"
 #include "UserInterruptBase.hpp"
 
+#ifdef CLAP_ENABLE_RW_LOG
+#define CLAP_RW_LOG CLAP_CLASS_LOG_DEBUG << "addr=0x" << std::hex << addr << " pData=0x" << pData << " sizeInByte=0x" << sizeInByte << std::dec << std::endl;
+#else
+#define CLAP_RW_LOG
+#endif
+
 namespace clap
 {
 namespace internal
