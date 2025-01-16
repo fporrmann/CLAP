@@ -235,7 +235,7 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		logTransferTime(addr, sizeInByte, timer, true);
+		logTransferTime(sizeInByte, timer, true);
 	}
 
 	void Write(const uint64_t& addr, const void* pData, const uint64_t& sizeInByte) override
@@ -270,7 +270,7 @@ public:
 			throw CLAPException(ss.str());
 		}
 
-		logTransferTime(addr, sizeInByte, timer, false);
+		logTransferTime(sizeInByte, timer, false);
 	}
 
 	UserInterruptPtr MakeUserInterrupt() const override

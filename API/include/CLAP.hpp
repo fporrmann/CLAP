@@ -161,8 +161,6 @@ public:
 	virtual bool CheckUIOPropertyExists(const uint64_t& addr, const std::string& propName) const                        = 0;
 	virtual Expected<int32_t> GetUIOID(const uint64_t& addr) const                                                      = 0;
 
-	virtual void AddPollAddress(const uint64_t& addr) = 0;
-
 	uint32_t GetDevNum() const
 	{
 		return m_devNum;
@@ -321,12 +319,6 @@ public:
 	internal::UserInterruptPtr MakeUserInterrupt()
 	{
 		return m_pBackend->MakeUserInterrupt();
-	}
-
-	void AddPollAddress(const uint64_t& addr) override
-	{
-		std::lock_guard<std::mutex> lock(m_pollAddrMtx);
-		m_pBackend->AddPollAddr(addr);
 	}
 
 	void SetLogByteThreshold(const uint64_t& threshold)

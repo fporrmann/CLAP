@@ -89,26 +89,6 @@ public:
 		registerReg<uint32_t>(m_mm2sFDelyStrideReg, MM2S_FRMDLY_STRIDE);
 		registerReg<uint32_t>(m_s2mmFDelyStrideReg, S2MM_FRMDLY_STRIDE);
 
-		// Make sure all offsets are registered as polling offsets
-		registerPollOffset(MM2S_VDMACR);
-		registerPollOffset(MM2S_VDMASR);
-		registerPollOffset(MM2S_REG_INDEX);
-		registerPollOffset(PARK_PTR_REG);
-		registerPollOffset(VDMA_VERSION);
-		registerPollOffset(S2MM_VDMACR);
-		registerPollOffset(S2MM_VDMASR);
-		registerPollOffset(S2MM_VDMA_IRQ_MASK);
-		registerPollOffset(S2MM_REG_INDEX);
-		registerPollOffset(MM2S_VSIZE);
-		registerPollOffset(MM2S_HSIZE);
-		registerPollOffset(MM2S_FRMDLY_STRIDE);
-		registerPollOffset(MM2S_START_ADDRESS);
-		registerPollOffset(S2MM_VSIZE);
-		registerPollOffset(S2MM_HSIZE);
-		registerPollOffset(S2MM_FRMDLY_STRIDE);
-		registerPollOffset(S2MM_START_ADDRESS);
-		registerPollOffset(ENABLE_VERTICAL_FLIP);
-
 		UpdateAllRegisters();
 	}
 
