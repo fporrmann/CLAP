@@ -981,7 +981,7 @@ private:
 			cyclic    = 0;
 		}
 
-		void Init(const SGDescriptors& descs, const bool& extDescs = false)
+		void Init(const SGDescriptors& descs, const bool& useExtDescs = false)
 		{
 			descriptors = descs;
 			runState    = SGState::Idle;
@@ -989,12 +989,12 @@ private:
 			freeCnt = allCnt = static_cast<uint32_t>(descs.size());
 
 			cyclicBd       = nullptr;
-			this->extDescs = extDescs;
+			extDescs = useExtDescs;
 
-			ReInit(extDescs);
+			ReInit();
 		}
 
-		void ReInit(const bool& extDescs = false)
+		void ReInit()
 		{
 			freeHead = descriptors.front();
 			preHead  = descriptors.front();
