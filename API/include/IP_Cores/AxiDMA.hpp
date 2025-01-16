@@ -24,6 +24,12 @@
  *
  */
 
+// Notes:
+// - The BD pointer can only be updated when the DMA engine is halted (stopped)
+//   - This means that when another BD region, e.g., pre initialized should be used, the DMA engine has to be stopped before updating the BD pointer, i.e., starting the next transfer
+// TODOs:
+// - Add a check to ensure that the BD pointer is only updated when the DMA engine is halted -- Make sure that when the DMA engine is running the given BD pointer stays constant and throw an exception if it is changed
+
 #pragma once
 
 #include "../internal/RegisterControl.hpp"
@@ -1031,15 +1037,30 @@ private:
 
 		bool extDescs = false;
 
+		class AxiDMA<T>::StatusRegister* pStatusReg = nullptr;
+		class AxiDMA<T>::ControlRegister* pCtrlReg  = nullptr;
+
+		uint64_t descPtrOffset  = 0;
+		uint64_t tailDescOffset = 0;
+
 		static const uint64_t SEPARATION = AXI_DMA_BD_MINIMUM_ALIGNMENT;
 	};
 
 	void initBDRings()
 	{
-		m_bdRingTx.hasDRE    = GetHasDRE(DMAChannel::MM2S);
-		m_bdRingTx.dataWidth = GetDataWidth(DMAChannel::MM2S);
-		m_bdRingRx.hasDRE    = GetHasDRE(DMAChannel::S2MM);
-		m_bdRingRx.dataWidth = GetDataWidth(DMAChannel::S2MM);
+		m_bdRingTx.hasDRE         = GetHasDRE(DMAChannel::MM2S);
+		m_bdRingTx.dataWidth      = GetDataWidth(DMAChannel::MM2S);
+		m_bdRingTx.pStatusReg     = &m_mm2sStatReg;
+		m_bdRingTx.pCtrlReg       = &m_mm2sCtrlReg;
+		m_bdRingTx.descPtrOffset  = MM2S_CURDESC;
+		m_bdRingTx.tailDescOffset = MM2S_TAILDESC;
+
+		m_bdRingRx.hasDRE         = GetHasDRE(DMAChannel::S2MM);
+		m_bdRingRx.dataWidth      = GetDataWidth(DMAChannel::S2MM);
+		m_bdRingRx.pStatusReg     = &m_s2mmStatReg;
+		m_bdRingRx.pCtrlReg       = &m_s2mmCtrlReg;
+		m_bdRingRx.descPtrOffset  = S2MM_CURDESC;
+		m_bdRingRx.tailDescOffset = S2MM_TAILDESC;
 
 		// -1 to get a 0xXFFFFF value
 		m_bdRingTx.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
@@ -1100,39 +1121,14 @@ private:
 			return false;
 		}
 
-		// TODO: Link as a member of BdRing -- Move this method into BdRing
-		if (bdRing.channel == DMAChannel::MM2S)
-		{
-			m_mm2sCtrlReg.SetIrqThreshold(counter);
-			m_mm2sCtrlReg.SetIrqDelay(timer);
-		}
-		else
-		{
-			m_s2mmCtrlReg.SetIrqThreshold(counter);
-			m_s2mmCtrlReg.SetIrqDelay(timer);
-		}
+		bdRing.pCtrlReg->SetIrqThreshold(counter);
+		bdRing.pCtrlReg->SetIrqDelay(timer);
 
 		return true;
 	}
 
 	bool updateCDesc(BdRing& bdRing)
 	{
-		uint32_t ringIndex = bdRing.ringIndex;
-
-		StatusRegister* pStatusReg = nullptr;
-		uint64_t descPtrOffset     = 0;
-
-		if (bdRing.channel == DMAChannel::MM2S)
-		{
-			pStatusReg    = &m_mm2sStatReg;
-			descPtrOffset = MM2S_CURDESC;
-		}
-		else
-		{
-			pStatusReg    = &m_s2mmStatReg;
-			descPtrOffset = S2MM_CURDESC;
-		}
-
 		if (bdRing.allCnt == 0)
 		{
 			CLAP_IP_CORE_LOG_ERROR << "updateCDesc: no bds" << std::endl;
@@ -1142,13 +1138,13 @@ private:
 		if (bdRing.runState == SGState::Running)
 			return true;
 
-		if (!pStatusReg->IsStarted())
+		if (!bdRing.pStatusReg->IsStarted())
 		{
 			SGDescriptor* pDesc = bdRing.bdRestart;
 
 			if (bdRing.extDescs)
 			{
-				writeRegister(descPtrOffset, pDesc->Addr());
+				writeRegister(bdRing.descPtrOffset, pDesc->Addr());
 				return true;
 			}
 
@@ -1156,13 +1152,13 @@ private:
 			{
 				if (bdRing.IsRxChannel())
 				{
-					if (!ringIndex)
-						writeRegister(descPtrOffset, pDesc->Addr());
+					if (!bdRing.ringIndex)
+						writeRegister(bdRing.descPtrOffset, pDesc->Addr());
 					else
 						BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 				}
 				else
-					writeRegister(descPtrOffset, pDesc->Addr());
+					writeRegister(bdRing.descPtrOffset, pDesc->Addr());
 			}
 			else
 			{
@@ -1180,13 +1176,13 @@ private:
 					{
 						if (bdRing.IsRxChannel())
 						{
-							if (!ringIndex)
-								writeRegister(descPtrOffset, pDesc->Addr());
+							if (!bdRing.ringIndex)
+								writeRegister(bdRing.descPtrOffset, pDesc->Addr());
 							else
 								BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 						}
 						else
-							writeRegister(descPtrOffset, pDesc->Addr());
+							writeRegister(bdRing.descPtrOffset, pDesc->Addr());
 						break;
 					}
 				}
@@ -1198,29 +1194,10 @@ private:
 
 	bool startBdRingHW(BdRing& bdRing)
 	{
-		uint32_t ringIndex = bdRing.ringIndex;
+		if (!bdRing.pStatusReg->IsStarted())
+			bdRing.pCtrlReg->Start();
 
-		StatusRegister* pStatusReg = nullptr;
-		ControlRegister* pCtrlReg  = nullptr;
-		uint64_t tailDescOffset    = 0;
-
-		if (bdRing.channel == DMAChannel::MM2S)
-		{
-			pStatusReg     = &m_mm2sStatReg;
-			pCtrlReg       = &m_mm2sCtrlReg;
-			tailDescOffset = MM2S_TAILDESC;
-		}
-		else
-		{
-			pStatusReg     = &m_s2mmStatReg;
-			pCtrlReg       = &m_s2mmCtrlReg;
-			tailDescOffset = S2MM_TAILDESC;
-		}
-
-		if (!pStatusReg->IsStarted())
-			pCtrlReg->Start();
-
-		if (pStatusReg->IsStarted())
+		if (bdRing.pStatusReg->IsStarted())
 		{
 			bdRing.runState = SGState::Running;
 
@@ -1228,7 +1205,7 @@ private:
 			{
 				if (bdRing.cyclic)
 				{
-					writeRegister(tailDescOffset, bdRing.cyclicBd->Addr());
+					writeRegister(bdRing.tailDescOffset, bdRing.cyclicBd->Addr());
 					return true;
 				}
 
@@ -1236,13 +1213,13 @@ private:
 				{
 					if (bdRing.IsRxChannel())
 					{
-						if (!ringIndex)
-							writeRegister(tailDescOffset, bdRing.hwTail->Addr());
+						if (!bdRing.ringIndex)
+							writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
 						else
 							BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 					}
 					else
-						writeRegister(tailDescOffset, bdRing.hwTail->Addr());
+						writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
 				}
 			}
 
@@ -1250,7 +1227,7 @@ private:
 		}
 
 		CLAP_IP_CORE_LOG_ERROR << "startBdRingHW: Failed to start hardware -- Try resetting the AxiDMA IP before starting" << std::endl;
-		pStatusReg->Print();
+		bdRing.pStatusReg->Print();
 
 		return false;
 	}
@@ -1295,15 +1272,6 @@ private:
 
 	bool bdRingToHw(BdRing& bdRing, const uint32_t& numBd, SGDescriptor* pBdSet)
 	{
-		uint64_t tailDescOffset = 0;
-
-		if (bdRing.channel == DMAChannel::MM2S)
-			tailDescOffset = MM2S_TAILDESC;
-		else
-			tailDescOffset = S2MM_TAILDESC;
-
-		uint32_t ringIndex = bdRing.ringIndex;
-
 		if (numBd == 0) return true;
 
 		if ((bdRing.preCnt < numBd) || (bdRing.preHead != pBdSet))
@@ -1371,19 +1339,19 @@ private:
 		{
 			if (bdRing.cyclic)
 			{
-				writeRegister(tailDescOffset, bdRing.cyclicBd->Addr());
+				writeRegister(bdRing.tailDescOffset, bdRing.cyclicBd->Addr());
 				return true;
 			}
 
 			if (bdRing.IsRxChannel())
 			{
-				if (!ringIndex)
-					writeRegister(tailDescOffset, bdRing.hwTail->Addr());
+				if (!bdRing.ringIndex)
+					writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
 				else
 					BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 			}
 			else
-				writeRegister(tailDescOffset, bdRing.hwTail->Addr());
+				writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
 		}
 
 		return true;
