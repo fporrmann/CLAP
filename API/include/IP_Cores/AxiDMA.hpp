@@ -45,16 +45,13 @@
 
 namespace clap
 {
-#define XAXIDMA_BD_CTRL_TXSOF_MASK   0x08000000
-#define XAXIDMA_BD_CTRL_TXEOF_MASK   0x04000000
-#define XAXIDMA_BD_CTRL_ALL_MASK     0x0C000000
-#define XAXIDMA_BD_WORDLEN_MASK      0xFF
-#define XAXIDMA_BD_HAS_DRE_MASK      0xF00
-#define XAXIDMA_BD_STS_COMPLETE_MASK 0x80000000
 
 class SGDescriptor : public internal::RegisterControlBase
 {
-	static inline const uint32_t AXI_DMA_BD_MAX_LENGTH_MASK = 0x3FFFFFF;
+	static inline const uint32_t CTRL_ALL_MASK   = 0x0C000000;
+	static inline const uint32_t MAX_LENGTH_MASK = 0x3FFFFFF;
+	static inline const uint32_t HAS_DRE_MASK    = 0xF00;
+	static inline const uint8_t WORDLEN_MASK     = 0xFF;
 
 	enum REGISTER_MAP
 	{
@@ -142,11 +139,11 @@ public:
 	bool SetBufferAddr(const uint64_t& addr)
 	{
 		GetHasDRE();
-		const uint8_t wordLen = m_hasDRE & XAXIDMA_BD_WORDLEN_MASK;
+		const uint8_t wordLen = m_hasDRE & WORDLEN_MASK;
 
 		if (addr & (wordLen - 1))
 		{
-			if ((m_hasDRE & XAXIDMA_BD_HAS_DRE_MASK) == 0)
+			if ((m_hasDRE & HAS_DRE_MASK) == 0)
 			{
 				CLAP_IP_CORE_LOG_ERROR << "Error set buf addr 0x" << std::hex << addr << std::dec << " with hasDRE=" << m_hasDRE << " and wordLen=" << (wordLen - 1) << std::endl;
 				return false;
@@ -169,8 +166,8 @@ public:
 	{
 		GetControl();
 
-		m_control &= ~XAXIDMA_BD_CTRL_ALL_MASK;
-		m_control |= (bits & XAXIDMA_BD_CTRL_ALL_MASK);
+		m_control &= ~CTRL_ALL_MASK;
+		m_control |= (bits & CTRL_ALL_MASK);
 
 		SetControl(m_control);
 	}
@@ -184,7 +181,7 @@ public:
 		}
 
 		GetControl();
-		m_control &= ~AXI_DMA_BD_MAX_LENGTH_MASK;
+		m_control &= ~MAX_LENGTH_MASK;
 		m_control |= lenBytes;
 
 		SetControl(m_control);
@@ -255,7 +252,7 @@ public:
 	uint32_t GetLength()
 	{
 		GetControl();
-		return m_control & AXI_DMA_BD_MAX_LENGTH_MASK;
+		return m_control & MAX_LENGTH_MASK;
 	}
 
 	const uint32_t& GetStatus()
@@ -282,7 +279,7 @@ public:
 
 	bool IsComplete()
 	{
-		return GetStatus() & XAXIDMA_BD_STS_COMPLETE_MASK;
+		return GetStatus() & COMPLETE_MASK;
 	}
 
 private:
@@ -302,6 +299,9 @@ private:
 	uint32_t m_hasDRE         = 0; // 3C-3F -- Whether the BD has DRE (allows unaligned transfers)
 
 	class SGDescriptor* m_pNextDesc = nullptr;
+
+public:
+	static inline const uint32_t COMPLETE_MASK = 0x80000000;
 };
 
 using SGDescriptors = std::vector<SGDescriptor*>;
@@ -359,6 +359,12 @@ class AxiDMA : public internal::RegisterControlBase
 	static inline const std::string S2MM_INTR_NAME = "s2mm_introut";
 
 	static inline const uint32_t SG_IRQ_DELAY = 0;
+
+	static inline const uint32_t CTRL_TXSOF_MASK = 0x08000000;
+	static inline const uint32_t CTRL_TXEOF_MASK = 0x04000000;
+
+	static inline const uint32_t MINIMUM_ALIGNMENT = 0x40;
+	static inline const uint32_t HAS_DRE_SHIFT     = 8;
 
 public:
 	enum DMAInterrupts
@@ -909,7 +915,7 @@ public:
 	{
 		if (channel == DMAChannel::MM2S)
 		{
-			const uint32_t bdCount = ROUND_UP_DIV(memBD.GetSize(), AXI_DMA_BD_MINIMUM_ALIGNMENT);
+			const uint32_t bdCount = ROUND_UP_DIV(memBD.GetSize(), MINIMUM_ALIGNMENT);
 			SGDescriptors descs    = initDescs(m_bdRingTx, memBD.GetBaseAddr(), bdCount);
 			if (configDescs(numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
 				return descs;
@@ -937,9 +943,6 @@ public:
 	}
 
 private:
-	static inline const uint32_t AXI_DMA_BD_MINIMUM_ALIGNMENT = 0x40;
-	static inline const uint32_t AXI_DMA_BD_HAS_DRE_SHIFT     = 8;
-
 	struct BdRing
 	{
 		BdRing(const DMAChannel& ch) :
@@ -988,7 +991,7 @@ private:
 
 			freeCnt = allCnt = static_cast<uint32_t>(descs.size());
 
-			cyclicBd       = nullptr;
+			cyclicBd = nullptr;
 			extDescs = useExtDescs;
 
 			ReInit();
@@ -1043,7 +1046,7 @@ private:
 		uint64_t descPtrOffset  = 0;
 		uint64_t tailDescOffset = 0;
 
-		static const uint64_t SEPARATION = AXI_DMA_BD_MINIMUM_ALIGNMENT;
+		static const uint64_t SEPARATION = MINIMUM_ALIGNMENT;
 	};
 
 	void initBDRings()
@@ -1291,7 +1294,7 @@ private:
 		uint32_t bdCr  = pCurBd->GetControl();
 		uint32_t bdSts = pCurBd->GetStatus();
 
-		if (!bdRing.IsRxChannel() && !(bdCr & XAXIDMA_BD_CTRL_TXSOF_MASK))
+		if (!bdRing.IsRxChannel() && !(bdCr & CTRL_TXSOF_MASK))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Tx first BD does not have SOF" << std::endl;
 			return false;
@@ -1305,7 +1308,7 @@ private:
 				return false;
 			}
 
-			bdSts &= ~XAXIDMA_BD_STS_COMPLETE_MASK;
+			bdSts &= ~SGDescriptor::COMPLETE_MASK;
 			pCurBd->SetStatus(bdSts);
 
 			pCurBd = pCurBd->GetNextDesc();
@@ -1313,7 +1316,7 @@ private:
 			bdSts  = pCurBd->GetStatus();
 		}
 
-		if (!bdRing.IsRxChannel() && !(bdCr & XAXIDMA_BD_CTRL_TXEOF_MASK))
+		if (!bdRing.IsRxChannel() && !(bdCr & CTRL_TXEOF_MASK))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Tx last BD does not have EOF" << std::endl;
 			return false;
@@ -1325,7 +1328,7 @@ private:
 			return false;
 		}
 
-		bdSts &= ~XAXIDMA_BD_STS_COMPLETE_MASK;
+		bdSts &= ~SGDescriptor::COMPLETE_MASK;
 		pCurBd->SetStatus(bdSts);
 
 		for (uint32_t i = 0; i < numBd; i++)
@@ -1359,7 +1362,7 @@ private:
 
 	bool bdSetup(BdRing& bdRing, const Memory& mem, const uint8_t& numPkts, const uint8_t& irqDelay)
 	{
-		const uint32_t bdCount = ROUND_UP_DIV(mem.GetSize(), AXI_DMA_BD_MINIMUM_ALIGNMENT);
+		const uint32_t bdCount = ROUND_UP_DIV(mem.GetSize(), MINIMUM_ALIGNMENT);
 
 		// If the BD ring count is the same as the previous one, we can reuse the BD ring
 		if (bdRing.allCnt == bdCount)
@@ -1495,9 +1498,9 @@ private:
 			return {};
 		}
 
-		if (addr % AXI_DMA_BD_MINIMUM_ALIGNMENT)
+		if (addr % MINIMUM_ALIGNMENT)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "initDescs: Physical address  0x" << std::hex << addr << " is not aligned to 0x" << AXI_DMA_BD_MINIMUM_ALIGNMENT << std::dec << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "initDescs: Physical address  0x" << std::hex << addr << " is not aligned to 0x" << MINIMUM_ALIGNMENT << std::dec << std::endl;
 			return {};
 		}
 
@@ -1513,7 +1516,7 @@ private:
 				d->SetNextDescAddr(addr);
 
 			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
-			d->SetHasDRE((bdRing.hasDRE << AXI_DMA_BD_HAS_DRE_SHIFT) | bdRing.dataWidth);
+			d->SetHasDRE((bdRing.hasDRE << HAS_DRE_SHIFT) | bdRing.dataWidth);
 
 			descs[i] = d;
 		}
@@ -1553,10 +1556,10 @@ private:
 				}
 
 				if (pkt == 0)
-					crBits |= XAXIDMA_BD_CTRL_TXSOF_MASK;
+					crBits |= CTRL_TXSOF_MASK;
 
 				if (pkt == (bdsPerPkt - 1))
-					crBits |= XAXIDMA_BD_CTRL_TXEOF_MASK;
+					crBits |= CTRL_TXEOF_MASK;
 
 				pBdCur->SetControlBits(crBits);
 				pBdCur->SetId(i);
