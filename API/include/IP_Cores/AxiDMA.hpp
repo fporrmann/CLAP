@@ -432,7 +432,7 @@ public:
 			return false;
 		}
 
-		m_bdRingTx.runState = SGState::Idle;
+		m_bdRingTx.SetRunState(SGState::Idle);
 
 		return true;
 	}
@@ -450,7 +450,7 @@ public:
 			return false;
 		}
 
-		m_bdRingRx.runState = SGState::Idle;
+		m_bdRingRx.SetRunState(SGState::Idle);
 
 		return true;
 	}
@@ -886,9 +886,12 @@ public:
 
 	void StartSGExtDescs(const DMAChannel& channel, const SGDescriptors& descs)
 	{
+		SGDescriptor* pBd     = descs.front();
+		const uint32_t numBDs = static_cast<uint32_t>(descs.size());
+
 		if (channel == DMAChannel::MM2S)
 		{
-			if (m_bdRingTx.runState != SGState::Idle)
+			if (m_bdRingTx.GetRunState() != SGState::Idle)
 				BUILD_IP_EXCEPTION(CLAPException, "DMA channel MM2S is still active");
 
 			m_bdRingTx.Init(descs, true);
@@ -898,40 +901,49 @@ public:
 			if (!startBdRing(m_bdRingTx))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to start BD ring");
 
-			SGDescriptor* pBd     = descs.front();
-			const uint32_t numBDs = static_cast<uint32_t>(descs.size());
-
 			if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to send packet, length: " << pBd->GetLength());
 		}
 		else if (channel == DMAChannel::S2MM)
 		{
-			BUILD_IP_EXCEPTION(CLAPException, "StartSGExtDescs for S2MM not implemented yet");
+			if (m_bdRingRx.GetRunState() != SGState::Idle)
+				BUILD_IP_EXCEPTION(CLAPException, "DMA channel S2MM is still active");
+
+			m_bdRingRx.Init(descs, true);
+			if (!m_watchDogS2MM.Start(true))
+				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for S2MM already running!");
+
+			if (!bdRingToHw(m_bdRingRx, numBDs, pBd))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed to read packet, length: " << pBd->GetLength());
+
+			if (!startBdRing(m_bdRingRx))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed to start BD ring");
 		}
 	}
 
 	SGDescriptors PreInitSGDescs(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
-		if (channel == DMAChannel::MM2S)
-		{
-			const uint32_t bdCount = ROUND_UP_DIV(memBD.GetSize(), MINIMUM_ALIGNMENT);
-			SGDescriptors descs    = initDescs(m_bdRingTx, memBD.GetBaseAddr(), bdCount);
-			if (configDescs(numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
-				return descs;
-			else
-			{
-				for (SGDescriptor* d : descs)
-					delete d;
-				descs.clear();
-				BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed");
-			}
-		}
-		else if (channel == DMAChannel::S2MM)
-		{
-			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs for S2MM not implemented yet");
-		}
+		BdRing* pRing = nullptr;
 
-		BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed, invalid channel");
+		if (channel == DMAChannel::MM2S)
+			pRing = &m_bdRingTx;
+		else if (channel == DMAChannel::S2MM)
+			pRing = &m_bdRingRx;
+		else
+			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed, invalid channel");
+
+		const uint32_t bdCount = ROUND_UP_DIV(memBD.GetSize(), MINIMUM_ALIGNMENT);
+		SGDescriptors descs    = initDescs(*pRing, memBD.GetBaseAddr(), bdCount);
+
+		if (configDescs(channel, numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
+			return descs;
+		else
+		{
+			for (SGDescriptor* d : descs)
+				delete d;
+			descs.clear();
+			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed");
+		}
 	}
 
 	void CleanupSGDescs(SGDescriptors& descs)
@@ -942,10 +954,14 @@ public:
 	}
 
 private:
-	struct BdRing
+	class BdRing
 	{
+	public:
+		static const uint64_t SEPARATION = MINIMUM_ALIGNMENT;
+
+	public:
 		BdRing(const DMAChannel& ch) :
-			channel(ch)
+			m_channel(ch)
 		{}
 
 		DISABLE_COPY_ASSIGN_MOVE(BdRing)
@@ -957,70 +973,71 @@ private:
 
 		void Reset()
 		{
-			if (!extDescs)
+			if (!m_extDescs)
 			{
-				for (SGDescriptor* d : descriptors)
+				for (SGDescriptor* d : m_descriptors)
 					delete d;
 
-				if (cyclicBd) delete cyclicBd;
+				if (m_pCyclicBd) delete m_pCyclicBd;
 
-				descriptors.clear();
+				m_descriptors.clear();
 			}
 
-			runState = SGState::Idle;
+			m_runState = SGState::Idle;
 
-			freeHead  = nullptr;
-			preHead   = nullptr;
-			hwTail    = nullptr;
-			bdRestart = nullptr;
-			cyclicBd  = nullptr;
+			m_pFreeHead  = nullptr;
+			m_pPreHead   = nullptr;
+			m_pHwTail    = nullptr;
+			m_pBdRestart = nullptr;
+			m_pCyclicBd  = nullptr;
 
-			freeCnt   = 0;
-			preCnt    = 0;
-			hwCnt     = 0;
-			allCnt    = 0;
-			ringIndex = 0;
-			cyclic    = 0;
+			m_freeCnt   = 0;
+			m_preCnt    = 0;
+			m_hwCnt     = 0;
+			m_allCnt    = 0;
+			m_ringIndex = 0;
+			m_cyclic    = 0;
 		}
 
 		void Init(const SGDescriptors& descs, const bool& useExtDescs = false)
 		{
 			CheckBdMemAddr(descs.front()->Addr());
 
-			descriptors = descs;
-			runState    = SGState::Idle;
+			m_descriptors = descs;
+			m_runState    = SGState::Idle;
 
-			freeCnt = allCnt = static_cast<uint32_t>(descs.size());
+			m_freeCnt = m_allCnt = static_cast<uint32_t>(descs.size());
 
-			cyclicBd = nullptr;
-			extDescs = useExtDescs;
+			m_pCyclicBd = nullptr;
 
-			ReInit();
+			ReInit(useExtDescs);
 		}
 
-		void ReInit()
+		void ReInit(const bool& useExtDescs = false)
 		{
-			freeHead = descriptors.front();
-			preHead  = descriptors.front();
-			hwTail   = descriptors.front();
+			m_extDescs  = useExtDescs;
 
-			bdRestart = descriptors.front();
+			m_pFreeHead = m_descriptors.front();
+			m_pPreHead  = m_descriptors.front();
+			m_pHwTail   = m_descriptors.front();
 
-			freeCnt = (extDescs ? 0 : allCnt);
-			preCnt  = (extDescs ? allCnt : 0);
-			hwCnt   = 0;
+			m_pBdRestart = m_descriptors.front();
+
+			m_freeCnt = (m_extDescs ? 0 : m_allCnt);
+			m_preCnt  = (m_extDescs ? m_allCnt : 0);
+			m_hwCnt   = 0;
 		}
 
 		bool IsRxChannel() const
 		{
-			return channel == DMAChannel::S2MM;
+			return m_channel == DMAChannel::S2MM;
 		}
 
 		bool CheckBdMemAddr(const uint64_t& addr)
 		{
-			if (bdRestart == nullptr) return true;
-			if (!pStatusReg->IsStarted()) return true;
-			if (bdRestart->Addr() == addr) return true;
+			if (m_pBdRestart == nullptr) return true;
+			if (!m_pStatusReg->IsStarted()) return true;
+			if (m_pBdRestart->Addr() == addr) return true;
 
 			BUILD_IP_EXCEPTION(CLAPException, "The BD memory location cannot be changed while the DMA is running, please stop the DMA first");
 		}
@@ -1030,69 +1047,274 @@ private:
 			return CheckBdMemAddr(mem.GetBaseAddr());
 		}
 
+		void SetHasDRE(const bool& dre)
+		{
+			m_hasDRE = dre;
+		}
+
+		void SetDataWidth(const uint32_t& width)
+		{
+			m_dataWidth = width;
+		}
+
+		void SetMaxTransferLen(const uint32_t& len)
+		{
+			m_maxTransferLen = len;
+		}
+
+		void SetStatusRegister(class AxiDMA<T>::StatusRegister* pReg)
+		{
+			m_pStatusReg = pReg;
+		}
+
+		void SetControlRegister(class AxiDMA<T>::ControlRegister* pReg)
+		{
+			m_pCtrlReg = pReg;
+		}
+
+		void SetDescPtrOffset(const uint64_t& offset)
+		{
+			m_descPtrOffset = offset;
+		}
+
+		void SetTailDescOffset(const uint64_t& offset)
+		{
+			m_tailDescOffset = offset;
+		}
+
+		void SetRunState(const SGState& state)
+		{
+			m_runState = state;
+		}
+
+		void SetAllCnt(const uint32_t& cnt)
+		{
+			m_allCnt = cnt;
+		}
+
+		void SetCyclicBd(SGDescriptor* pBd)
+		{
+			m_pCyclicBd = pBd;
+		}
+
+		void SetFreeHead(SGDescriptor* pDesc)
+		{
+			m_pFreeHead = pDesc;
+		}
+
+		void SetPreHead(SGDescriptor* pDesc)
+		{
+			m_pPreHead = pDesc;
+		}
+
+		void SetHwTail(SGDescriptor* pDesc)
+		{
+			m_pHwTail = pDesc;
+		}
+
+		void SetBdRestart(SGDescriptor* pDesc)
+		{
+			m_pBdRestart = pDesc;
+		}
+
+		void SetPreCnt(const uint32_t& cnt)
+		{
+			m_preCnt = cnt;
+		}
+
+		void SetFreeCnt(const uint32_t& cnt)
+		{
+			m_freeCnt = cnt;
+		}
+
+		void SetHwCnt(const uint32_t& cnt)
+		{
+			m_hwCnt = cnt;
+		}
+
+		const DMAChannel& GetChannel() const
+		{
+			return m_channel;
+		}
+
+		const uint32_t& HasDRE() const
+		{
+			return m_hasDRE;
+		}
+
+		const uint32_t& GetDataWidth() const
+		{
+			return m_dataWidth;
+		}
+
+		const uint32_t& GetMaxTransferLen() const
+		{
+			return m_maxTransferLen;
+		}
+
+		// For some reason the following getter break the clang-format, therefore, they are not formatted
+		// clang-format off
+
+		class AxiDMA<T>::StatusRegister* GetStatusRegister() const
+		{
+			return m_pStatusReg;
+		}
+
+		class AxiDMA<T>::ControlRegister* GetControlRegister() const
+		{
+			return m_pCtrlReg;
+		}
+
+		const uint64_t& GetDescPtrOffset() const
+		{
+			return m_descPtrOffset;
+		}
+
+		// clang-format on
+
+		const uint64_t& GetTailDescOffset() const
+		{
+			return m_tailDescOffset;
+		}
+
+		const SGState& GetRunState() const
+		{
+			return m_runState;
+		}
+
+		const uint32_t& GetAllCnt() const
+		{
+			return m_allCnt;
+		}
+
+		SGDescriptor* GetFreeHead() const
+		{
+			return m_pFreeHead;
+		}
+
+		SGDescriptor* GetPreHead() const
+		{
+			return m_pPreHead;
+		}
+
+		SGDescriptor* GetHwTail() const
+		{
+			return m_pHwTail;
+		}
+
+		SGDescriptor* GetBdRestart() const
+		{
+			return m_pBdRestart;
+		}
+
+		SGDescriptor* GetCyclicBd() const
+		{
+			return m_pCyclicBd;
+		}
+
+		const uint32_t& GetFreeCnt() const
+		{
+			return m_freeCnt;
+		}
+
+		const uint32_t& GetPreCnt() const
+		{
+			return m_preCnt;
+		}
+
+		const uint32_t& GetHwCnt() const
+		{
+			return m_hwCnt;
+		}
+
+		const uint32_t& GetRingIndex() const
+		{
+			return m_ringIndex;
+		}
+
+		const uint32_t& IsCyclic() const
+		{
+			return m_cyclic;
+		}
+
+		const SGDescriptors& GetDescriptors() const
+		{
+			return m_descriptors;
+		}
+
+		const bool& HasExtDescs() const
+		{
+			return m_extDescs;
+		}
+
+		const uint32_t& HasStsCntrlStrm() const
+		{
+			return m_hasStsCntrlStrm;
+		}
+
+	private:
 		std::string nameTag() const
 		{
 			return "";
 		}
 
-		SGDescriptors descriptors = {};
+	private:
+		SGDescriptors m_descriptors = {};
 
-		DMAChannel channel = DMAChannel::MM2S;
+		DMAChannel m_channel = DMAChannel::MM2S;
 
-		SGState runState         = SGState::Idle;
-		uint32_t hasStsCntrlStrm = 0;
-		uint32_t hasDRE          = 0;
-		uint32_t dataWidth       = 0;
-		uint32_t maxTransferLen  = 0;
+		SGState m_runState         = SGState::Idle;
+		uint32_t m_hasStsCntrlStrm = 0;
+		uint32_t m_hasDRE          = 0;
+		uint32_t m_dataWidth       = 0;
+		uint32_t m_maxTransferLen  = 0;
 
-		SGDescriptor* freeHead  = nullptr;
-		SGDescriptor* preHead   = nullptr;
-		SGDescriptor* hwTail    = nullptr;
-		SGDescriptor* bdRestart = nullptr;
-		SGDescriptor* cyclicBd  = nullptr;
+		SGDescriptor* m_pFreeHead  = nullptr;
+		SGDescriptor* m_pPreHead   = nullptr;
+		SGDescriptor* m_pHwTail    = nullptr;
+		SGDescriptor* m_pBdRestart = nullptr;
+		SGDescriptor* m_pCyclicBd  = nullptr;
 
-		uint32_t freeCnt   = 0;
-		uint32_t preCnt    = 0;
-		uint32_t hwCnt     = 0;
-		uint32_t allCnt    = 0;
-		uint32_t ringIndex = 0;
-		uint32_t cyclic    = 0;
+		uint32_t m_freeCnt   = 0;
+		uint32_t m_preCnt    = 0;
+		uint32_t m_hwCnt     = 0;
+		uint32_t m_allCnt    = 0;
+		uint32_t m_ringIndex = 0;
+		uint32_t m_cyclic    = 0;
 
-		bool extDescs = false;
+		bool m_extDescs = false;
 
-		class AxiDMA<T>::StatusRegister* pStatusReg = nullptr;
-		class AxiDMA<T>::ControlRegister* pCtrlReg  = nullptr;
+		class AxiDMA<T>::StatusRegister* m_pStatusReg = nullptr;
+		class AxiDMA<T>::ControlRegister* m_pCtrlReg  = nullptr;
 
-		uint64_t descPtrOffset  = 0;
-		uint64_t tailDescOffset = 0;
-
-		static const uint64_t SEPARATION = MINIMUM_ALIGNMENT;
+		uint64_t m_descPtrOffset  = 0;
+		uint64_t m_tailDescOffset = 0;
 	};
 
 	void initBDRings()
 	{
-		m_bdRingTx.hasDRE         = GetHasDRE(DMAChannel::MM2S);
-		m_bdRingTx.dataWidth      = GetDataWidth(DMAChannel::MM2S);
-		m_bdRingTx.pStatusReg     = &m_mm2sStatReg;
-		m_bdRingTx.pCtrlReg       = &m_mm2sCtrlReg;
-		m_bdRingTx.descPtrOffset  = MM2S_CURDESC;
-		m_bdRingTx.tailDescOffset = MM2S_TAILDESC;
+		m_bdRingTx.SetHasDRE(GetHasDRE(DMAChannel::MM2S));
+		m_bdRingTx.SetDataWidth(GetDataWidth(DMAChannel::MM2S));
+		m_bdRingTx.SetStatusRegister(&m_mm2sStatReg);
+		m_bdRingTx.SetControlRegister(&m_mm2sCtrlReg);
+		m_bdRingTx.SetDescPtrOffset(MM2S_CURDESC);
+		m_bdRingTx.SetTailDescOffset(MM2S_TAILDESC);
 
-		m_bdRingRx.hasDRE         = GetHasDRE(DMAChannel::S2MM);
-		m_bdRingRx.dataWidth      = GetDataWidth(DMAChannel::S2MM);
-		m_bdRingRx.pStatusReg     = &m_s2mmStatReg;
-		m_bdRingRx.pCtrlReg       = &m_s2mmCtrlReg;
-		m_bdRingRx.descPtrOffset  = S2MM_CURDESC;
-		m_bdRingRx.tailDescOffset = S2MM_TAILDESC;
+		m_bdRingRx.SetHasDRE(GetHasDRE(DMAChannel::S2MM));
+		m_bdRingRx.SetDataWidth(GetDataWidth(DMAChannel::S2MM));
+		m_bdRingRx.SetStatusRegister(&m_s2mmStatReg);
+		m_bdRingRx.SetControlRegister(&m_s2mmCtrlReg);
+		m_bdRingRx.SetDescPtrOffset(S2MM_CURDESC);
+		m_bdRingRx.SetTailDescOffset(S2MM_TAILDESC);
 
 		// -1 to get a 0xXFFFFF value
-		m_bdRingTx.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
-		m_bdRingRx.maxTransferLen = (1 << m_bufLenRegWidth) - 1;
+		m_bdRingTx.SetMaxTransferLen((1 << m_bufLenRegWidth) - 1);
+		m_bdRingRx.SetMaxTransferLen((1 << m_bufLenRegWidth) - 1);
 	}
 
 	void startSGTransferMM2S(const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts, const uint32_t& bdsPerPkt)
 	{
-		if (m_bdRingTx.runState != SGState::Idle)
+		if (m_bdRingTx.GetRunState() != SGState::Idle)
 			BUILD_IP_EXCEPTION(CLAPException, "DMA channel MM2S is still active");
 
 		if (!bdSetup(m_bdRingTx, memBD, numPkts, SG_IRQ_DELAY))
@@ -1104,7 +1326,7 @@ private:
 
 	void startSGTransferS2MM(const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts)
 	{
-		if (m_bdRingRx.runState != SGState::Idle)
+		if (m_bdRingRx.GetRunState() != SGState::Idle)
 			BUILD_IP_EXCEPTION(CLAPException, "DMA channel S2MM is still active");
 
 		if (!bdSetup(m_bdRingRx, memBD, numPkts, SG_IRQ_DELAY))
@@ -1116,7 +1338,7 @@ private:
 
 	bool initBdRing(BdRing& bdRing, const uint64_t& addr, const uint32_t& bdCount)
 	{
-		CLAP_IP_CORE_LOG_DEBUG << "Creating BD ring for channel " << bdRing.channel << " with " << bdCount << " BDs" << std::endl;
+		CLAP_IP_CORE_LOG_DEBUG << "Creating BD ring for channel " << bdRing.GetChannel() << " with " << bdCount << " BDs" << std::endl;
 
 		if (bdCount <= 0)
 		{
@@ -1144,30 +1366,30 @@ private:
 			return false;
 		}
 
-		bdRing.pCtrlReg->SetIrqThreshold(counter);
-		bdRing.pCtrlReg->SetIrqDelay(timer);
+		bdRing.GetControlRegister()->SetIrqThreshold(counter);
+		bdRing.GetControlRegister()->SetIrqDelay(timer);
 
 		return true;
 	}
 
 	bool updateCDesc(BdRing& bdRing)
 	{
-		if (bdRing.allCnt == 0)
+		if (bdRing.GetAllCnt() == 0)
 		{
 			CLAP_IP_CORE_LOG_ERROR << "updateCDesc: no bds" << std::endl;
 			return false;
 		}
 
-		if (bdRing.runState == SGState::Running)
+		if (bdRing.GetRunState() == SGState::Running)
 			return true;
 
-		if (!bdRing.pStatusReg->IsStarted())
+		if (!bdRing.GetStatusRegister()->IsStarted())
 		{
-			SGDescriptor* pDesc = bdRing.bdRestart;
+			SGDescriptor* pDesc = bdRing.GetBdRestart();
 
-			if (bdRing.extDescs)
+			if (bdRing.HasExtDescs())
 			{
-				writeRegister(bdRing.descPtrOffset, pDesc->Addr());
+				writeRegister(bdRing.GetDescPtrOffset(), pDesc->Addr());
 				return true;
 			}
 
@@ -1175,13 +1397,13 @@ private:
 			{
 				if (bdRing.IsRxChannel())
 				{
-					if (!bdRing.ringIndex)
-						writeRegister(bdRing.descPtrOffset, pDesc->Addr());
+					if (!bdRing.GetRingIndex())
+						writeRegister(bdRing.GetDescPtrOffset(), pDesc->Addr());
 					else
 						BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 				}
 				else
-					writeRegister(bdRing.descPtrOffset, pDesc->Addr());
+					writeRegister(bdRing.GetDescPtrOffset(), pDesc->Addr());
 			}
 			else
 			{
@@ -1189,7 +1411,7 @@ private:
 				{
 					pDesc = pDesc->GetNextDesc();
 
-					if (pDesc == bdRing.bdRestart)
+					if (pDesc == bdRing.GetBdRestart())
 					{
 						CLAP_IP_CORE_LOG_ERROR << "updateCDesc: Cannot find valid cdesc" << std::endl;
 						return false;
@@ -1199,13 +1421,13 @@ private:
 					{
 						if (bdRing.IsRxChannel())
 						{
-							if (!bdRing.ringIndex)
-								writeRegister(bdRing.descPtrOffset, pDesc->Addr());
+							if (!bdRing.GetRingIndex())
+								writeRegister(bdRing.GetDescPtrOffset(), pDesc->Addr());
 							else
 								BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 						}
 						else
-							writeRegister(bdRing.descPtrOffset, pDesc->Addr());
+							writeRegister(bdRing.GetDescPtrOffset(), pDesc->Addr());
 						break;
 					}
 				}
@@ -1217,32 +1439,32 @@ private:
 
 	bool startBdRingHW(BdRing& bdRing)
 	{
-		if (!bdRing.pStatusReg->IsStarted())
-			bdRing.pCtrlReg->Start();
+		if (!bdRing.GetStatusRegister()->IsStarted())
+			bdRing.GetControlRegister()->Start();
 
-		if (bdRing.pStatusReg->IsStarted())
+		if (bdRing.GetStatusRegister()->IsStarted())
 		{
-			bdRing.runState = SGState::Running;
+			bdRing.SetRunState(SGState::Running);
 
-			if (bdRing.hwCnt > 0)
+			if (bdRing.GetHwCnt() > 0)
 			{
-				if (bdRing.cyclic)
+				if (bdRing.IsCyclic())
 				{
-					writeRegister(bdRing.tailDescOffset, bdRing.cyclicBd->Addr());
+					writeRegister(bdRing.GetTailDescOffset(), bdRing.GetCyclicBd()->Addr());
 					return true;
 				}
 
-				if (!bdRing.hwTail->IsComplete())
+				if (!bdRing.GetHwTail()->IsComplete())
 				{
 					if (bdRing.IsRxChannel())
 					{
-						if (!bdRing.ringIndex)
-							writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
+						if (!bdRing.GetRingIndex())
+							writeRegister(bdRing.GetTailDescOffset(), bdRing.GetHwTail()->Addr());
 						else
 							BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 					}
 					else
-						writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
+						writeRegister(bdRing.GetTailDescOffset(), bdRing.GetHwTail()->Addr());
 				}
 			}
 
@@ -1250,7 +1472,7 @@ private:
 		}
 
 		CLAP_IP_CORE_LOG_ERROR << "startBdRingHW: Failed to start hardware -- Try resetting the AxiDMA IP before starting" << std::endl;
-		bdRing.pStatusReg->Print();
+		bdRing.GetStatusRegister()->Print();
 
 		return false;
 	}
@@ -1276,19 +1498,19 @@ private:
 	{
 		CLAP_IP_CORE_LOG_DEBUG << "Allocating " << numBd << " BDs" << std::endl;
 
-		if (bdRing.freeCnt < numBd)
+		if (bdRing.GetFreeCnt() < numBd)
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Not enough BDs to alloc " << numBd << "/" << bdRing.freeCnt << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Not enough BDs to alloc " << numBd << "/" << bdRing.GetFreeCnt() << std::endl;
 			return false;
 		}
 
-		*ppBdSet = bdRing.freeHead;
+		*ppBdSet = bdRing.GetFreeHead();
 
 		for (uint32_t i = 0; i < numBd; i++)
-			bdRing.freeHead = bdRing.freeHead->GetNextDesc();
+			bdRing.SetFreeHead(bdRing.GetFreeHead()->GetNextDesc());
 
-		bdRing.freeCnt -= numBd;
-		bdRing.preCnt += numBd;
+		bdRing.SetFreeCnt(bdRing.GetFreeCnt() - numBd);
+		bdRing.SetPreCnt(bdRing.GetPreCnt() + numBd);
 
 		return true;
 	}
@@ -1297,14 +1519,14 @@ private:
 	{
 		if (numBd == 0) return true;
 
-		if ((bdRing.preCnt < numBd) || (bdRing.preHead != pBdSet))
+		if ((bdRing.GetPreCnt() < numBd) || (bdRing.GetPreHead() != pBdSet))
 		{
 			CLAP_IP_CORE_LOG_ERROR << "BD ring has problems:" << std::endl;
-			if (bdRing.preCnt < numBd)
-				CLAP_IP_CORE_LOG_ERROR << "preCnt (" << bdRing.preCnt << ") < numBd (" << numBd << ")" << std::endl;
+			if (bdRing.GetPreCnt() < numBd)
+				CLAP_IP_CORE_LOG_ERROR << "preCnt (" << bdRing.GetPreCnt() << ") < numBd (" << numBd << ")" << std::endl;
 
-			if (bdRing.preHead != pBdSet)
-				CLAP_IP_CORE_LOG_ERROR << std::hex << "preHead (0x" << bdRing.preHead << ") != pBdSet (0x" << pBdSet << ")" << std::dec << std::endl;
+			if (bdRing.GetPreHead() != pBdSet)
+				CLAP_IP_CORE_LOG_ERROR << std::hex << "preHead (0x" << bdRing.GetPreHead() << ") != pBdSet (0x" << pBdSet << ")" << std::dec << std::endl;
 
 			return false;
 		}
@@ -1322,9 +1544,9 @@ private:
 
 		for (uint32_t i = 0; i < numBd - 1; i++)
 		{
-			if ((pCurBd->GetLength() & bdRing.maxTransferLen) == 0)
+			if ((pCurBd->GetLength() & bdRing.GetMaxTransferLen()) == 0)
 			{
-				CLAP_IP_CORE_LOG_ERROR << "0 length BD" << std::endl;
+				CLAP_IP_CORE_LOG_ERROR << "0 length BD at index: " << i << std::endl;
 				return false;
 			}
 
@@ -1342,7 +1564,7 @@ private:
 			return false;
 		}
 
-		if ((bdCr & bdRing.maxTransferLen) == 0)
+		if ((bdCr & bdRing.GetMaxTransferLen()) == 0)
 		{
 			CLAP_IP_CORE_LOG_ERROR << "0 length BD" << std::endl;
 			return false;
@@ -1352,29 +1574,29 @@ private:
 		pCurBd->SetStatus(bdSts);
 
 		for (uint32_t i = 0; i < numBd; i++)
-			bdRing.preHead = bdRing.preHead->GetNextDesc();
+			bdRing.SetPreHead(bdRing.GetPreHead()->GetNextDesc());
 
-		bdRing.preCnt -= numBd;
-		bdRing.hwTail = pCurBd;
-		bdRing.hwCnt += numBd;
+		bdRing.SetPreCnt(bdRing.GetPreCnt() - numBd);
+		bdRing.SetHwTail(pCurBd);
+		bdRing.SetHwCnt(bdRing.GetHwCnt() + numBd);
 
-		if (bdRing.runState == SGState::Running)
+		if (bdRing.GetRunState() == SGState::Running)
 		{
-			if (bdRing.cyclic)
+			if (bdRing.IsCyclic())
 			{
-				writeRegister(bdRing.tailDescOffset, bdRing.cyclicBd->Addr());
+				writeRegister(bdRing.GetTailDescOffset(), bdRing.GetCyclicBd()->Addr());
 				return true;
 			}
 
 			if (bdRing.IsRxChannel())
 			{
-				if (!bdRing.ringIndex)
-					writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
+				if (!bdRing.GetRingIndex())
+					writeRegister(bdRing.GetTailDescOffset(), bdRing.GetHwTail()->Addr());
 				else
 					BUILD_IP_EXCEPTION(CLAPException, "Multi channel support is currently not implemented");
 			}
 			else
-				writeRegister(bdRing.tailDescOffset, bdRing.hwTail->Addr());
+				writeRegister(bdRing.GetTailDescOffset(), bdRing.GetHwTail()->Addr());
 		}
 
 		return true;
@@ -1387,7 +1609,7 @@ private:
 		const uint32_t bdCount = ROUND_UP_DIV(mem.GetSize(), MINIMUM_ALIGNMENT);
 
 		// If the BD ring count is the same as the previous one, we can reuse the BD ring
-		if (bdRing.allCnt == bdCount)
+		if (bdRing.GetAllCnt() == bdCount)
 		{
 			CLAP_IP_CORE_LOG_DEBUG << "Reusing BD ring" << std::endl;
 			bdRing.ReInit();
@@ -1411,7 +1633,7 @@ private:
 
 	bool readPackets(const uint32_t& maxPktByteLen, const Memory& mem)
 	{
-		int32_t freeBdCount = m_bdRingRx.freeCnt;
+		int32_t freeBdCount = m_bdRingRx.GetFreeCnt();
 		SGDescriptor* pBd;
 
 		if (!bdRingAlloc(m_bdRingRx, freeBdCount, &pBd))
@@ -1420,34 +1642,8 @@ private:
 			return false;
 		}
 
-		SGDescriptor* pBdCur   = pBd;
-		uint64_t pRxBuffer     = mem.GetBaseAddr();
-		uint64_t remainingSize = mem.GetSize();
-
-		for (int32_t i = 0; i < freeBdCount; i++)
-		{
-			if (!pBdCur->SetBufferAddr(pRxBuffer))
-			{
-				CLAP_IP_CORE_LOG_ERROR << "Rx set buffer addr 0x" << std::hex << pRxBuffer << std::dec << " on BD " << pBdCur->GetName() << " failed" << std::endl;
-				return false;
-			}
-
-			const uint64_t bdLength = std::min(remainingSize, static_cast<uint64_t>(maxPktByteLen));
-			remainingSize -= bdLength;
-
-			if (!pBdCur->SetLength(bdLength, m_bdRingRx.maxTransferLen))
-			{
-				CLAP_IP_CORE_LOG_ERROR << "Rx set length " << bdLength << " on BD " << pBdCur->GetName() << " failed" << std::endl;
-				return false;
-			}
-
-			pBdCur->SetControlBits(0);
-
-			pBdCur->SetId(i); // Arbitrary ID
-
-			pRxBuffer += bdLength;
-			pBdCur = pBdCur->GetNextDesc();
-		}
+		SGDescriptor* pBdCur = pBd;
+		configRxDescs(maxPktByteLen, mem, freeBdCount, pBdCur);
 
 		if (!bdRingToHw(m_bdRingRx, freeBdCount, pBd))
 		{
@@ -1476,15 +1672,15 @@ private:
 
 		CLAP_IP_CORE_LOG_DEBUG << "Sending " << static_cast<uint32_t>(numPkts) << " packets of " << maxPktByteLen << " bytes, with " << bdsPerPkt << " BDs per packet" << std::endl;
 
-		if (static_cast<uint32_t>(maxPktByteLen) * bdsPerPkt > m_bdRingTx.maxTransferLen)
+		if (static_cast<uint32_t>(maxPktByteLen) * bdsPerPkt > m_bdRingTx.GetMaxTransferLen())
 		{
-			CLAP_IP_CORE_LOG_ERROR << "Invalid total per packet transfer length for the packet " << maxPktByteLen * bdsPerPkt << "/" << m_bdRingTx.maxTransferLen << std::endl;
+			CLAP_IP_CORE_LOG_ERROR << "Invalid total per packet transfer length for the packet " << maxPktByteLen * bdsPerPkt << "/" << m_bdRingTx.GetMaxTransferLen() << std::endl;
 			return false;
 		}
 
 		SGDescriptor* pBd;
 
-		if (!m_bdRingTx.extDescs)
+		if (!m_bdRingTx.HasExtDescs())
 		{
 			if (!bdRingAlloc(m_bdRingTx, numBDs, &pBd))
 			{
@@ -1492,12 +1688,10 @@ private:
 				return false;
 			}
 
-			configDescs(numPkts, maxPktByteLen, bdsPerPkt, mem, pBd);
+			configTxDescs(numPkts, maxPktByteLen, bdsPerPkt, mem, pBd);
 		}
 		else
-		{
-			pBd = m_bdRingTx.descriptors.front();
-		}
+			pBd = m_bdRingTx.GetDescriptors().front();
 
 		if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
 		{
@@ -1537,8 +1731,8 @@ private:
 			else
 				d->SetNextDescAddr(addr);
 
-			d->SetHasStsCtrlStrm(bdRing.hasStsCntrlStrm);
-			d->SetHasDRE((bdRing.hasDRE << HAS_DRE_SHIFT) | bdRing.dataWidth);
+			d->SetHasStsCtrlStrm(bdRing.HasStsCntrlStrm());
+			d->SetHasDRE((bdRing.HasDRE() << HAS_DRE_SHIFT) | bdRing.GetDataWidth());
 
 			descs[i] = d;
 		}
@@ -1549,7 +1743,17 @@ private:
 		return descs;
 	}
 
-	bool configDescs(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& mem, SGDescriptor* pBd)
+	bool configDescs(const DMAChannel& channel, const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& mem, SGDescriptor* pBd)
+	{
+		if (channel == DMAChannel::MM2S)
+			return configTxDescs(numPkts, maxPktByteLen, bdsPerPkt, mem, pBd);
+		else if (channel == DMAChannel::S2MM)
+			return configRxDescs(maxPktByteLen, mem, bdsPerPkt * numPkts, pBd);
+		else
+			return false;
+	}
+
+	bool configTxDescs(const uint8_t& numPkts, const uint32_t maxPktByteLen, const uint32_t& bdsPerPkt, const Memory& mem, SGDescriptor* pBd)
 	{
 		uint64_t bufferAddr    = mem.GetBaseAddr();
 		uint64_t remainingSize = mem.GetSize();
@@ -1571,7 +1775,7 @@ private:
 				const uint64_t bdLength = std::min(remainingSize, static_cast<uint64_t>(maxPktByteLen));
 				remainingSize -= bdLength;
 
-				if (!pBdCur->SetLength(bdLength, m_bdRingTx.maxTransferLen))
+				if (!pBdCur->SetLength(bdLength, m_bdRingTx.GetMaxTransferLen()))
 				{
 					CLAP_IP_CORE_LOG_ERROR << "Tx set length " << bdLength << " on BD " << pBdCur << " failed" << std::endl;
 					return false;
@@ -1589,6 +1793,46 @@ private:
 				bufferAddr += bdLength;
 				pBdCur = pBdCur->GetNextDesc();
 			}
+		}
+
+		return true;
+	}
+
+	bool configRxDescs(const uint32_t& maxPktByteLen, const Memory& mem, const int32_t& bdCount, SGDescriptor* pBd)
+	{
+		uint64_t pRxBuffer     = mem.GetBaseAddr();
+		uint64_t remainingSize = mem.GetSize();
+
+		SGDescriptor* pBdCur = pBd;
+
+		if(bdCount <= 0)
+		{
+			CLAP_IP_CORE_LOG_ERROR << "non-positive BD number " << bdCount << std::endl;
+			return false;
+		}
+
+		for (int32_t i = 0; i < bdCount; i++)
+		{
+			if (!pBdCur->SetBufferAddr(pRxBuffer))
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Rx set buffer addr 0x" << std::hex << pRxBuffer << std::dec << " on BD " << pBdCur->GetName() << " failed" << std::endl;
+				return false;
+			}
+
+			const uint64_t bdLength = std::min(remainingSize, static_cast<uint64_t>(maxPktByteLen));
+			remainingSize -= bdLength;
+
+			if (!pBdCur->SetLength(bdLength, m_bdRingRx.GetMaxTransferLen()))
+			{
+				CLAP_IP_CORE_LOG_ERROR << "Rx set length " << bdLength << " on BD " << pBdCur->GetName() << " failed" << std::endl;
+				return false;
+			}
+
+			pBdCur->SetControlBits(0);
+			pBdCur->SetId(i); // Arbitrary ID
+
+			pRxBuffer += bdLength;
+			pBdCur = pBdCur->GetNextDesc();
 		}
 
 		return true;
