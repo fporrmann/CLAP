@@ -18,7 +18,7 @@ static constexpr uint64_t AXI_MM2S_DMA_BASE_ADDR = 0x40410000;
 static constexpr uint64_t AXI_S2MM_DMA_BASE_ADDR = 0x40420000;
 
 #define MAX_PKT_BYTE_LEN           0x400
-#define NUMBER_OF_BDS_PER_PKT      2
+#define NUMBER_OF_BDS_PER_PKT      1
 #define NUMBER_OF_PKTS_TO_TRANSFER 11
 #define NUMBER_OF_BDS_TO_TRANSFER  (NUMBER_OF_PKTS_TO_TRANSFER * NUMBER_OF_BDS_PER_PKT)
 
@@ -32,28 +32,34 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 	// Create host side buffer for the test data to be written to the input memory
 	clap::CLAPBuffer<uint32_t> testData(testDataSize, 0);
+	clap::CLAPBuffer<uint32_t> testData2(testDataSize, 0);
 	// Create host side buffer for the data read from the destination memory
 	clap::CLAPBuffer<uint32_t> testDataRB(testDataSize, 0);
 
 	clap::CLAPBuffer<uint32_t> zeroData(testDataSize, 0);
 
-	//clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
+	// clap::logging::SetVerbosity(clap::logging::Verbosity::VB_DEBUG);
 	try
 	{
-		// Create an XDMA object
+		// Create a CLAP object
 		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PetaLinuxBackend>();
-		// Add a DDR memory region to the XDMA
+		// Add a DDR memory region
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Allocate memory for the data on the devices DDR
-		clap::Memory inBuf  = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
-		clap::Memory outBuf = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
+		clap::Memory inBuf   = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
+		clap::Memory inBuf2  = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
+		clap::Memory outBuf  = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
+		clap::Memory outBuf2 = pClap->AllocMemoryDDR(testDataSize, sizeof(uint32_t));
 
-		std::cout << "Input Buffer : " << inBuf << std::endl;
-		std::cout << "Output Buffer: " << outBuf << std::endl;
+		std::cout << "Input Buffer  : " << inBuf << std::endl;
+		std::cout << "Input Buffer2 : " << inBuf2 << std::endl;
+		std::cout << "Output Buffer : " << outBuf << std::endl;
+		std::cout << "Output Buffer2: " << outBuf2 << std::endl;
 
 		// Fill the test data buffer with random data
 		std::generate(testData.begin(), testData.end(), [&]() { return dist(rng); });
+		std::generate(testData2.begin(), testData2.end(), [&]() { return dist(rng); });
 
 		// Write the test data to the input buffer
 		pClap->Write(inBuf, testData);
@@ -97,13 +103,17 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 			return -1;
 		}
 
-		clap::Memory txBdMem = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
-		clap::Memory rxBdMem = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
+		clap::Memory txBdMem  = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
+		clap::Memory txBdMem2 = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
+		clap::Memory rxBdMem  = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
+		clap::Memory rxBdMem2 = pClap->AllocMemoryDDR(NUMBER_OF_BDS_TO_TRANSFER, std::size_t(0x40));
 
-		std::cout << "Tx BD Memory: " << txBdMem << std::endl;
-		std::cout << "Rx BD Memory: " << rxBdMem << std::endl;
+		std::cout << "Tx BD Memory  : " << txBdMem << std::endl;
+		std::cout << "Tx BD Memory 2: " << txBdMem2 << std::endl;
+		std::cout << "Rx BD Memory  : " << rxBdMem << std::endl;
+		std::cout << "Rx BD Memory 2: " << rxBdMem2 << std::endl;
 
-		for (uint32_t i = 0; i < 100; i++)
+		for (uint32_t i = 0; i < 10; i++)
 		{
 			pClap->Write(outBuf, zeroData);
 			axiDMA.StartSG(txBdMem, rxBdMem, inBuf, outBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
@@ -137,39 +147,139 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 				std::cout << "Test failed" << std::endl;
 		}
 
-		std::cout << "---------------------------- Testing MM2S and S2MM channels separately ----------------------------" << std::endl;
+		std::cout << "---------------------------- Testing MM2S and S2MM channels separately DESCS1 ----------------------------" << std::endl;
 
-		pClap->Write(outBuf, zeroData);
-		axiDMAmm2s.StartSG(DMAChannel::MM2S, txBdMem, inBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
-		axiDMAs2mm.StartSG(DMAChannel::S2MM, rxBdMem, outBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptors descs0 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem, inBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptors descs1 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem2, inBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
 
-		// Wait until the MM2S channel finishes (an interrupt occures on complete)
-		if (axiDMAmm2s.WaitForFinish(DMAChannel::MM2S))
-			std::cout << "Channel: MM2S finished successfully - Runtime: " << axiDMAmm2s.GetMM2SRuntime() << " ms" << std::endl;
+		clap::SGDescriptors descs2 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem, outBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptors descs3 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem2, outBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
 
-		// Wait until the S2MM channel finishes (an interrupt occures on complete)
-		if (axiDMAs2mm.WaitForFinish(DMAChannel::S2MM))
-			std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMAs2mm.GetS2MMRuntime() << " ms" << std::endl;
-
-		// Readback the result data from the DDR memory.
-		pClap->Read(outBuf, testDataRB);
-
-		// Validate the result data
-		bool success = true;
-		for (uint32_t j = 0; j < testDataSize; j++)
+		for (uint32_t i = 0; i < 10; i++)
 		{
-			if (testDataRB[j] != testData[j])
+			pClap->Write(outBuf, zeroData);
+			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs0);
+			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs2);
+
+			// Wait until the MM2S channel finishes (an interrupt occures on complete)
+			if (axiDMAmm2s.WaitForFinish(DMAChannel::MM2S))
+				std::cout << "Channel: MM2S finished successfully - Runtime: " << axiDMAmm2s.GetMM2SRuntime() << " ms" << std::endl;
+
+			// Wait until the S2MM channel finishes (an interrupt occures on complete)
+			if (axiDMAs2mm.WaitForFinish(DMAChannel::S2MM))
+				std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMAs2mm.GetS2MMRuntime() << " ms" << std::endl;
+
+			// Readback the result data from the DDR memory.
+			pClap->Read(outBuf, testDataRB);
+
+			// Validate the result data
+			bool success = true;
+			for (uint32_t j = 0; j < testDataSize; j++)
 			{
-				if (success)
-					std::cout << "Test failed at index: " << j << std::endl;
-				success = false;
+				if (testDataRB[j] != testData[j])
+				{
+					if (success)
+					{
+						std::cerr << "Test failed at index: " << j << std::endl;
+						std::cerr << "Expected: " << testData[j] << " Got: " << testDataRB[j] << std::endl;
+					}
+					success = false;
+				}
 			}
+
+			if (success)
+				std::cout << "Test successful" << std::endl;
+			else
+				std::cout << "Test failed" << std::endl;
 		}
 
-		if (success)
-			std::cout << "Test successful" << std::endl;
-		else
-			std::cout << "Test failed" << std::endl;
+		axiDMAmm2s.Stop();
+		axiDMAs2mm.Stop();
+
+		std::cout << "---------------------------- Testing MM2S and S2MM channels separately DESCS2 ----------------------------" << std::endl;
+
+		for (uint32_t i = 0; i < 10; i++)
+		{
+			pClap->Write(outBuf2, zeroData);
+			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs1);
+			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs3);
+
+			// Wait until the MM2S channel finishes (an interrupt occures on complete)
+			if (axiDMAmm2s.WaitForFinish(DMAChannel::MM2S))
+				std::cout << "Channel: MM2S finished successfully - Runtime: " << axiDMAmm2s.GetMM2SRuntime() << " ms" << std::endl;
+
+			// Wait until the S2MM channel finishes (an interrupt occures on complete)
+			if (axiDMAs2mm.WaitForFinish(DMAChannel::S2MM))
+				std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMAs2mm.GetS2MMRuntime() << " ms" << std::endl;
+
+			// Readback the result data from the DDR memory.
+			pClap->Read(outBuf2, testDataRB);
+
+			// Validate the result data
+			bool success = true;
+			for (uint32_t j = 0; j < testDataSize; j++)
+			{
+				if (testDataRB[j] != testData2[j])
+				{
+					if (success)
+					{
+						std::cerr << "Test failed at index: " << j << std::endl;
+						std::cerr << "Expected: " << testData2[j] << " Got: " << testDataRB[j] << std::endl;
+					}
+					success = false;
+				}
+			}
+
+			if (success)
+				std::cout << "Test successful" << std::endl;
+			else
+				std::cout << "Test failed" << std::endl;
+		}
+
+		std::cout << "---------------------------- Testing MM2S and S2MM channels separately Mixed DESCS ----------------------------" << std::endl;
+
+		for (uint32_t i = 0; i < 10; i++)
+		{
+			axiDMAmm2s.Stop();
+			axiDMAs2mm.Stop();
+			pClap->Write((i % 2 == 0 ? outBuf : outBuf2), zeroData);
+			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, (i % 2 == 0 ? descs0 : descs1));
+			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, (i % 2 == 0 ? descs2 : descs3));
+
+			// Wait until the MM2S channel finishes (an interrupt occures on complete)
+			if (axiDMAmm2s.WaitForFinish(DMAChannel::MM2S))
+				std::cout << "Channel: MM2S finished successfully - Runtime: " << axiDMAmm2s.GetMM2SRuntime() << " ms" << std::endl;
+
+			// Wait until the S2MM channel finishes (an interrupt occures on complete)
+			if (axiDMAs2mm.WaitForFinish(DMAChannel::S2MM))
+				std::cout << "Channel: S2MM finished successfully - Runtime: " << axiDMAs2mm.GetS2MMRuntime() << " ms" << std::endl;
+
+			// Readback the result data from the DDR memory.
+			pClap->Read((i % 2 == 0 ? outBuf : outBuf2), testDataRB);
+
+			// Validate the result data
+			bool success = true;
+			for (uint32_t j = 0; j < testDataSize; j++)
+			{
+				if (testDataRB[j] != (i % 2 == 0 ? testData[j] : testData2[j]))
+				{
+					if (success)
+					{
+						std::cerr << "Test failed at index: " << j << std::endl;
+						std::cerr << "Expected: " << (i % 2 == 0 ? testData[j] : testData2[j]) << " Got: " << testDataRB[j] << std::endl;
+					}
+					success = false;
+				}
+			}
+
+			if (success)
+				std::cout << "Test successful" << std::endl;
+			else
+				std::cout << "Test failed" << std::endl;
+		}
+
+		axiDMAmm2s.Stop();
+		axiDMAs2mm.Stop();
 
 		axiInterruptController.Stop();
 	}
