@@ -30,9 +30,9 @@ int main()
 
 	try
 	{
-		// Create an XDMA object
+		// Create a CLAP object
 		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
-		// Add a DDR memory region to the XDMA
+		// Add a DDR memory region
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Create an HLS core object, whose control registers are located at HLS_TEST_CORE_BASE_ADDR

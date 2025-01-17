@@ -10,8 +10,8 @@ static constexpr uint64_t DDR_BASE_ADDR = 0x20000000;
 // The size of the DDR is 512MB
 static constexpr uint64_t DDR_SIZE = 0x20000000;
 
-static constexpr uint64_t AXI_DMA_BASE_ADDR              = 0x40010000;
-static constexpr uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x40020000;
+static constexpr uint64_t AXI_DMA_BASE_ADDR                  = 0x40400000;
+static constexpr uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x41800000;
 
 int main(int argc, char** argv)
 {
@@ -30,9 +30,9 @@ int main(int argc, char** argv)
 
 	try
 	{
-		// Create an XDMA object
+		// Create a CLAP object
 		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PetaLinuxBackend>();
-		// Add a DDR memory region to the XDMA
+		// Add a DDR memory region
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Allocate memory for the data on the devices DDR
@@ -83,6 +83,8 @@ int main(int argc, char** argv)
 
 			std::cout << " ---------------------- " << std::endl
 					  << std::endl;
+
+			std::cout << "Total S2MM Transferred Bytes: " << axiDMA.GetS2MMTotalTransferredBytes() << " - Expected: " << testDataSize * sizeof(uint32_t) << std::endl;
 		}
 
 		// Stop the AxiDMA engine

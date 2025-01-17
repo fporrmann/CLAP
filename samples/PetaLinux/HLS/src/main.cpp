@@ -30,9 +30,9 @@ int main()
 
 	try
 	{
-		// Create an XDMA object
+		// Create a CLAP object
 		clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PetaLinuxBackend>();
-		// Add a DDR memory region to the XDMA
+		// Add a DDR memory region
 		pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 		// Create an HLS core object, whose control registers are located at HLS_TEST_CORE_BASE_ADDR
@@ -79,7 +79,7 @@ int main()
 
 		// Configure the HLS core to use its interrupt signal to determine when the core is finished.
 		// The number (0) specifies which of the up to 16 interrupt events the HLS core is connected to.
-		// If only one interrupt is connected to the XDMA core, the number is always 0. When multiple
+		// If only one interrupt is connected to the core, the number is always 0. When multiple
 		// interrupts are connected, the ordering of the concat used to combine the signals determines
 		// the mapping of the cores to the interrupt events.
 		// If the interrupt is not configure, polling is used to determine when the core is finished.

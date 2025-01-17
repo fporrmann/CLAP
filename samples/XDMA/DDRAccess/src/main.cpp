@@ -11,9 +11,9 @@ const uint64_t TEST_DATA_SIZE = 8;
 
 int main()
 {
-	// Create an XDMA object
+	// Create a CLAP object
 	clap::CLAPPtr pClap = clap::CLAP::Create<clap::backends::PCIeBackend>();
-	// Add a DDR memory region to the XDMA
+	// Add a DDR memory region
 	pClap->AddMemoryRegion(clap::CLAP::MemoryType::DDR, DDR_BASE_ADDR, DDR_SIZE);
 
 	// Create host side buffer for the test data to be written to the input memory
