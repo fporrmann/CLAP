@@ -28,7 +28,8 @@
 // - The BD pointer can only be updated when the DMA engine is halted (stopped)
 //   - This means that when another BD region, e.g., pre initialized should be used, the DMA engine has to be stopped before updating the BD pointer, i.e., starting the next transfer
 // TODOs:
-// - Add a check to ensure that the BD pointer is only updated when the DMA engine is halted -- Make sure that when the DMA engine is running the given BD pointer stays constant and throw an exception if it is changed
+// - Implement SG multi-channel support
+// - Turn BdRing struct into a class
 
 #pragma once
 
@@ -40,8 +41,6 @@
 #include <array>
 #include <cstdint>
 #include <queue>
-
-// TODO: Implement SG multi-channel support
 
 namespace clap
 {
@@ -986,6 +985,8 @@ private:
 
 		void Init(const SGDescriptors& descs, const bool& useExtDescs = false)
 		{
+			CheckBdMemAddr(descs.front()->Addr());
+
 			descriptors = descs;
 			runState    = SGState::Idle;
 
@@ -1013,6 +1014,25 @@ private:
 		bool IsRxChannel() const
 		{
 			return channel == DMAChannel::S2MM;
+		}
+
+		bool CheckBdMemAddr(const uint64_t& addr)
+		{
+			if (bdRestart == nullptr) return true;
+			if (!pStatusReg->IsStarted()) return true;
+			if (bdRestart->Addr() == addr) return true;
+
+			BUILD_IP_EXCEPTION(CLAPException, "The BD memory location cannot be changed while the DMA is running, please stop the DMA first");
+		}
+
+		bool CheckBdMemAddr(const Memory& mem)
+		{
+			return CheckBdMemAddr(mem.GetBaseAddr());
+		}
+
+		std::string nameTag() const
+		{
+			return "";
 		}
 
 		SGDescriptors descriptors = {};
@@ -1362,6 +1382,8 @@ private:
 
 	bool bdSetup(BdRing& bdRing, const Memory& mem, const uint8_t& numPkts, const uint8_t& irqDelay)
 	{
+		bdRing.CheckBdMemAddr(mem);
+
 		const uint32_t bdCount = ROUND_UP_DIV(mem.GetSize(), MINIMUM_ALIGNMENT);
 
 		// If the BD ring count is the same as the previous one, we can reuse the BD ring
