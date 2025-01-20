@@ -1252,6 +1252,11 @@ private:
 			return m_hasStsCntrlStrm;
 		}
 
+		std::string GetName() const
+		{
+			return "";
+		}
+
 	private:
 		std::string nameTag() const
 		{
