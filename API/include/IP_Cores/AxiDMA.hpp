@@ -1015,7 +1015,7 @@ private:
 
 		void ReInit(const bool& useExtDescs = false)
 		{
-			m_extDescs  = useExtDescs;
+			m_extDescs = useExtDescs;
 
 			m_pFreeHead = m_descriptors.front();
 			m_pPreHead  = m_descriptors.front();
@@ -1805,7 +1805,7 @@ private:
 
 		SGDescriptor* pBdCur = pBd;
 
-		if(bdCount <= 0)
+		if (bdCount <= 0)
 		{
 			CLAP_IP_CORE_LOG_ERROR << "non-positive BD number " << bdCount << std::endl;
 			return false;
@@ -2034,6 +2034,9 @@ private:
 	{
 		m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::MM2S)];
 		m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] = (1 << m_bufLenRegWidth) / m_dataWidths[ch2Id(DMAChannel::S2MM)];
+
+		m_bdRingTx.SetMaxTransferLen((1 << m_bufLenRegWidth) - 1);
+		m_bdRingRx.SetMaxTransferLen((1 << m_bufLenRegWidth) - 1);
 
 		CLAP_LOG_DEBUG << "Max transfer length: MM2S=" << m_maxTransferLengths[ch2Id(DMAChannel::MM2S)] << ", S2MM=" << m_maxTransferLengths[ch2Id(DMAChannel::S2MM)] << std::endl;
 	}
