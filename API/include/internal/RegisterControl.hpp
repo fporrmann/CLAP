@@ -62,6 +62,15 @@
 	}
 #endif
 
+#ifndef BUILD_EXCEPTION
+#define BUILD_EXCEPTION(__EXPT__, __MSG__) \
+	{                                      \
+		std::stringstream ss;              \
+		ss << CLASS_TAG_AUTO << __MSG__;       \
+		throw __EXPT__(ss.str());          \
+	}
+#endif
+
 // TODO: Move this to a more appropriate place
 enum class DMAChannel
 {

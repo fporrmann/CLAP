@@ -1039,7 +1039,7 @@ private:
 			if (!m_pStatusReg->IsStarted()) return true;
 			if (m_pBdRestart->Addr() == addr) return true;
 
-			BUILD_IP_EXCEPTION(CLAPException, "The BD memory location cannot be changed while the DMA is running, please stop the DMA first");
+			BUILD_EXCEPTION(CLAPException, "The BD memory location cannot be changed while the DMA is running, please stop the DMA first");
 		}
 
 		bool CheckBdMemAddr(const Memory& mem)
@@ -1250,17 +1250,6 @@ private:
 		const uint32_t& HasStsCntrlStrm() const
 		{
 			return m_hasStsCntrlStrm;
-		}
-
-		std::string GetName() const
-		{
-			return "";
-		}
-
-	private:
-		std::string nameTag() const
-		{
-			return "";
 		}
 
 	private:
