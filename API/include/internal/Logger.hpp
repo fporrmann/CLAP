@@ -165,7 +165,7 @@ public:
 	LoggerContainer()  = default;
 	~LoggerContainer() = default;
 
-	Logger& GetLogger(const Verbosity& v)
+	Logger& GetLogger([[maybe_unused]] const Verbosity& v)
 	{
 #ifdef CLAP_DISABLE_LOGGING
 		return m_none;
@@ -188,7 +188,7 @@ public:
 #endif
 	}
 
-	void SetVerbosity(const Verbosity& v)
+	void SetVerbosity([[maybe_unused]] const Verbosity& v)
 	{
 #ifndef CLAP_DISABLE_LOGGING
 		m_debug.SetVerbosity(v);
@@ -245,19 +245,18 @@ inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 
 } // namespace logging
 
-#ifndef CLAP_DISABLE_LOGGING
-#define CLAP_LOG_DEBUG   logging::GetLogger(logging::Verbosity::VB_DEBUG)
-#define CLAP_LOG_VERBOSE logging::GetLogger(logging::Verbosity::VB_VERBOSE)
-#define CLAP_LOG_INFO    logging::GetLogger(logging::Verbosity::VB_INFO)
-#define CLAP_LOG_WARNING logging::GetLogger(logging::Verbosity::VB_WARNING)
-#define CLAP_LOG_ERROR   logging::GetLogger(logging::Verbosity::VB_ERROR)
+#ifdef CLAP_DISABLE_LOGGING
+#define CLAP_LOG_FLAG if (false)
 #else
-#define CLAP_LOG_DEBUG   logging::GetLogger(logging::Verbosity::VB_NONE)
-#define CLAP_LOG_VERBOSE logging::GetLogger(logging::Verbosity::VB_NONE)
-#define CLAP_LOG_INFO    logging::GetLogger(logging::Verbosity::VB_NONE)
-#define CLAP_LOG_WARNING logging::GetLogger(logging::Verbosity::VB_NONE)
-#define CLAP_LOG_ERROR   logging::GetLogger(logging::Verbosity::VB_NONE)
+#define CLAP_LOG_FLAG
 #endif
+
+
+#define CLAP_LOG_DEBUG   CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_DEBUG)
+#define CLAP_LOG_VERBOSE CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_VERBOSE)
+#define CLAP_LOG_INFO    CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_INFO)
+#define CLAP_LOG_WARNING CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_WARNING)
+#define CLAP_LOG_ERROR   CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_ERROR)
 
 #define CLAP_CLASS_LOG_DEBUG   CLAP_LOG_DEBUG << CLASS_TAG_AUTO
 #define CLAP_CLASS_LOG_VERBOSE CLAP_LOG_VERBOSE << CLASS_TAG_AUTO
