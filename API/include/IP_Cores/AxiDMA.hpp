@@ -188,6 +188,13 @@ public:
 		return true;
 	}
 
+	void ClearComplete()
+	{
+		GetStatus();
+		m_status &= ~COMPLETE_MASK;
+		writeRegister(SG_DESC_STATUS, m_status);
+	}
+
 	void SetStatus(const uint32_t& sts)
 	{
 		m_status = sts;
@@ -304,6 +311,79 @@ public:
 };
 
 using SGDescriptors = std::vector<SGDescriptor*>;
+
+class SGDescriptorContainer
+{
+public:
+	SGDescriptorContainer(const SGDescriptors& descs) :
+		m_descriptors(descs)
+	{}
+
+	~SGDescriptorContainer()
+	{
+		for (SGDescriptor* pDesc : m_descriptors)
+			delete pDesc;
+	}
+
+	SGDescriptorContainer(const SGDescriptorContainer& other)            = delete;
+	SGDescriptorContainer& operator=(const SGDescriptorContainer& other) = delete;
+
+	SGDescriptorContainer(SGDescriptorContainer&& other) noexcept :
+		m_descriptors(std::move(other.m_descriptors)),
+		m_completeClearDone(other.m_completeClearDone)
+	{
+		other.m_descriptors.clear();
+		other.m_completeClearDone = false;
+	}
+
+	SGDescriptorContainer& operator=(SGDescriptorContainer&& other) noexcept
+	{
+		if (this != &other)
+		{
+			for (SGDescriptor* pDesc : m_descriptors)
+				delete pDesc;
+
+			m_descriptors       = std::move(other.m_descriptors);
+			m_completeClearDone = other.m_completeClearDone;
+
+			other.m_descriptors.clear();
+			other.m_completeClearDone = false;
+		}
+		return *this;
+	}
+
+	void ResetCompleteState()
+	{
+		for (SGDescriptor* pDesc : m_descriptors)
+			pDesc->ClearComplete();
+
+		m_completeClearDone = true;
+	}
+
+	void SetCompleteClearDone(const bool& done)
+	{
+		m_completeClearDone = done;
+	}
+
+	const bool& GetCompleteClearDone() const
+	{
+		return m_completeClearDone;
+	}
+
+	const SGDescriptors& GetDescriptors() const
+	{
+		return m_descriptors;
+	}
+
+	void SetDescriptors(const SGDescriptors& descs)
+	{
+		m_descriptors = descs;
+	}
+
+private:
+	SGDescriptors m_descriptors = {};
+	bool m_completeClearDone    = false;
+};
 
 template<typename T>
 class AxiDMA : public internal::RegisterControlBase
@@ -884,10 +964,11 @@ public:
 		}
 	}
 
-	void StartSGExtDescs(const DMAChannel& channel, const SGDescriptors& descs)
+	void StartSGExtDescs(const DMAChannel& channel, SGDescriptorContainer& descContainer)
 	{
-		SGDescriptor* pBd     = descs.front();
-		const uint32_t numBDs = static_cast<uint32_t>(descs.size());
+		const SGDescriptors& descs = descContainer.GetDescriptors();
+		SGDescriptor* pBd          = descs.front();
+		const uint32_t numBDs      = static_cast<uint32_t>(descs.size());
 
 		if (channel == DMAChannel::MM2S)
 		{
@@ -901,7 +982,7 @@ public:
 			if (!startBdRing(m_bdRingTx))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to start BD ring");
 
-			if (!bdRingToHw(m_bdRingTx, numBDs, pBd))
+			if (!bdRingToHw(m_bdRingTx, numBDs, pBd, descContainer.GetCompleteClearDone()))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to send packet, length: " << pBd->GetLength());
 		}
 		else if (channel == DMAChannel::S2MM)
@@ -913,15 +994,17 @@ public:
 			if (!m_watchDogS2MM.Start(true))
 				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for S2MM already running!");
 
-			if (!bdRingToHw(m_bdRingRx, numBDs, pBd))
+			if (!bdRingToHw(m_bdRingRx, numBDs, pBd, descContainer.GetCompleteClearDone()))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to read packet, length: " << pBd->GetLength());
 
 			if (!startBdRing(m_bdRingRx))
 				BUILD_IP_EXCEPTION(CLAPException, "Failed to start BD ring");
 		}
+
+		descContainer.SetCompleteClearDone(false);
 	}
 
-	SGDescriptors PreInitSGDescs(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
+	SGDescriptorContainer PreInitSGDescs(const DMAChannel& channel, const Memory& memBD, const Memory& memData, const uint32_t& maxPktByteLen, const uint8_t& numPkts = 1, const uint32_t& bdsPerPkt = 1)
 	{
 		BdRing* pRing = nullptr;
 
@@ -936,7 +1019,7 @@ public:
 		SGDescriptors descs    = initDescs(*pRing, memBD.GetBaseAddr(), bdCount);
 
 		if (configDescs(channel, numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
-			return descs;
+			return SGDescriptorContainer(descs);
 		else
 		{
 			for (SGDescriptor* d : descs)
@@ -944,13 +1027,6 @@ public:
 			descs.clear();
 			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed");
 		}
-	}
-
-	void CleanupSGDescs(SGDescriptors& descs)
-	{
-		for (SGDescriptor* d : descs)
-			delete d;
-		descs.clear();
 	}
 
 private:
@@ -986,13 +1062,11 @@ private:
 			m_runState = SGState::Idle;
 
 			m_pFreeHead  = nullptr;
-			m_pPreHead   = nullptr;
 			m_pHwTail    = nullptr;
 			m_pBdRestart = nullptr;
 			m_pCyclicBd  = nullptr;
 
 			m_freeCnt   = 0;
-			m_preCnt    = 0;
 			m_hwCnt     = 0;
 			m_allCnt    = 0;
 			m_ringIndex = 0;
@@ -1018,13 +1092,11 @@ private:
 			m_extDescs = useExtDescs;
 
 			m_pFreeHead = m_descriptors.front();
-			m_pPreHead  = m_descriptors.front();
 			m_pHwTail   = m_descriptors.front();
 
 			m_pBdRestart = m_descriptors.front();
 
 			m_freeCnt = (m_extDescs ? 0 : m_allCnt);
-			m_preCnt  = (m_extDescs ? m_allCnt : 0);
 			m_hwCnt   = 0;
 		}
 
@@ -1102,11 +1174,6 @@ private:
 			m_pFreeHead = pDesc;
 		}
 
-		void SetPreHead(SGDescriptor* pDesc)
-		{
-			m_pPreHead = pDesc;
-		}
-
 		void SetHwTail(SGDescriptor* pDesc)
 		{
 			m_pHwTail = pDesc;
@@ -1117,11 +1184,6 @@ private:
 			m_pBdRestart = pDesc;
 		}
 
-		void SetPreCnt(const uint32_t& cnt)
-		{
-			m_preCnt = cnt;
-		}
-
 		void SetFreeCnt(const uint32_t& cnt)
 		{
 			m_freeCnt = cnt;
@@ -1130,6 +1192,18 @@ private:
 		void SetHwCnt(const uint32_t& cnt)
 		{
 			m_hwCnt = cnt;
+		}
+
+		void UpdateHwTail(const uint32_t& numBd)
+		{
+			if (m_descriptors.size() < static_cast<std::size_t>(numBd))
+				BUILD_EXCEPTION(CLAPException, "Invalid number of BDs, provided number: " << numBd << " but only " << m_descriptors.size() << " descriptors available");
+
+			if (numBd > 0)
+			{
+				// Minus 1, because the tail indicates the last used BD in the chain, i.e., if 1 BD were to be used the tail would be the same as the head (first BD)
+				m_pHwTail = m_descriptors[numBd - 1];
+			}
 		}
 
 		const DMAChannel& GetChannel() const
@@ -1192,11 +1266,6 @@ private:
 			return m_pFreeHead;
 		}
 
-		SGDescriptor* GetPreHead() const
-		{
-			return m_pPreHead;
-		}
-
 		SGDescriptor* GetHwTail() const
 		{
 			return m_pHwTail;
@@ -1215,11 +1284,6 @@ private:
 		const uint32_t& GetFreeCnt() const
 		{
 			return m_freeCnt;
-		}
-
-		const uint32_t& GetPreCnt() const
-		{
-			return m_preCnt;
 		}
 
 		const uint32_t& GetHwCnt() const
@@ -1264,13 +1328,11 @@ private:
 		uint32_t m_maxTransferLen  = 0;
 
 		SGDescriptor* m_pFreeHead  = nullptr;
-		SGDescriptor* m_pPreHead   = nullptr;
 		SGDescriptor* m_pHwTail    = nullptr;
 		SGDescriptor* m_pBdRestart = nullptr;
 		SGDescriptor* m_pCyclicBd  = nullptr;
 
 		uint32_t m_freeCnt   = 0;
-		uint32_t m_preCnt    = 0;
 		uint32_t m_hwCnt     = 0;
 		uint32_t m_allCnt    = 0;
 		uint32_t m_ringIndex = 0;
@@ -1504,74 +1566,20 @@ private:
 			bdRing.SetFreeHead(bdRing.GetFreeHead()->GetNextDesc());
 
 		bdRing.SetFreeCnt(bdRing.GetFreeCnt() - numBd);
-		bdRing.SetPreCnt(bdRing.GetPreCnt() + numBd);
 
 		return true;
 	}
 
-	bool bdRingToHw(BdRing& bdRing, const uint32_t& numBd, SGDescriptor* pBdSet)
+	bool bdRingToHw(BdRing& bdRing, const uint32_t& numBd, SGDescriptor* pBdSet, const bool& skipBdReset = false)
 	{
 		if (numBd == 0) return true;
 
-		if ((bdRing.GetPreCnt() < numBd) || (bdRing.GetPreHead() != pBdSet))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "BD ring has problems:" << std::endl;
-			if (bdRing.GetPreCnt() < numBd)
-				CLAP_IP_CORE_LOG_ERROR << "preCnt (" << bdRing.GetPreCnt() << ") < numBd (" << numBd << ")" << std::endl;
+		if (!skipBdReset)
+			resetDescs(!bdRing.IsRxChannel(), bdRing.GetMaxTransferLen(), numBd, pBdSet);
+		else
+			CLAP_IP_CORE_LOG_DEBUG << "Skipping BD reset, as it has already been performed beforehand" << std::endl;
 
-			if (bdRing.GetPreHead() != pBdSet)
-				CLAP_IP_CORE_LOG_ERROR << std::hex << "preHead (0x" << bdRing.GetPreHead() << ") != pBdSet (0x" << pBdSet << ")" << std::dec << std::endl;
-
-			return false;
-		}
-
-		SGDescriptor* pCurBd = pBdSet;
-
-		uint32_t bdCr  = pCurBd->GetControl();
-		uint32_t bdSts = pCurBd->GetStatus();
-
-		if (!bdRing.IsRxChannel() && !(bdCr & CTRL_TXSOF_MASK))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Tx first BD does not have SOF" << std::endl;
-			return false;
-		}
-
-		for (uint32_t i = 0; i < numBd - 1; i++)
-		{
-			if ((pCurBd->GetLength() & bdRing.GetMaxTransferLen()) == 0)
-			{
-				CLAP_IP_CORE_LOG_ERROR << "0 length BD at index: " << i << std::endl;
-				return false;
-			}
-
-			bdSts &= ~SGDescriptor::COMPLETE_MASK;
-			pCurBd->SetStatus(bdSts);
-
-			pCurBd = pCurBd->GetNextDesc();
-			bdCr   = pCurBd->GetControl();
-			bdSts  = pCurBd->GetStatus();
-		}
-
-		if (!bdRing.IsRxChannel() && !(bdCr & CTRL_TXEOF_MASK))
-		{
-			CLAP_IP_CORE_LOG_ERROR << "Tx last BD does not have EOF" << std::endl;
-			return false;
-		}
-
-		if ((bdCr & bdRing.GetMaxTransferLen()) == 0)
-		{
-			CLAP_IP_CORE_LOG_ERROR << "0 length BD" << std::endl;
-			return false;
-		}
-
-		bdSts &= ~SGDescriptor::COMPLETE_MASK;
-		pCurBd->SetStatus(bdSts);
-
-		for (uint32_t i = 0; i < numBd; i++)
-			bdRing.SetPreHead(bdRing.GetPreHead()->GetNextDesc());
-
-		bdRing.SetPreCnt(bdRing.GetPreCnt() - numBd);
-		bdRing.SetHwTail(pCurBd);
+		bdRing.UpdateHwTail(numBd);
 		bdRing.SetHwCnt(bdRing.GetHwCnt() + numBd);
 
 		if (bdRing.GetRunState() == SGState::Running)
@@ -1828,6 +1836,45 @@ private:
 			pRxBuffer += bdLength;
 			pBdCur = pBdCur->GetNextDesc();
 		}
+
+		return true;
+	}
+
+	bool resetDescs(const bool& isTx, const uint32_t& maxTransLen, const uint32_t& numBd, SGDescriptor* pBdSet)
+	{
+		SGDescriptor* pCurBd = pBdSet;
+
+		if (isTx && !(pCurBd->GetControl() & CTRL_TXSOF_MASK))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Tx first BD does not have SOF" << std::endl;
+			return false;
+		}
+
+		for (uint32_t i = 0; i < numBd - 1; i++)
+		{
+			if ((pCurBd->GetLength() & maxTransLen) == 0)
+			{
+				CLAP_IP_CORE_LOG_ERROR << "0 length BD at index: " << i << std::endl;
+				return false;
+			}
+
+			pCurBd->ClearComplete();
+			pCurBd = pCurBd->GetNextDesc();
+		}
+
+		if (isTx && !(pCurBd->GetControl() & CTRL_TXEOF_MASK))
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Tx last BD does not have EOF" << std::endl;
+			return false;
+		}
+
+		if ((pCurBd->GetLength() & maxTransLen) == 0)
+		{
+			CLAP_IP_CORE_LOG_ERROR << "0 length BD" << std::endl;
+			return false;
+		}
+
+		pCurBd->ClearComplete();
 
 		return true;
 	}

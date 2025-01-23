@@ -149,14 +149,16 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 		std::cout << "---------------------------- Testing MM2S and S2MM channels separately DESCS1 ----------------------------" << std::endl;
 
-		clap::SGDescriptors descs0 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem, inBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
-		clap::SGDescriptors descs1 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem2, inBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptorContainer descs0 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem, inBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptorContainer descs1 = axiDMAmm2s.PreInitSGDescs(DMAChannel::MM2S, txBdMem2, inBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
 
-		clap::SGDescriptors descs2 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem, outBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
-		clap::SGDescriptors descs3 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem2, outBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptorContainer descs2 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem, outBuf, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
+		clap::SGDescriptorContainer descs3 = axiDMAs2mm.PreInitSGDescs(DMAChannel::S2MM, rxBdMem2, outBuf2, MAX_PKT_BYTE_LEN, NUMBER_OF_PKTS_TO_TRANSFER, NUMBER_OF_BDS_PER_PKT);
 
 		for (uint32_t i = 0; i < 10; i++)
 		{
+			descs0.ResetCompleteState();
+			descs2.ResetCompleteState();
 			pClap->Write(outBuf, zeroData);
 			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs0);
 			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs2);
@@ -200,6 +202,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 		for (uint32_t i = 0; i < 10; i++)
 		{
+			descs1.ResetCompleteState();
+			descs3.ResetCompleteState();
 			pClap->Write(outBuf2, zeroData);
 			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs1);
 			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs3);
@@ -242,9 +246,25 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 		{
 			axiDMAmm2s.Stop();
 			axiDMAs2mm.Stop();
-			pClap->Write((i % 2 == 0 ? outBuf : outBuf2), zeroData);
-			axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, (i % 2 == 0 ? descs0 : descs1));
-			axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, (i % 2 == 0 ? descs2 : descs3));
+
+			if (i % 2 == 0)
+			{
+				descs0.ResetCompleteState();
+				descs2.ResetCompleteState();
+
+				pClap->Write(outBuf, zeroData);
+				axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs0);
+				axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs2);
+			}
+			else
+			{
+				descs1.ResetCompleteState();
+				descs3.ResetCompleteState();
+
+				pClap->Write(outBuf2, zeroData);
+				axiDMAmm2s.StartSGExtDescs(DMAChannel::MM2S, descs1);
+				axiDMAs2mm.StartSGExtDescs(DMAChannel::S2MM, descs3);
+			}
 
 			// Wait until the MM2S channel finishes (an interrupt occures on complete)
 			if (axiDMAmm2s.WaitForFinish(DMAChannel::MM2S))

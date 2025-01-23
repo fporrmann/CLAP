@@ -251,7 +251,6 @@ inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 #define CLAP_LOG_FLAG
 #endif
 
-
 #define CLAP_LOG_DEBUG   CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_DEBUG)
 #define CLAP_LOG_VERBOSE CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_VERBOSE)
 #define CLAP_LOG_INFO    CLAP_LOG_FLAG clap::logging::GetLogger(clap::logging::Verbosity::VB_INFO)
