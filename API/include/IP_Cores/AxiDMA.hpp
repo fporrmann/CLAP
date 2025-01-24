@@ -315,8 +315,9 @@ using SGDescriptors = std::vector<SGDescriptor*>;
 class SGDescriptorContainer
 {
 public:
-	SGDescriptorContainer(const SGDescriptors& descs) :
-		m_descriptors(descs)
+	SGDescriptorContainer(const SGDescriptors& descs, const uint8_t& numPkts) :
+		m_descriptors(descs),
+		m_numPkts(numPkts)
 	{}
 
 	~SGDescriptorContainer()
@@ -330,10 +331,12 @@ public:
 
 	SGDescriptorContainer(SGDescriptorContainer&& other) noexcept :
 		m_descriptors(std::move(other.m_descriptors)),
-		m_completeClearDone(other.m_completeClearDone)
+		m_completeClearDone(other.m_completeClearDone),
+		m_numPkts(other.m_numPkts)
 	{
 		other.m_descriptors.clear();
 		other.m_completeClearDone = false;
+		other.m_numPkts           = 0;
 	}
 
 	SGDescriptorContainer& operator=(SGDescriptorContainer&& other) noexcept
@@ -345,9 +348,11 @@ public:
 
 			m_descriptors       = std::move(other.m_descriptors);
 			m_completeClearDone = other.m_completeClearDone;
+			m_numPkts           = other.m_numPkts;
 
 			other.m_descriptors.clear();
 			other.m_completeClearDone = false;
+			other.m_numPkts           = 0;
 		}
 		return *this;
 	}
@@ -380,9 +385,20 @@ public:
 		m_descriptors = descs;
 	}
 
+	const uint8_t& GetNumPkts() const
+	{
+		return m_numPkts;
+	}
+
+	void SetNumPkts(const uint8_t& numPkts)
+	{
+		m_numPkts = numPkts;
+	}
+
 private:
 	SGDescriptors m_descriptors = {};
 	bool m_completeClearDone    = false;
+	uint8_t m_numPkts           = 0;
 };
 
 template<typename T>
@@ -969,6 +985,7 @@ public:
 		const SGDescriptors& descs = descContainer.GetDescriptors();
 		SGDescriptor* pBd          = descs.front();
 		const uint32_t numBDs      = static_cast<uint32_t>(descs.size());
+		const uint8_t& numPkts     = descContainer.GetNumPkts();
 
 		if (channel == DMAChannel::MM2S)
 		{
@@ -976,6 +993,10 @@ public:
 				BUILD_IP_EXCEPTION(CLAPException, "DMA channel MM2S is still active");
 
 			m_bdRingTx.Init(descs, true);
+
+			if (!setCoalesce(m_bdRingTx, numPkts, SG_IRQ_DELAY))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed set coalescing " << static_cast<uint32_t>(numPkts) << "/" << static_cast<uint32_t>(SG_IRQ_DELAY));
+
 			if (!m_watchDogMM2S.Start(true))
 				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for MM2S already running!");
 
@@ -991,6 +1012,10 @@ public:
 				BUILD_IP_EXCEPTION(CLAPException, "DMA channel S2MM is still active");
 
 			m_bdRingRx.Init(descs, true);
+
+			if (!setCoalesce(m_bdRingRx, numPkts, SG_IRQ_DELAY))
+				BUILD_IP_EXCEPTION(CLAPException, "Failed set coalescing " << static_cast<uint32_t>(numPkts) << "/" << static_cast<uint32_t>(SG_IRQ_DELAY));
+
 			if (!m_watchDogS2MM.Start(true))
 				BUILD_IP_EXCEPTION(CLAPException, "Watchdog for S2MM already running!");
 
@@ -1019,7 +1044,7 @@ public:
 		SGDescriptors descs    = initDescs(*pRing, memBD.GetBaseAddr(), bdCount);
 
 		if (configDescs(channel, numPkts, maxPktByteLen, bdsPerPkt, memData, descs.front()))
-			return SGDescriptorContainer(descs);
+			return SGDescriptorContainer(descs, numPkts);
 		else
 		{
 			for (SGDescriptor* d : descs)
