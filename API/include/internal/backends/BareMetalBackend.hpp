@@ -124,7 +124,8 @@ class BareMetalUserInterrupt : virtual public UserInterruptBase
 public:
 	BareMetalUserInterrupt()
 	{
-		m_devName = "BareMetal";
+		m_devName      = "BareMetal";
+		m_interruptNum = MINUS_ONE_U;
 	}
 
 	~BareMetalUserInterrupt() override
@@ -134,8 +135,8 @@ public:
 
 	void Init([[maybe_unused]] const uint32_t& devNum, [[maybe_unused]] const uint32_t& interruptNum, [[maybe_unused]] HasInterrupt* pReg = nullptr) override
 	{
-		m_intrNum = interruptNum;
-		m_pReg    = pReg;
+		m_interruptNum = interruptNum;
+		m_pReg         = pReg;
 
 		CLAP_CLASS_LOG_DEBUG << "Registering Interrupt " << interruptNum << std::endl;
 
@@ -181,24 +182,23 @@ public:
 				callback(lastIntr);
 		}
 
-		CLAP_CLASS_LOG_DEBUG << "Interrupt present, Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Interrupt present for interrupt #" << m_interruptNum << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
 		m_intrPresent = true;
 	}
 
 private:
 	void unset()
 	{
-		if (m_isSet && m_intrNum != MINUS_ONE_U)
-			BareMetalGic::GetInstance().UnregisterInterrupt(m_intrNum);
+		if (m_isSet && m_interruptNum != MINUS_ONE_U)
+			BareMetalGic::GetInstance().UnregisterInterrupt(m_interruptNum);
 
-		m_isSet   = false;
-		m_intrNum = MINUS_ONE_U;
-		m_pReg    = nullptr;
+		m_isSet        = false;
+		m_interruptNum = MINUS_ONE_U;
+		m_pReg         = nullptr;
 	}
 
 private:
 	bool m_isSet        = false;
-	uint32_t m_intrNum  = MINUS_ONE_U;
 	bool m_runCallbacks = true;
 	bool m_intrPresent  = false;
 };
