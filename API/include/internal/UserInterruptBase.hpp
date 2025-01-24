@@ -104,6 +104,16 @@ public:
 		return m_instantForward;
 	}
 
+	bool HasDoneIntr() const
+	{
+		return m_pReg->HasDoneIntr();
+	}
+
+	bool HasErrorIntr() const
+	{
+		return m_pReg->HasErrorIntr();
+	}
+
 protected:
 	std::string m_devName                 = "";
 	HasInterrupt* m_pReg                  = nullptr;

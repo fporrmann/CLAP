@@ -2248,6 +2248,16 @@ private:
 			return intr;
 		}
 
+		bool HasDoneIntr() const override
+		{
+			return m_ioCIrq;
+		}
+
+		bool HasErrorIntr() const override
+		{
+			return m_errIrq;
+		}
+
 		void ResetInterrupts(const DMAInterrupts& intr)
 		{
 			if (intr & INTR_ON_COMPLETE)

@@ -79,8 +79,18 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 		{
 			if (pUserIntr->IsSet())
 			{
-				while (!pThreadDone->load(std::memory_order_acquire) && !pUserIntr->WaitForInterrupt(100))
-					;
+				while (true)
+				{
+					if (pThreadDone->load(std::memory_order_acquire)) break;
+
+					pUserIntr->WaitForInterrupt(100);
+					if (pUserIntr->HasDoneIntr()) break;
+					if (pUserIntr->HasErrorIntr())
+					{
+						CLAP_LOG_ERROR << "[" << name << "] an error interrupt was triggered" << std::endl;
+						break;
+					}
+				}
 			}
 			else if (pStatus)
 			{

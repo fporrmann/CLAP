@@ -347,6 +347,11 @@ private:
 			return getInterrupts();
 		}
 
+		bool HasDoneIntr() const override
+		{
+			return m_ap_done;
+		}
+
 		void Reset()
 		{
 			reset();
@@ -376,7 +381,7 @@ private:
 		void clearInterrupts()
 		{
 			m_lastInterrupt = getInterrupts();
-			ResetInterrupts(AP_INTR_ALL);
+			ResetInterrupts(static_cast<APInterrupts>(m_lastInterrupt));
 		}
 
 		void reset()

@@ -459,6 +459,16 @@ public:
 		return 0;
 	}
 
+	virtual bool HasDoneIntr() const
+	{
+		return true;
+	}
+
+	virtual bool HasErrorIntr() const
+	{
+		return false;
+	}
+
 	uint32_t GetLastInterrupt() const
 	{
 		return m_lastInterrupt;

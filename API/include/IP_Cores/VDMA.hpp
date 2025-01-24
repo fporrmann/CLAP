@@ -509,6 +509,11 @@ private:
 			return intr;
 		}
 
+		bool HasErrorIntr() const override
+		{
+			return m_errIrq;
+		}
+
 		void ResetInterrupts(const VDMAInterrupts& intr)
 		{
 			if (intr & VDMA_INTR_ON_FRAME_COUNT)
