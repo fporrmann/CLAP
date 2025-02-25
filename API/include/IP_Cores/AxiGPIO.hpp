@@ -127,7 +127,7 @@ public:
 		registerReg<uint32_t>(m_ipIntrEn, ADDR_IP_IER);
 		registerReg<uint32_t>(m_ipIntrStatus, ADDR_IP_ISR);
 
-		m_watchDog.SetFinishCallback(std::bind(&AxiGPIO::OnFinished, this));
+		m_watchDog.SetIPCoreFinishCallback(std::bind(&AxiGPIO::OnFinished, this));
 		m_watchDog.RegisterInterruptCallback(std::bind(&AxiGPIO::InterruptTriggered, this, std::placeholders::_1));
 
 		detectDualChannel();

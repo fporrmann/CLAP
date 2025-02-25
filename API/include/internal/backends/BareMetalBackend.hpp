@@ -176,13 +176,9 @@ public:
 		if (m_pReg)
 			lastIntr = m_pReg->GetLastInterrupt();
 
-		if (m_runCallbacks)
-		{
-			for (const auto& callback : m_callbacks)
-				callback(lastIntr);
-		}
+		processCallbacks(m_runCallbacks, lastIntr);
 
-		CLAP_CLASS_LOG_DEBUG << "Interrupt present for interrupt #" << m_interruptNum << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Status Register Specified") << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Interrupt present for interrupt #" << m_interruptNum << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Interrupt Status Register Specified") << std::endl;
 		m_intrPresent = true;
 	}
 

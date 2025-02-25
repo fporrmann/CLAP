@@ -52,16 +52,12 @@ namespace internal
 static std::exception_ptr g_pExcept = nullptr;
 static int64_t g_pollSleepTimeMS    = 10;
 
-// TODO: Rename to indicate that this also controls whether the thread should be terminated
-// TODO: Replace the bool with an enum
-using WatchDogFinishCallback = std::function<bool(void)>;
-
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
 //       Find a better way, i.e., a way to interrupt the call to poll (ppoll or epoll might be a solution)
 
 #ifndef EMBEDDED_XILINX
 static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, [[maybe_unused]] std::condition_variable* pCv, [[maybe_unused]] const std::string& name,
-								std::atomic<bool>* pThreadDone, [[maybe_unused]] const bool& dontTerminate, [[maybe_unused]] const WatchDogFinishCallback& callback)
+								std::atomic<bool>* pThreadDone, [[maybe_unused]] const bool& dontTerminate)
 {
 	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
@@ -84,6 +80,9 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 					if (pThreadDone->load(std::memory_order_acquire)) break;
 
 					pUserIntr->WaitForInterrupt(100);
+
+					if (!pUserIntr->HasStatusReg()) break;
+
 					if (pUserIntr->HasDoneIntr()) break;
 					if (pUserIntr->HasErrorIntr())
 					{
@@ -99,8 +98,14 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 			}
 
 			const bool forceTerminate = pThreadDone->load(std::memory_order_acquire);
-			if (!forceTerminate && callback)
-				end = callback();
+			if (!forceTerminate && pUserIntr->HasFinishedCallback())
+			{
+				// The Finished callback will be called by the interrupt handler once the interrupt is received
+				if (pUserIntr->IsSet())
+					end = pUserIntr->IsIpCoreFinished();
+				else // When polling, the Finished callback is called here -- TODO: This might still not be the best position
+					end = pUserIntr->CallIpCoreFinishCallback();
+			}
 
 		} while (!pThreadDone->load(std::memory_order_acquire) && dontTerminate && !end);
 	}
@@ -206,7 +211,7 @@ public:
 
 		g_pExcept = nullptr;
 		m_threadDone.store(false, std::memory_order_release);
-		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone, dontTerminate, m_callback);
+		m_waitThread    = std::thread(waitForFinishThread, m_pInterrupt.get(), m_pStatus, &m_timer, &m_cv, m_name, &m_threadDone, dontTerminate);
 		m_threadRunning = true;
 #endif
 
@@ -286,9 +291,9 @@ public:
 		m_pInterrupt->SetInstantForward(instantForward);
 	}
 
-	void SetFinishCallback(WatchDogFinishCallback callback)
+	void SetIPCoreFinishCallback(IPCoreFinishCallback callback)
 	{
-		m_callback = callback;
+		m_pInterrupt->SetIPCoreFinishCallback(callback);
 	}
 
 private:
@@ -330,8 +335,7 @@ private:
 	bool m_threadRunning = false;
 	std::atomic<bool> m_threadDone;
 #endif
-	WatchDogFinishCallback m_callback = nullptr;
-	HasStatus* m_pStatus              = nullptr;
+	HasStatus* m_pStatus = nullptr;
 };
 } // namespace internal
 

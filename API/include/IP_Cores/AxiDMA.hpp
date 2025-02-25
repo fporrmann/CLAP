@@ -496,7 +496,7 @@ public:
 			registerReg<uint32_t>(m_mm2sStatReg, MM2S_DMASR);
 
 			m_watchDogMM2S.SetStatusRegister(&m_mm2sStatReg);
-			m_watchDogMM2S.SetFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
+			m_watchDogMM2S.SetIPCoreFinishCallback(std::bind(&AxiDMA::OnMM2SFinished, this));
 		}
 
 		if (m_s2mmPresent)
@@ -505,7 +505,7 @@ public:
 			registerReg<uint32_t>(m_s2mmStatReg, S2MM_DMASR);
 
 			m_watchDogS2MM.SetStatusRegister(&m_s2mmStatReg);
-			m_watchDogS2MM.SetFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
+			m_watchDogS2MM.SetIPCoreFinishCallback(std::bind(&AxiDMA::OnS2MMFinished, this));
 		}
 
 		detectBufferLengthRegWidth();

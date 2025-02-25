@@ -86,12 +86,19 @@ public:
 		m_callbacks.push_back(callback);
 	}
 
+	void SetIPCoreFinishCallback(const IPCoreFinishCallback& callback)
+	{
+		m_ipCoreFinishCallback = callback;
+	}
+
 	void TransferCallbacks(UserInterruptBase* pInterrupt)
 	{
 		for (const auto& callback : m_callbacks)
 			pInterrupt->RegisterCallback(callback);
 
 		m_callbacks.clear();
+
+		pInterrupt->SetIPCoreFinishCallback(std::move(m_ipCoreFinishCallback));
 	}
 
 	void SetInstantForward(const bool& instantForward)
@@ -104,22 +111,72 @@ public:
 		return m_instantForward;
 	}
 
+	bool HasStatusReg() const
+	{
+		return m_pReg != nullptr;
+	}
+
 	bool HasDoneIntr() const
 	{
-		return m_pReg->HasDoneIntr();
+		if(!IsSet())
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt Status Register is not set, HasDoneIntr can only be called when a status register as been set.");
+
+			return m_pReg->HasDoneIntr();
 	}
 
 	bool HasErrorIntr() const
 	{
+		if (!IsSet())
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt Status Register is not set, HasErrorIntr can only be called when a status register as been set.");
+
 		return m_pReg->HasErrorIntr();
 	}
 
+	bool HasFinishedCallback() const
+	{
+		return m_ipCoreFinishCallback != nullptr;
+	}
+
+	bool IsIpCoreFinished() const
+	{
+		if (!IsSet())
+		BUILD_EXCEPTION(UserInterruptException, "Interrupt is unset, IsIpCoreFinished can only be called on set interrupts, if the interrupt is not set please check the finish state using the CallIpCoreFinishCallback() method.");
+
+		return m_isIpCoreFinished;
+	}
+
+	bool CallIpCoreFinishCallback()
+	{
+		if (IsSet())
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt is set, CallIpCoreFinishCallback can only be called on unset interrupts, as for set interrupts this is automatically done when an interrupt is received. Please check the finish state using the IsIpCoreFinished() method.");
+
+		if (m_ipCoreFinishCallback)
+			return m_ipCoreFinishCallback();
+		else // If the callback is not set, return true as the core is finished
+			return true;
+	}
+
 protected:
-	std::string m_devName                 = "";
-	HasInterrupt* m_pReg                  = nullptr;
-	std::vector<IntrCallback> m_callbacks = {};
-	uint32_t m_interruptNum               = 0;
-	bool m_instantForward                 = false;
+	void processCallbacks(const bool& runCallbacks, const uint32_t& lastIntr)
+	{
+		if (runCallbacks)
+		{
+			for (const auto& callback : m_callbacks)
+				callback(lastIntr);
+		}
+
+		if (m_ipCoreFinishCallback)
+			m_isIpCoreFinished = m_ipCoreFinishCallback();
+	}
+
+protected:
+	std::string m_devName                       = "";
+	HasInterrupt* m_pReg                        = nullptr;
+	std::vector<IntrCallback> m_callbacks       = {};
+	IPCoreFinishCallback m_ipCoreFinishCallback = nullptr;
+	uint32_t m_interruptNum                     = 0;
+	bool m_instantForward                       = false;
+	bool m_isIpCoreFinished                     = false;
 };
 } // namespace internal
 } // namespace clap

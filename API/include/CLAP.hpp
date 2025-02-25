@@ -50,6 +50,7 @@
 // --------------------------------------------------------------------------------------------
 // - Read/Write stream methods are only implemented for XDMA, possible for other backends? -- Move to different location
 // --------------------------------------------------------------------------------------------
+// - Reduce the redundant code in the WaitForInterrupt methods of the UserInterrupt implementations
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 /////////////////////////

@@ -52,7 +52,8 @@ using CLAPBuffer = std::vector<T, CLAPBufferAllocator<T>>;
 using CLAPPtr  = std::shared_ptr<class CLAP>;
 using Bit32Arr = std::array<bool, 32>;
 
-using IntrCallback = std::function<void(uint32_t)>;
+using IntrCallback         = std::function<void(uint32_t)>;
+using IPCoreFinishCallback = std::function<bool(void)>;
 
 namespace internal
 {
