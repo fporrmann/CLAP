@@ -63,6 +63,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 		// Write the test data to the input buffer
 		pClap->Write(inBuf, testData);
+		pClap->Write(inBuf2, testData2);
+
 		clap::AxiDMA<uint32_t> axiDMA(pClap, AXI_DMA_BASE_ADDR);
 
 		clap::AxiDMA<uint32_t> axiDMAmm2s(pClap, AXI_MM2S_DMA_BASE_ADDR);
