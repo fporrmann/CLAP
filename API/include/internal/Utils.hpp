@@ -69,6 +69,15 @@ void xUSleep(const std::chrono::microseconds &us)
 #define FUNCTION_TAG "[" << __func__ << "] "
 #endif
 
+#ifndef BUILD_EXCEPTION
+#define BUILD_EXCEPTION(__EXPT__, __MSG__) \
+	{                                      \
+		std::stringstream ss;              \
+		ss << CLASS_TAG_AUTO << __MSG__;   \
+		throw __EXPT__(ss.str());          \
+	}
+#endif
+
 #ifndef DISABLE_COPY_ASSIGN_MOVE
 #define DISABLE_COPY_ASSIGN_MOVE(_C_)                                               \
 	_C_(const _C_ &)            = delete; /* disable copy constructor */            \
