@@ -269,8 +269,6 @@ public:
 			while (!m_pStatus->PollDone())
 				utils::SleepUS(1);
 		}
-
-		m_callback();
 #endif
 
 		return true;
