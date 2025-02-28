@@ -91,7 +91,7 @@ public:
 		m_ipCoreFinishCallback = callback;
 	}
 
-	void TransferCallbacks(UserInterruptBase* pInterrupt)
+	void Transfer(UserInterruptBase* pInterrupt)
 	{
 		for (const auto& callback : m_callbacks)
 			pInterrupt->RegisterCallback(callback);
@@ -99,6 +99,10 @@ public:
 		m_callbacks.clear();
 
 		pInterrupt->SetIPCoreFinishCallback(std::move(m_ipCoreFinishCallback));
+
+		pInterrupt->SetName(m_devName);
+		pInterrupt->SetInterruptNum(m_interruptNum);
+		pInterrupt->SetReg(m_pReg);
 	}
 
 	bool HasStatusReg() const
@@ -108,10 +112,10 @@ public:
 
 	bool HasDoneIntr() const
 	{
-		if(!IsSet())
+		if (!IsSet())
 			BUILD_EXCEPTION(UserInterruptException, "Interrupt Status Register is not set, HasDoneIntr can only be called when a status register as been set.");
 
-			return m_pReg->HasDoneIntr();
+		return m_pReg->HasDoneIntr();
 	}
 
 	bool HasErrorIntr() const
@@ -130,7 +134,7 @@ public:
 	bool IsIpCoreFinished() const
 	{
 		if (!IsSet())
-		BUILD_EXCEPTION(UserInterruptException, "Interrupt is unset, IsIpCoreFinished can only be called on set interrupts, if the interrupt is not set please check the finish state using the CallIpCoreFinishCallback() method.");
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt is unset, IsIpCoreFinished can only be called on set interrupts, if the interrupt is not set please check the finish state using the CallIpCoreFinishCallback() method.");
 
 		return m_isIpCoreFinished;
 	}
@@ -144,6 +148,21 @@ public:
 			return m_ipCoreFinishCallback();
 		else // If the callback is not set, return true as the core is finished
 			return true;
+	}
+
+	void SetName(const std::string& name)
+	{
+		m_devName = name;
+	}
+
+	void SetInterruptNum(const uint32_t& interruptNum)
+	{
+		m_interruptNum = interruptNum;
+	}
+
+	void SetReg(HasInterrupt* pReg)
+	{
+		m_pReg = pReg;
 	}
 
 protected:

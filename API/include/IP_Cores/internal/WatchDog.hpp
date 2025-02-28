@@ -155,7 +155,7 @@ public:
 
 	void SetUserInterrupt(UserInterruptPtr pInterrupt)
 	{
-		m_pInterrupt->TransferCallbacks(pInterrupt.get());
+		m_pInterrupt->Transfer(pInterrupt.get());
 		m_pInterrupt = std::move(pInterrupt);
 	}
 
