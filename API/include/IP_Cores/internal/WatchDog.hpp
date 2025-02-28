@@ -156,7 +156,6 @@ public:
 	void SetUserInterrupt(UserInterruptPtr pInterrupt)
 	{
 		m_pInterrupt->TransferCallbacks(pInterrupt.get());
-		m_pInterrupt->SetInstantForward(pInterrupt->GetInstantForward());
 		m_pInterrupt = std::move(pInterrupt);
 	}
 
@@ -282,11 +281,6 @@ public:
 	void RegisterInterruptCallback(const IntrCallback& callback)
 	{
 		m_pInterrupt->RegisterCallback(callback);
-	}
-
-	void SetInstantForward(const bool& instantForward)
-	{
-		m_pInterrupt->SetInstantForward(instantForward);
 	}
 
 	void SetIPCoreFinishCallback(IPCoreFinishCallback callback)

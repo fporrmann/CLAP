@@ -210,7 +210,6 @@ public:
 		m_globalIntrEn.SetGlobalInterruptEnable(true);
 
 		m_watchDog.InitInterrupt(getDevNum(), intrID, &m_ipIntrStatus);
-		m_watchDog.SetInstantForward(true);
 		m_ipIntrEn.EnableInterrupt(intr);
 	}
 

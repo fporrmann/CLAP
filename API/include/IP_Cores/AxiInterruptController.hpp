@@ -73,14 +73,6 @@ public:
 
 		m_interruptOccured = false;
 
-		uint32_t lastIntr = UNSET_INTR_MASK;
-		if (m_pReg)
-			lastIntr = m_pReg->GetLastInterrupt();
-
-		processCallbacks(runCallbacks, lastIntr);
-
-		CLAP_CLASS_LOG_DEBUG << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Interrupt Status Register Specified") << std::endl;
-
 		return true;
 	}
 
@@ -89,14 +81,18 @@ public:
 		if (m_pReg)
 			m_pReg->ClearInterrupts();
 
+		uint32_t lastIntr = UNSET_INTR_MASK;
+		if (m_pReg)
+			lastIntr = m_pReg->GetLastInterrupt();
+
+		processCallbacks(m_runCallbacks, lastIntr);
+
+		CLAP_CLASS_LOG_DEBUG << "Interrupt present on " << m_devName << ", Interrupt Mask: " << (m_pReg ? std::to_string(lastIntr) : "No Interrupt Status Register Specified") << std::endl;
+
 		m_interruptOccured = true;
 #ifndef EMBEDDED_XILINX
 		m_cv.notify_all();
-#else
-		if (m_instantForward)
-			WaitForInterrupt();
 #endif
-		CLAP_CLASS_LOG_DEBUG << "Interrupt triggered on " << m_devName << std::endl;
 	}
 
 private:
@@ -148,6 +144,7 @@ private:
 	std::mutex m_mtx             = {};
 #endif
 	bool m_interruptOccured = false;
+	bool m_runCallbacks     = true;
 };
 } // namespace internal
 

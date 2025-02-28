@@ -101,16 +101,6 @@ public:
 		pInterrupt->SetIPCoreFinishCallback(std::move(m_ipCoreFinishCallback));
 	}
 
-	void SetInstantForward(const bool& instantForward)
-	{
-		m_instantForward = instantForward;
-	}
-
-	const bool& GetInstantForward() const
-	{
-		return m_instantForward;
-	}
-
 	bool HasStatusReg() const
 	{
 		return m_pReg != nullptr;
@@ -175,7 +165,6 @@ protected:
 	std::vector<IntrCallback> m_callbacks       = {};
 	IPCoreFinishCallback m_ipCoreFinishCallback = nullptr;
 	uint32_t m_interruptNum                     = 0;
-	bool m_instantForward                       = false;
 	bool m_isIpCoreFinished                     = false;
 };
 } // namespace internal
