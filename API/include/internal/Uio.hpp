@@ -51,8 +51,6 @@ using UIOAddrType = uint64_t;
 using UIOAddrType = uint32_t;
 #endif
 
-namespace fs = std::filesystem;
-
 // TODO:
 //  - Handle multiple maps
 //    This will require proper offsetting -- according to https://www.kernel.org/doc/html/latest/driver-api/uio-howto.html#mmap-device-memory
@@ -422,7 +420,7 @@ public:
 
 	bool CheckPropertyExists(const std::string& property) const
 	{
-		return fs::exists(m_devTreePropPath + property);
+		return std::filesystem::exists(m_devTreePropPath + property);
 	}
 
 	const std::string& GetName() const
