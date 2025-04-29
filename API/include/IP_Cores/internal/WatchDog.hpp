@@ -49,8 +49,12 @@ namespace clap
 {
 namespace internal
 {
-static std::exception_ptr g_pExcept = nullptr;
-static int64_t g_pollSleepTimeMS    = 10;
+inline std::exception_ptr g_pExcept = nullptr;
+#ifdef EMBEDDED_XILINX
+inline int64_t g_sleepTimeUS        = 10;
+#else
+inline int64_t g_pollSleepTimeMS    = 10;
+#endif
 
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
 //       Find a better way, i.e., a way to interrupt the call to poll (ppoll or epoll might be a solution)
@@ -229,12 +233,18 @@ public:
 #endif
 	}
 
-	bool WaitForFinish(const int32_t& timeoutMS = WAIT_INFINITE)
+	/// @brief Waits for the thread to finish
+	/// @details This function will block until the thread has finished or the timeout has been reached.
+	/// @details If the timeout is set to WAIT_INFINITE, the function will block until the thread has finished.
+	/// @details If the thread has already finished, the function will return immediately.
+	/// @param timeout The timeout in microseconds for BareMetal or milliseconds for Linux. Default is WAIT_INFINITE, which means no timeout.
+	/// @return True if the thread has finished, false if the timeout was reached.
+	bool WaitForFinish(const int32_t& timeout = WAIT_INFINITE)
 	{
 #ifndef EMBEDDED_XILINX
 		using namespace std::chrono_literals;
 
-		CLAP_CLASS_LOG_DEBUG << "Core=" << m_name << " timeoutMS=" << (timeoutMS == WAIT_INFINITE ? "Infinite" : std::to_string(timeoutMS)) << std::endl;
+		CLAP_CLASS_LOG_DEBUG << "Core=" << m_name << " timeout=" << (timeout == WAIT_INFINITE ? "Infinite" : std::to_string(timeout) + " ms") << std::endl;
 
 		if (!m_threadRunning)
 			return true;
@@ -249,40 +259,42 @@ public:
 		{
 			std::unique_lock<std::mutex> lck(m_mtx);
 
-			if (timeoutMS == WAIT_INFINITE)
+			if (timeout == WAIT_INFINITE)
 				m_cv.wait(lck, [this] { return m_threadDone.load(std::memory_order_acquire); });
-			else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeoutMS)) == std::cv_status::timeout)
+			else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
 				return false;
 		}
 
 		joinThread();
 		checkException();
 #else
-		int32_t timeoutCnt = 0;
+		int32_t sleepTimeUS = 0;
 
 		if (m_pInterrupt->IsSet())
 		{
 			while (!m_pInterrupt->WaitForInterrupt())
 			{
-				if(timeoutMS != WAIT_INFINITE)
+				if (timeoutMS != WAIT_INFINITE)
 				{
-					if (timeoutCnt++ > timeoutMS)
+					if (sleepTimeUS > timeout)
 						return false;
 				}
-				utils::SleepUS(1000);
+				utils::SleepUS(g_sleepTimeUS);
+				sleepTimeUS += g_sleepTimeUS;
 			}
 		}
 		else if (m_pStatus != nullptr)
 		{
 			while (!m_pStatus->PollDone())
 			{
-				if(timeoutMS != WAIT_INFINITE)
+				if (timeoutMS != WAIT_INFINITE)
 				{
-					if (timeoutCnt++ > timeoutMS)
+					if (sleepTimeUS > timeout)
 						return false;
 				}
+				utils::SleepUS(g_sleepTimeUS);
+				sleepTimeUS += g_sleepTimeUS;
 			}
-				utils::SleepUS(1000);
 		}
 #endif
 
@@ -347,9 +359,16 @@ private:
 };
 } // namespace internal
 
+#ifdef EMBEDDED_XILINX
+inline void SetWatchDogSleepTimeUS(const uint32_t& timeUS = 10)
+{
+	internal::g_sleepTimeUS = timeUS;
+}
+#else
 inline void SetWatchDogPollSleepTimeMS(const uint32_t& timeMS = 10)
 {
 	internal::g_pollSleepTimeMS = timeMS;
 }
+#endif
 
 } // namespace clap
