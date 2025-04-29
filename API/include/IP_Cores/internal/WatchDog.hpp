@@ -274,7 +274,7 @@ public:
 		{
 			while (!m_pInterrupt->WaitForInterrupt())
 			{
-				if (timeoutMS != WAIT_INFINITE)
+				if (timeout != WAIT_INFINITE)
 				{
 					if (sleepTimeUS > timeout)
 						return false;
@@ -287,7 +287,7 @@ public:
 		{
 			while (!m_pStatus->PollDone())
 			{
-				if (timeoutMS != WAIT_INFINITE)
+				if (timeout != WAIT_INFINITE)
 				{
 					if (sleepTimeUS > timeout)
 						return false;
