@@ -96,11 +96,14 @@ public:
 	}
 
 private:
+	/// @brief Wait for the interrupt to occur
+	/// @param timeout The timeout in microseconds for BareMetal or milliseconds for Linux. Default is WAIT_INFINITE, which means no timeout.
+	/// @return
 	bool waitForInterrupt([[maybe_unused]] const int32_t& timeout = WAIT_INFINITE)
 	{
 		// The interruptOccured flag is used to make sure that the interrupt has not already occured
 #ifdef EMBEDDED_XILINX
-		const uint64_t timeoutTicks = static_cast<uint64_t>(timeout) * 1000;
+		const uint64_t timeoutTicks = static_cast<uint64_t>(timeout);
 
 		if (timeout == WAIT_INFINITE)
 		{

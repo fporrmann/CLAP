@@ -272,15 +272,12 @@ public:
 
 		if (m_pInterrupt->IsSet())
 		{
-			while (!m_pInterrupt->WaitForInterrupt())
+			while (!m_pInterrupt->WaitForInterrupt(timeout))
 			{
 				if (timeout != WAIT_INFINITE)
-				{
-					if (sleepTimeUS > timeout)
-						return false;
-				}
+					return false;
+
 				utils::SleepUS(g_sleepTimeUS);
-				sleepTimeUS += g_sleepTimeUS;
 			}
 		}
 		else if (m_pStatus != nullptr)
