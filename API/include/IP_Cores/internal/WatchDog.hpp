@@ -258,15 +258,31 @@ public:
 		joinThread();
 		checkException();
 #else
+		int32_t timeoutCnt = 0;
+
 		if (m_pInterrupt->IsSet())
 		{
 			while (!m_pInterrupt->WaitForInterrupt())
-				utils::SleepUS(1);
+			{
+				if(timeoutMS != WAIT_INFINITE)
+				{
+					if (timeoutCnt++ > timeoutMS)
+						return false;
+				}
+				utils::SleepUS(1000);
+			}
 		}
 		else if (m_pStatus != nullptr)
 		{
 			while (!m_pStatus->PollDone())
-				utils::SleepUS(1);
+			{
+				if(timeoutMS != WAIT_INFINITE)
+				{
+					if (timeoutCnt++ > timeoutMS)
+						return false;
+				}
+			}
+				utils::SleepUS(1000);
 		}
 #endif
 
