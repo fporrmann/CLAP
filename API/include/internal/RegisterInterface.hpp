@@ -474,6 +474,8 @@ public:
 		return m_lastInterrupt;
 	}
 
+	virtual void Reset() {}
+
 protected:
 	uint32_t m_lastInterrupt = 0;
 };

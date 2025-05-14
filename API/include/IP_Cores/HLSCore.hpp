@@ -360,7 +360,7 @@ private:
 			return m_ap_done;
 		}
 
-		void Reset()
+		void Reset() override
 		{
 			reset();
 		}

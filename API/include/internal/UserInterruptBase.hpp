@@ -126,6 +126,14 @@ public:
 		return m_pReg->HasErrorIntr();
 	}
 
+	void Reset()
+	{
+		if (!IsSet())
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt Status Register is not set, Reset can only be called when a status register as been set.");
+
+		m_pReg->Reset();
+	}
+
 	bool HasFinishedCallback() const
 	{
 		return m_ipCoreFinishCallback != nullptr;

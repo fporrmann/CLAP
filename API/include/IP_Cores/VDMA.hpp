@@ -526,6 +526,21 @@ private:
 			Update(internal::Direction::WRITE);
 		}
 
+		void Reset() override
+		{
+			reset();
+		}
+
+	private:
+		void reset()
+		{
+			clearInterrupts();
+			m_lastInterrupt = 0;
+			m_frmCntIrq     = false;
+			m_dlyCntIrq     = false;
+			m_errIrq        = false;
+		}
+
 	private:
 		bool m_halted            = false;
 		bool m_vdmaIntErr        = false;

@@ -94,6 +94,10 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 						break;
 					}
 				}
+
+				// Once an interrupt was detected, the internal state is reset to prevent carrying over the interrupt to the next call
+				if(pUserIntr->HasStatusReg())
+					pUserIntr->Reset();
 			}
 			else if (pStatus)
 			{

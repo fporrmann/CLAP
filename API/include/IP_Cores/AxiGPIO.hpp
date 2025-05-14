@@ -509,6 +509,11 @@ private:
 			Update(internal::Direction::WRITE);
 		}
 
+		void Reset() override
+		{
+			reset();
+		}
+
 	private:
 		void clearInterrupts()
 		{
@@ -524,6 +529,14 @@ private:
 			intr |= m_bits[1] << (INTR_ON_CH2 >> 1);
 
 			return intr;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			m_lastInterrupt = 0;
+			m_bits[0]       = false;
+			m_bits[1]       = false;
 		}
 	};
 

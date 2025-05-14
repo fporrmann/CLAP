@@ -44,7 +44,6 @@
 
 namespace clap
 {
-
 class SGDescriptor : public internal::RegisterControlBase
 {
 	static inline const uint32_t CTRL_ALL_MASK   = 0x0C000000;
@@ -326,7 +325,7 @@ public:
 			delete pDesc;
 	}
 
-	SGDescriptorContainer(const SGDescriptorContainer& other)            = delete;
+	SGDescriptorContainer(const SGDescriptorContainer& other) = delete;
 	SGDescriptorContainer& operator=(const SGDescriptorContainer& other) = delete;
 
 	SGDescriptorContainer(SGDescriptorContainer&& other) noexcept :
@@ -2282,12 +2281,27 @@ private:
 			return m_sgIncld;
 		}
 
+		void Reset() override
+		{
+			reset();
+		}
+
 	protected:
 		void getStatus() override
 		{
 			Update();
 			if (!m_done && m_idle)
 				m_done = true;
+		}
+
+	private:
+		void reset()
+		{
+			clearInterrupts();
+			m_lastInterrupt = 0;
+			m_ioCIrq        = false;
+			m_dlyIrq        = false;
+			m_errIrq        = false;
 		}
 
 	private:
