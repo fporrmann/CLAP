@@ -494,8 +494,7 @@ private:
 
 		void ClearInterrupts() override
 		{
-			m_lastInterrupt = GetInterrupts();
-			ResetInterrupts(VDMA_INTR_ALL);
+			clearInterrupts();
 		}
 
 		uint32_t GetInterrupts() override
@@ -532,6 +531,12 @@ private:
 		}
 
 	private:
+		void clearInterrupts()
+		{
+			m_lastInterrupt = GetInterrupts();
+			ResetInterrupts(VDMA_INTR_ALL);
+		}
+
 		void reset()
 		{
 			clearInterrupts();

@@ -325,7 +325,7 @@ public:
 			delete pDesc;
 	}
 
-	SGDescriptorContainer(const SGDescriptorContainer& other) = delete;
+	SGDescriptorContainer(const SGDescriptorContainer& other)            = delete;
 	SGDescriptorContainer& operator=(const SGDescriptorContainer& other) = delete;
 
 	SGDescriptorContainer(SGDescriptorContainer&& other) noexcept :
@@ -2232,8 +2232,7 @@ private:
 
 		void ClearInterrupts() override
 		{
-			m_lastInterrupt = GetInterrupts();
-			ResetInterrupts(INTR_ALL);
+			clearInterrupts();
 		}
 
 		uint32_t GetInterrupts() override
@@ -2295,6 +2294,12 @@ private:
 		}
 
 	private:
+		void clearInterrupts()
+		{
+			m_lastInterrupt = GetInterrupts();
+			ResetInterrupts(INTR_ALL);
+		}
+
 		void reset()
 		{
 			clearInterrupts();
