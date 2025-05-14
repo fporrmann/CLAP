@@ -104,6 +104,14 @@ public:
 
 	bool Start()
 	{
+		if (m_apCtrl.IsRunning())
+		{
+			CLAP_IP_CORE_LOG_ERROR << "Tried to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;
+			return false;
+		}
+
+		m_apCtrl.Prestart();
+
 		if (!m_watchDog.Start())
 		{
 			CLAP_IP_CORE_LOG_ERROR << "Tried to start HLS core at: 0x" << std::hex << m_ctrlOffset << " which is still running, stopping startup ..." << std::endl;

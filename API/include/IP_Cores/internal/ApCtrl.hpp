@@ -94,10 +94,21 @@ public:
 
 	bool IsDone() override
 	{
-		if (m_done) return m_done;
 		if (!m_running) return false;
+		if (m_done) return m_done;
 		getStatus();
 		return m_done;
+	}
+
+	const bool& IsRunning() const
+	{
+		return m_running;
+	}
+
+	void Prestart()
+	{
+		m_done    = false;
+		m_running = false;
 	}
 
 private:
