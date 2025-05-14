@@ -92,6 +92,14 @@ public:
 		reset();
 	}
 
+	bool IsDone() override
+	{
+		if (m_done) return m_done;
+		if (!m_running) return false;
+		getStatus();
+		return m_done;
+	}
+
 private:
 	void getStatus() override
 	{
