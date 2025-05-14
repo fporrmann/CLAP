@@ -100,8 +100,9 @@ public:
 		return m_done;
 	}
 
-	const bool& IsRunning() const
+	const bool& IsRunning()
 	{
+		getStatus();
 		return m_running;
 	}
 
