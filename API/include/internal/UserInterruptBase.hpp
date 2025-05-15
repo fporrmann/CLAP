@@ -126,6 +126,14 @@ public:
 		return m_pReg->HasErrorIntr();
 	}
 
+	void ResetStates()
+	{
+		if (!IsSet())
+			BUILD_EXCEPTION(UserInterruptException, "Interrupt Status Register is not set, ResetStates can only be called when a status register as been set.");
+
+		m_pReg->ResetStates();
+	}
+
 	void Reset()
 	{
 		if (!IsSet())

@@ -530,6 +530,11 @@ private:
 			reset();
 		}
 
+		void ResetStates() override
+		{
+			resetStates();
+		}
+
 	private:
 		void clearInterrupts()
 		{
@@ -537,13 +542,18 @@ private:
 			ResetInterrupts(VDMA_INTR_ALL);
 		}
 
-		void reset()
+		void resetStates()
 		{
-			clearInterrupts();
 			m_lastInterrupt = 0;
 			m_frmCntIrq     = false;
 			m_dlyCntIrq     = false;
 			m_errIrq        = false;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			resetStates();
 		}
 
 	private:

@@ -514,6 +514,11 @@ private:
 			reset();
 		}
 
+		void ResetStates() override
+		{
+			resetStates();
+		}
+
 	private:
 		void clearInterrupts()
 		{
@@ -531,12 +536,17 @@ private:
 			return intr;
 		}
 
-		void reset()
+		void resetStates()
 		{
-			clearInterrupts();
 			m_lastInterrupt = 0;
 			m_bits[0]       = false;
 			m_bits[1]       = false;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			resetStates();
 		}
 	};
 

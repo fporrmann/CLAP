@@ -476,6 +476,8 @@ public:
 
 	virtual void Reset() {}
 
+	virtual void ResetStates() {}
+
 protected:
 	uint32_t m_lastInterrupt = 0;
 };

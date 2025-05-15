@@ -2285,6 +2285,11 @@ private:
 			reset();
 		}
 
+		void ResetStates() override
+		{
+			resetStates();
+		}
+
 	protected:
 		void getStatus() override
 		{
@@ -2300,13 +2305,18 @@ private:
 			ResetInterrupts(INTR_ALL);
 		}
 
-		void reset()
+		void resetStates()
 		{
-			clearInterrupts();
 			m_lastInterrupt = 0;
 			m_ioCIrq        = false;
 			m_dlyIrq        = false;
 			m_errIrq        = false;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			resetStates();
 		}
 
 	private:

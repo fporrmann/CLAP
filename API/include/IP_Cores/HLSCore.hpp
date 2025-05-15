@@ -365,6 +365,11 @@ private:
 			reset();
 		}
 
+		void ResetStates() override
+		{
+			resetStates();
+		}
+
 		void ResetInterrupts(const APInterrupts& intr)
 		{
 			if (intr & AP_INTR_DONE)
@@ -392,12 +397,17 @@ private:
 			ResetInterrupts(static_cast<APInterrupts>(m_lastInterrupt));
 		}
 
-		void reset()
+		void resetStates()
 		{
-			clearInterrupts();
 			m_lastInterrupt = 0;
 			m_ap_done       = false;
 			m_ap_ready      = false;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			resetStates();
 		}
 
 	private:
