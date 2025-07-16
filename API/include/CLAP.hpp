@@ -219,6 +219,21 @@ public:
 		BRAM
 	};
 
+	std::string GetMemoryTypeName(const MemoryType& type) const
+	{
+		switch (type)
+		{
+			case MemoryType::DDR:
+				return "DDR";
+			case MemoryType::HBM:
+				return "HBM";
+			case MemoryType::BRAM:
+				return "BRAM";
+			default:
+				return "Unknown";
+		}
+	}
+
 	struct MemoryRegion
 	{
 		MemoryType type;
@@ -1133,38 +1148,28 @@ public:
 	}
 
 private:
-	template<class>
-	struct always_false : std::false_type
-	{};
-
-	template<typename T>
-	T doAllocMemory(internal::MemoryManagerPtr& mem, const uint64_t& byteSize)
-	{
-		if constexpr (std::is_same<T, MemoryPtr>::value)
-			return mem->AllocMemoryPtr(byteSize);
-		else if constexpr (std::is_same<T, MemoryUPtr>::value)
-			return mem->AllocMemoryUPtr(byteSize);
-		else if constexpr (std::is_same<T, Memory>::value)
-			return mem->AllocMemory(byteSize);
-		else
-			static_assert(always_false<T>::value, "Unsupported type");
-	}
-
 	template<typename T>
 	T allocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
+		CLAP_CLASS_LOG_DEBUG << "Waiting for memory allocation mutex" << std::endl;
 		std::lock_guard<std::mutex> lock(m_memMtx);
+		CLAP_CLASS_LOG_DEBUG << "Got Mutex - Allocating " << byteSize << " bytes of memory" << std::endl;
 
 		if (memIdx == -1)
 		{
+			CLAP_CLASS_LOG_DEBUG << "Allocating memory from all available regions of type " << GetMemoryTypeName(type) << std::endl;
 			for (internal::MemoryManagerPtr& mem : m_memories[type])
 			{
 				if (mem->GetAvailableSpace() >= byteSize)
-					return doAllocMemory<T>(mem, byteSize);
+				{
+					CLAP_CLASS_LOG_DEBUG << "Found memory region with enough space: (0x" << std::hex << mem->GetAvailableSpace() << std::dec << " bytes available)" << std::endl;
+					return mem->AllocMemory<T>(byteSize);
+				}
 			}
 		}
 		else
 		{
+			CLAP_CLASS_LOG_DEBUG << "Allocating memory from region with index " << memIdx << " of type " << GetMemoryTypeName(type) << std::endl;
 			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
 			{
 				std::stringstream ss;
@@ -1172,11 +1177,12 @@ private:
 				throw CLAPException(ss.str());
 			}
 
-			return doAllocMemory<T>(m_memories[type][memIdx], byteSize);
+			CLAP_CLASS_LOG_DEBUG << "Found memory region with enough space: (0x" << std::hex << m_memories[type][memIdx]->GetAvailableSpace() << std::dec << " bytes available)" << std::endl;
+			return m_memories[type][memIdx]->AllocMemory<T>(byteSize);
 		}
 
 		std::stringstream ss;
-		ss << CLASS_TAG_AUTO << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
+		ss << CLASS_TAG_AUTO << "No memory region found with enough space left to allocate 0x" << std::hex << byteSize << " byte." << std::dec;
 		throw CLAPException(ss.str());
 	}
 
