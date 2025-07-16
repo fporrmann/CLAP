@@ -357,31 +357,19 @@ public:
 	/// @return Allocated memory block
 	Memory AllocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
-		std::lock_guard<std::mutex> lock(m_memMtx);
+		return allocMemory<Memory>(type, byteSize, memIdx);
+	}
 
-		if (memIdx == -1)
-		{
-			for (internal::MemoryManagerPtr& mem : m_memories[type])
-			{
-				if (mem->GetAvailableSpace() >= byteSize)
-					return mem->AllocMemory(byteSize);
-			}
-		}
-		else
-		{
-			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
-			{
-				std::stringstream ss;
-				ss << CLASS_TAG_AUTO << "Specified memory region " << std::dec << memIdx << " does not exist.";
-				throw CLAPException(ss.str());
-			}
-
-			return m_memories[type][memIdx]->AllocMemory(byteSize);
-		}
-
-		std::stringstream ss;
-		ss << CLASS_TAG_AUTO << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
-		throw CLAPException(ss.str());
+	/// @brief Template version: Allocates a memory block of the specified size and type
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param type Type of memory to allocate
+	/// @param byteSize Size of the memory block in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated memory object of type T
+	template<typename T>
+	T AllocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		return allocMemory<T>(type, byteSize, memIdx);
 	}
 
 	/// @brief Allocates a memory block for n-elements
@@ -395,6 +383,19 @@ public:
 		return AllocMemory(type, elements * sizeOfElement, memIdx);
 	}
 
+	/// @brief Template version: Allocates a memory block for n-elements of type T
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param type Type of memory to allocate
+	/// @param elements Number of elements to allocate
+	/// @param sizeOfElement Size of one element in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated memory block of type T
+	template<typename T>
+	T AllocMemory(const MemoryType& type, const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(type, elements * sizeof(typename T::element_type), memIdx);
+	}
+
 	/// @brief Allocates a DDR memory block for n-elements
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
@@ -403,6 +404,18 @@ public:
 	Memory AllocMemoryDDR(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::DDR, elements, sizeOfElement, memIdx);
+	}
+
+	/// @brief Template version: Allocates a DDR memory block for n-elements of type T
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param elements Number of elements to allocate
+	/// @param sizeOfElement Size of one element in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated DDR memory block of type T
+	template<typename T>
+	T AllocMemoryDDR(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::DDR, elements, sizeOfElement, memIdx);
 	}
 
 	/// @brief Allocates a HBM memory block for n-elements
@@ -415,6 +428,18 @@ public:
 		return AllocMemory(MemoryType::HBM, elements, sizeOfElement, memIdx);
 	}
 
+	/// @brief Template version: Allocates a HBM memory block for n-elements of type T
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param elements Number of elements to allocate
+	/// @param sizeOfElement Size of one element in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated HBM memory block of type T
+	template<typename T>
+	T AllocMemoryHBM(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::HBM, elements, sizeOfElement, memIdx);
+	}
+
 	/// @brief Allocates a BRAM memory block for n-elements
 	/// @param elements Number of elements to allocate
 	/// @param sizeOfElement Size of one element in bytes
@@ -423,6 +448,18 @@ public:
 	Memory AllocMemoryBRAM(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::BRAM, elements, sizeOfElement, memIdx);
+	}
+
+	/// @brief Template version: Allocates a BRAM memory block for n-elements of type T
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param elements Number of elements to allocate
+	/// @param sizeOfElement Size of one element in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated BRAM memory block of type T
+	template<typename T>
+	T AllocMemoryBRAM(const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::BRAM, elements, sizeOfElement, memIdx);
 	}
 
 	/// @brief Allocates a DDR memory block of the specified byte size
@@ -434,6 +471,17 @@ public:
 		return AllocMemory(MemoryType::DDR, byteSize, memIdx);
 	}
 
+	/// @brief Template version: Allocates a DDR memory block of the specified byte size
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param byteSize Size of the memory block in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated DDR memory block of type T
+	template<typename T>
+	T AllocMemoryDDR(const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::DDR, byteSize, memIdx);
+	}
+
 	/// @brief Allocates a HBM memory block of the specified byte size
 	/// @param byteSize Size of the memory block in bytes
 	/// @param memIdx Index of the memory region to allocate from
@@ -443,6 +491,17 @@ public:
 		return AllocMemory(MemoryType::HBM, byteSize, memIdx);
 	}
 
+	/// @brief Template version: Allocates a HBM memory block of the specified byte size
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param byteSize Size of the memory block in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated HBM memory block of type T
+	template<typename T>
+	T AllocMemoryHBM(const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::HBM, byteSize, memIdx);
+	}
+
 	/// @brief Allocates a BRAM memory block of the specified byte size
 	/// @param byteSize Size of the memory block in bytes
 	/// @param memIdx Index of the memory region to allocate from
@@ -450,6 +509,17 @@ public:
 	Memory AllocMemoryBRAM(const uint64_t& byteSize, const int32_t& memIdx = -1)
 	{
 		return AllocMemory(MemoryType::BRAM, byteSize, memIdx);
+	}
+
+	/// @brief Template version: Allocates a BRAM memory block of the specified byte size
+	/// @tparam T Type of the memory object to return, can be Memory, MemoryPtr, or MemoryUPtr
+	/// @param byteSize Size of the memory block in bytes
+	/// @param memIdx Index of the memory region to allocate from
+	/// @return Allocated BRAM memory block of type T
+	template<typename T>
+	T AllocMemoryBRAM(const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		return AllocMemory<T>(MemoryType::BRAM, byteSize, memIdx);
 	}
 
 	/// @brief Frees the specified memory block
@@ -1063,6 +1133,53 @@ public:
 	}
 
 private:
+	template<class>
+	struct always_false : std::false_type
+	{};
+
+	template<typename T>
+	T doAllocMemory(internal::MemoryManagerPtr& mem, const uint64_t& byteSize)
+	{
+		if constexpr (std::is_same<T, MemoryPtr>::value)
+			return mem->AllocMemoryPtr(byteSize);
+		else if constexpr (std::is_same<T, MemoryUPtr>::value)
+			return mem->AllocMemoryUPtr(byteSize);
+		else if constexpr (std::is_same<T, Memory>::value)
+			return mem->AllocMemory(byteSize);
+		else
+			static_assert(always_false<T>::value, "Unsupported type");
+	}
+
+	template<typename T>
+	T allocMemory(const MemoryType& type, const uint64_t& byteSize, const int32_t& memIdx = -1)
+	{
+		std::lock_guard<std::mutex> lock(m_memMtx);
+
+		if (memIdx == -1)
+		{
+			for (internal::MemoryManagerPtr& mem : m_memories[type])
+			{
+				if (mem->GetAvailableSpace() >= byteSize)
+					return doAllocMemory<T>(mem, byteSize);
+			}
+		}
+		else
+		{
+			if (m_memories[type].size() <= static_cast<uint32_t>(memIdx))
+			{
+				std::stringstream ss;
+				ss << CLASS_TAG_AUTO << "Specified memory region " << std::dec << memIdx << " does not exist.";
+				throw CLAPException(ss.str());
+			}
+
+			return doAllocMemory<T>(m_memories[type][memIdx], byteSize);
+		}
+
+		std::stringstream ss;
+		ss << CLASS_TAG_AUTO << "No memory region found with enough space left to allocate " << std::dec << byteSize << " byte.";
+		throw CLAPException(ss.str());
+	}
+
 	template<typename T>
 	T read(const Memory& mem)
 	{
