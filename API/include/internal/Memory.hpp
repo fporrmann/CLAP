@@ -200,7 +200,7 @@ public:
 		if (!mem.IsValid()) return true;
 
 		// Search for the given address in the list of used memory regions
-		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [mem](const MemList::value_type& p) { return p.first == mem.m_baseAddr; });
+		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [&mem](const MemList::value_type& p) { return p.first == mem.m_baseAddr; });
 		// Check if the given address was found
 		if (it == m_usedMemory.end()) return false;
 
@@ -301,7 +301,7 @@ private:
 		m_usedMemory.push_back(std::make_pair(addr, alignedSize));
 		m_spaceLeft -= alignedSize;
 
-		return std::make_pair(addr, alignedSize);
+		return std::make_pair(addr, size);
 	}
 
 	void coalesce()
