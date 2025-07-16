@@ -393,7 +393,7 @@ public:
 	template<typename T>
 	T AllocMemory(const MemoryType& type, const uint64_t& elements, const std::size_t& sizeOfElement, const int32_t& memIdx = -1)
 	{
-		return AllocMemory<T>(type, elements * sizeof(typename T::element_type), memIdx);
+		return AllocMemory<T>(type, elements * sizeOfElement, memIdx);
 	}
 
 	/// @brief Allocates a DDR memory block for n-elements
