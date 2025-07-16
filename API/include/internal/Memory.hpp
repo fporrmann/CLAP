@@ -35,6 +35,7 @@
 #include <sstream>
 
 #include "Exceptions.hpp"
+#include "Logger.hpp"
 #include "StdStub.hpp"
 
 namespace clap
@@ -51,8 +52,37 @@ class Memory
 {
 	friend class internal::MemoryManager;
 
+	// From: https://stackoverflow.com/a/8147326
+	struct this_is_private
+	{
+		explicit this_is_private([[maybe_unused]] uint32_t) {}
+	};
+
 public:
 	Memory() = default;
+	Memory(const this_is_private&, internal::MemoryManagerPtr manager, const uint64_t& baseAddr, const uint64_t& size) :
+		m_manager(std::move(manager)),
+		m_baseAddr(baseAddr),
+		m_size(size),
+		m_valid(true)
+	{}
+
+	template<typename... T>
+	static MemoryPtr Create(T&&... args)
+	{
+		return std::make_shared<Memory>(this_is_private{ 0 }, std::forward<T>(args)...);
+	}
+
+	template<typename... T>
+	static MemoryUPtr CreateUnique(T&&... args)
+	{
+		return std::make_unique<Memory>(this_is_private{ 0 }, std::forward<T>(args)...);
+	}
+
+	~Memory()
+	{
+		free();
+	}
 
 	const uint64_t& GetBaseAddr() const
 	{
@@ -83,6 +113,11 @@ public:
 		return m_valid;
 	}
 
+	operator bool() const
+	{
+		return m_valid;
+	}
+
 	friend std::ostream& operator<<(std::ostream& stream, const Memory& m)
 	{
 		stream << std::showbase << std::hex
@@ -99,6 +134,7 @@ private:
 		m_valid(true)
 	{}
 
+	// This should never be called directly, instead it should be called by the MemoryManager to ensure proper cleanup
 	void invalidate()
 	{
 		m_baseAddr = 0;
@@ -106,7 +142,11 @@ private:
 		m_valid    = false;
 	}
 
+	void free();
+
 private:
+	internal::MemoryManagerPtr m_manager = nullptr;
+
 	uint64_t m_baseAddr = 0;
 	uint64_t m_size     = 0;
 	bool m_valid        = false;
@@ -114,7 +154,7 @@ private:
 
 namespace internal
 {
-class MemoryManager
+class MemoryManager : public std::enable_shared_from_this<MemoryManager>
 {
 	static constexpr uint32_t ALIGNMENT          = 0x40;
 	static constexpr uint32_t COALESCE_THRESHOLD = 4;
@@ -136,6 +176,73 @@ public:
 	DISABLE_COPY_ASSIGN_MOVE(MemoryManager)
 
 	Memory AllocMemory(const uint64_t& size)
+	{
+		auto [addr, alignedSize] = allocate(size);
+		return Memory(addr, alignedSize);
+	}
+
+	MemoryPtr AllocMemoryPtr(const uint64_t& size)
+	{
+		auto [addr, alignedSize] = allocate(size);
+		return Memory::Create(shared_from_this(), addr, alignedSize);
+	}
+
+	MemoryUPtr AllocMemoryUPtr(const uint64_t& size)
+	{
+		auto [addr, alignedSize] = allocate(size);
+		return Memory::CreateUnique(shared_from_this(), addr, alignedSize);
+	}
+
+	bool FreeMemory(Memory& mem)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		if (!mem.IsValid()) return true;
+
+		// Search for the given address in the list of used memory regions
+		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [mem](const MemList::value_type& p) { return p.first == mem.m_baseAddr; });
+		// Check if the given address was found
+		if (it == m_usedMemory.end()) return false;
+
+		m_spaceLeft += it->second;
+		m_freeMemory.push_front(std::make_pair(it->first, it->second));
+		m_usedMemory.erase(it);
+
+		mem.invalidate();
+
+		if (m_freeMemory.size() > COALESCE_THRESHOLD)
+			coalesce();
+
+		return true;
+	}
+
+	uint64_t GetAvailableSpace() const
+	{
+		return m_spaceLeft;
+	}
+
+	void Reset()
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+
+		m_freeMemory.clear();
+		m_usedMemory.clear();
+		m_freeMemory.push_back(std::make_pair(m_baseAddr, m_size));
+		m_spaceLeft = m_size;
+	}
+
+	void SetCustomAlignment(const int32_t& alignment)
+	{
+		m_alignment = alignment;
+	}
+
+	const int32_t& GetCustomAlignment() const
+	{
+		return m_alignment;
+	}
+
+private:
+	std::pair<uint64_t, uint64_t> allocate(const uint64_t& size)
 	{
 		if (size == 0)
 		{
@@ -194,56 +301,9 @@ public:
 		m_usedMemory.push_back(std::make_pair(addr, alignedSize));
 		m_spaceLeft -= alignedSize;
 
-		return Memory(addr, size);
+		return std::make_pair(addr, alignedSize);
 	}
 
-	bool FreeMemory(Memory& buffer)
-	{
-		std::lock_guard<std::mutex> lock(m_mutex);
-
-		// Search for the given address in the list of used memory regions
-		MemList::iterator it = std::find_if(m_usedMemory.begin(), m_usedMemory.end(), [buffer](const MemList::value_type& p) { return p.first == buffer.m_baseAddr; });
-		// Check if the given address was found
-		if (it == m_usedMemory.end()) return false;
-
-		m_spaceLeft += it->second;
-		m_freeMemory.push_front(std::make_pair(it->first, it->second));
-		m_usedMemory.erase(it);
-
-		buffer.invalidate();
-
-		if (m_freeMemory.size() > COALESCE_THRESHOLD)
-			coalesce();
-
-		return true;
-	}
-
-	uint64_t GetAvailableSpace() const
-	{
-		return m_spaceLeft;
-	}
-
-	void Reset()
-	{
-		std::lock_guard<std::mutex> lock(m_mutex);
-
-		m_freeMemory.clear();
-		m_usedMemory.clear();
-		m_freeMemory.push_back(std::make_pair(m_baseAddr, m_size));
-		m_spaceLeft = m_size;
-	}
-
-	void SetCustomAlignment(const int32_t& alignment)
-	{
-		m_alignment = alignment;
-	}
-
-	const int32_t& GetCustomAlignment() const
-	{
-		return m_alignment;
-	}
-
-private:
 	void coalesce()
 	{
 		m_freeMemory.sort();
@@ -282,5 +342,20 @@ private:
 	MemList m_usedMemory;
 	int32_t m_alignment = -1;
 };
+} // namespace internal
+
+void Memory::free()
+{
+	if (m_manager && m_valid)
+	{
+		try
+		{
+			m_manager->FreeMemory(*this);
+		}
+		catch (const MemoryException& e)
+		{
+			CLAP_CLASS_LOG_ERROR << "Failed to free memory: " << e.what() << std::endl;
+		}
+	}
 } // namespace internal
 } // namespace clap

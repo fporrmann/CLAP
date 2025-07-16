@@ -49,6 +49,9 @@ using CLAPBufferAllocator = clap::internal::AlignmentAllocator<T, ALIGNMENT>;
 template<class T>
 using CLAPBuffer = std::vector<T, CLAPBufferAllocator<T>>;
 
+using MemoryPtr = std::shared_ptr<class Memory>;
+using MemoryUPtr = std::unique_ptr<class Memory>;
+
 using CLAPPtr  = std::shared_ptr<class CLAP>;
 using Bit32Arr = std::array<bool, 32>;
 

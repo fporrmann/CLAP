@@ -27,7 +27,9 @@
 #pragma once
 
 ////// TODO:
-// - Maybe change the way IP core objects are created, possible to create from an XDMA object?
+// - Implement read/write only options for registers
+// --------------------------------------------------------------------------------------------
+// - Maybe change the way IP core objects are created, possible to create from a CLAP object?
 // --------------------------------------------------------------------------------------------
 // - Look into 32-bit AXI interfaces, although this is disabled by default it might still be used
 //   - Would require some edits to the memory manager
@@ -40,7 +42,7 @@
 // --------------------------------------------------------------------------------------------
 // - Redesign some of the methods to remove the need for explicit casts
 // --------------------------------------------------------------------------------------------
-// - Replace pointers, e.g., in XDMAManaged with smart pointers
+// - Replace pointers, e.g., in CLAPManaged with smart pointers
 // --------------------------------------------------------------------------------------------
 // - Detect if the control address of an IP Core is within the range of a memory block / other IP Core
 // --------------------------------------------------------------------------------------------
