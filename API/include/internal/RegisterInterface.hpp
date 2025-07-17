@@ -399,6 +399,8 @@ public:
 		CLAP_LOG_INFO << std::endl;
 	}
 
+	virtual void PostRegistration() {}
+
 private:
 	std::vector<RegIntfPtr> m_regElems;
 	uint32_t m_registerBitSize;

@@ -89,6 +89,13 @@ inline std::ostream& operator<<(std::ostream& os, const DMAChannel& channel)
 
 namespace clap
 {
+	enum class PostRegisterReg
+	{
+		RunUpdate,
+		RunPostRegFunction,
+		DoNothing
+	};
+
 namespace internal
 {
 class RegisterControlBase : public CLAPManaged
@@ -154,7 +161,7 @@ protected:
 	// Register a register to the list of known registers and
 	// setup its update callback function
 	template<typename T>
-	void registerReg(Register<T>& reg, const uint64_t& offset = 0x0)
+	void registerReg(Register<T>& reg, const uint64_t& offset = 0x0, const PostRegisterReg& postReg = PostRegisterReg::RunPostRegFunction)
 	{
 		if constexpr (sizeof(T) > sizeof(uint64_t))
 		{
@@ -165,6 +172,11 @@ protected:
 
 		reg.SetupCallBackBasedUpdate(reinterpret_cast<void*>(this), offset, UpdateCallBack<T>);
 		m_registers.push_back(&reg);
+
+		if(postReg == PostRegisterReg::RunUpdate)
+			reg.Update(Direction::READ);
+		else if(postReg == PostRegisterReg::RunPostRegFunction)
+			reg.PostRegistration();
 	}
 
 	template<typename T>
