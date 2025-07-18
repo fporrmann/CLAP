@@ -87,7 +87,7 @@ public:
 		return ap_idle;
 	}
 
-	void Reset()
+	void Reset() override
 	{
 		reset();
 	}
