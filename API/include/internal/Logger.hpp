@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -70,6 +71,11 @@ public:
 		m_verbosity = v;
 	}
 
+	void SetOutputFile(std::shared_ptr<std::ofstream> pOutFile)
+	{
+		m_pOutFile = std::move(pOutFile);
+	}
+
 	// Required for pure std::endl / std::flush calls (e.g. Logger << std::endl)
 	Logger& operator<<(ManipType manip)
 	{
@@ -88,6 +94,9 @@ public:
 			xil_printf("%s\r", message.str().c_str());
 #else
 			m_outStream << message.str();
+
+			if (m_pOutFile && m_pOutFile->is_open())
+				*m_pOutFile << message.str();
 #endif
 		}
 
@@ -100,13 +109,19 @@ public:
 		std::lock_guard<std::mutex> lock(s_logMutex);
 
 		if (m_lvl >= m_verbosity)
+		{
 			m_outStream << manip;
+
+			if (m_pOutFile && m_pOutFile->is_open())
+				*m_pOutFile << manip;
+		}
 	}
 
 private:
 	Verbosity m_lvl;
 	Verbosity m_verbosity;
 	std::ostream& m_outStream;
+	std::shared_ptr<std::ofstream> m_pOutFile = nullptr;
 	static inline std::mutex s_logMutex;
 };
 
@@ -162,8 +177,13 @@ LoggerBuffer operator<<(Logger& logger, T&& message)
 class LoggerContainer
 {
 public:
-	LoggerContainer()  = default;
-	~LoggerContainer() = default;
+	LoggerContainer() = default;
+
+	~LoggerContainer()
+	{
+		if (m_pOutFile && m_pOutFile->is_open())
+			m_pOutFile->close();
+	}
 
 	Logger& GetLogger([[maybe_unused]] const Verbosity& v)
 	{
@@ -199,6 +219,49 @@ public:
 #endif
 	}
 
+	void Log2File(const std::string& fileName)
+	{
+		if (fileName.empty() && m_pOutFile && m_pOutFile->is_open())
+		{
+			m_debug.SetOutputFile(nullptr);
+			m_verbose.SetOutputFile(nullptr);
+			m_info.SetOutputFile(nullptr);
+			m_warning.SetOutputFile(nullptr);
+			m_error.SetOutputFile(nullptr);
+
+			m_pOutFile->close();
+			return;
+		}
+
+		m_pOutFile = std::make_shared<std::ofstream>(fileName, std::ios::app);
+		if (!m_pOutFile->is_open())
+		{
+			std::cerr << "[CLAP Logger] Failed to open log file: " << fileName << std::endl;
+			return;
+		}
+
+		m_pOutFile->setf(std::ios::unitbuf); // Ensure that the output is flushed after each write
+
+		// Write the header to the log file
+		*m_pOutFile << "==============================================================" << std::endl;
+		*m_pOutFile << "==============================================================" << std::endl;
+		*m_pOutFile << " ██████╗██╗      █████╗ ██████╗ " << std::endl;
+		*m_pOutFile << "██╔════╝██║     ██╔══██╗██╔══██╗" << std::endl;
+		*m_pOutFile << "██║     ██║     ███████║██████╔╝" << std::endl;
+		*m_pOutFile << "██║     ██║     ██╔══██║██╔═══╝ " << std::endl;
+		*m_pOutFile << "╚██████╗███████╗██║  ██║██║     " << std::endl;
+		*m_pOutFile << " ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝     " << std::endl;
+		*m_pOutFile << "==============================================================" << std::endl;
+		*m_pOutFile << "CLAP Logger started at: " << utils::GetCurrentTime() << std::endl;
+		*m_pOutFile << "==============================================================" << std::endl;
+
+		m_debug.SetOutputFile(m_pOutFile);
+		m_verbose.SetOutputFile(m_pOutFile);
+		m_info.SetOutputFile(m_pOutFile);
+		m_warning.SetOutputFile(m_pOutFile);
+		m_error.SetOutputFile(m_pOutFile);
+	}
+
 private:
 #ifdef CLAP_DISABLE_LOGGING
 	Logger m_none = Logger(Verbosity::VB_DEBUG, Verbosity::VB_NONE);
@@ -208,6 +271,7 @@ private:
 	Logger m_info = Logger(Verbosity::VB_INFO);
 	Logger m_warning = Logger(Verbosity::VB_WARNING, Verbosity::VB_INFO, std::cerr);
 	Logger m_error = Logger(Verbosity::VB_ERROR, Verbosity::VB_INFO, std::cerr);
+	std::shared_ptr<std::ofstream> m_pOutFile = nullptr;
 #endif
 };
 
@@ -240,6 +304,13 @@ inline void SetVerbosity([[maybe_unused]] const Verbosity& v)
 {
 #ifndef CLAP_DISABLE_LOGGING
 	GetLoggers().SetVerbosity(v);
+#endif
+}
+
+inline void Log2File([[maybe_unused]] const std::string& fileName)
+{
+#ifndef CLAP_DISABLE_LOGGING
+	GetLoggers().Log2File(fileName);
 #endif
 }
 

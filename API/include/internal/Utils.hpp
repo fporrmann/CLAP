@@ -30,6 +30,7 @@
 #include <cmath>
 #include <cxxabi.h>
 #include <exception>
+#include <iomanip>
 #include <sstream>
 #include <thread>
 #include <vector>
@@ -50,7 +51,7 @@ void xUSleep(const std::chrono::microseconds &us)
 {
 	usleep(us.count());
 }
-}
+} // namespace
 #endif
 
 #ifndef CLASS_TAG
@@ -309,6 +310,21 @@ inline void SleepMS(const uint32_t &ms)
 inline void SleepUS(const uint32_t &us)
 {
 	SleepUS(std::chrono::microseconds(us));
+}
+
+inline std::string GetCurrentTime()
+{
+	auto now       = std::chrono::system_clock::now();
+	auto in_time_t = std::chrono::system_clock::to_time_t(now);
+	std::tm buf;
+#ifdef _WIN32
+	localtime_s(&buf, &in_time_t);
+#else
+	localtime_r(&in_time_t, &buf);
+#endif
+	std::ostringstream oss;
+	oss << std::put_time(&buf, "%Y-%m-%d %H:%M:%S");
+	return oss.str();
 }
 
 } // namespace utils
