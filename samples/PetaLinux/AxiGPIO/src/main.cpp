@@ -6,9 +6,9 @@
 #include <IP_Cores/AxiGPIO.hpp>
 #include <IP_Cores/AxiInterruptController.hpp>
 
-static constexpr uint64_t AXI_GPIO_1_BASE_ADDR           = 0x41200000;
-static constexpr uint64_t AXI_GPIO_2_BASE_ADDR           = 0x41210000;
-static constexpr uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x41800000;
+[[maybe_unused]] static constexpr uint64_t AXI_GPIO_1_BASE_ADDR           = 0x41200000;
+[[maybe_unused]] static constexpr uint64_t AXI_GPIO_2_BASE_ADDR           = 0x41210000;
+[[maybe_unused]] static constexpr uint64_t AXI_INTERRUPT_CONTROLLER_BASE_ADDR = 0x41800000;
 
 volatile bool intrDone = false;
 

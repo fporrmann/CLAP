@@ -290,8 +290,8 @@ public:
 private:
 	uint64_t m_nextDescAddr   = 0; // 0-7
 	uint64_t m_bufferAddr     = 0; // 8-F
-	uint32_t m_reserved1      = 0; // 10-13
-	uint32_t m_reserved2      = 0; // 14-17
+	// uint32_t m_reserved1      = 0; // 10-13
+	// uint32_t m_reserved2      = 0; // 14-17
 	uint32_t m_control        = 0; // 18-1B
 	uint32_t m_status         = 0; // 1C-1F
 	uint32_t m_app0           = 0; // 20-23
@@ -429,9 +429,19 @@ class AxiDMA : public internal::RegisterControlBase
 
 	struct TransferChunk
 	{
-		const DMAChannel channel;
-		const T addr;
-		const uint32_t length;
+		const DMAChannel channel = DMAChannel::MM2S;
+		const T addr = 0;
+		const uint32_t length = 0;
+
+		// Default constructor
+		TransferChunk() = default;
+
+		TransferChunk(const DMAChannel& ch, const T& address, const uint32_t& len)
+			: channel(ch), addr(address), length(len) {}
+
+		// Explicit copy constructor
+		TransferChunk(const TransferChunk& other)
+			: channel(other.channel), addr(other.addr), length(other.length) {}
 
 		// Assignment operator
 		TransferChunk& operator=(const TransferChunk& other)
@@ -1052,6 +1062,266 @@ public:
 			BUILD_IP_EXCEPTION(CLAPException, "PreInitSGDescs failed");
 		}
 	}
+
+private:
+	class ControlRegister : public internal::Register<uint32_t>
+	{
+	public:
+		explicit ControlRegister(const std::string& name) :
+			Register(name)
+		{
+			RegisterElement<bool>(&m_rs, "RS", 0);
+			RegisterElement<bool>(&m_reset, "Reset", 2);
+			RegisterElement<bool>(&m_keyhole, "Keyhole", 3);
+			RegisterElement<bool>(&m_cyclicBDEnable, "CyclicBDEnable", 4);
+			RegisterElement<bool>(&m_ioCIrqEn, "IOCIrqEn", 12);
+			RegisterElement<bool>(&m_dlyIrqEn, "DlyIrqEn", 13);
+			RegisterElement<bool>(&m_errIrqEn, "ErrIrqEn", 14);
+			RegisterElement<uint8_t>(&m_irqThreshold, "IRQThreshold", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelay, "IRQDelay", 24, 31);
+		}
+
+		void EnableInterrupts(const DMAInterrupts& intr = INTR_ALL)
+		{
+			setInterrupts(true, intr);
+		}
+
+		void DisableInterrupts(const DMAInterrupts& intr = INTR_ALL)
+		{
+			setInterrupts(false, intr);
+		}
+
+		void Start()
+		{
+			setRunStop(true);
+		}
+
+		void Stop()
+		{
+			setRunStop(false);
+		}
+
+		void DoReset()
+		{
+			Update();
+			m_reset = 1;
+			Update(internal::Direction::WRITE);
+
+			// The Reset bit will be set to 0 once the reset has been completed
+			while (m_reset)
+				Update();
+		}
+
+		void SetIrqThreshold(const uint8_t& threshold)
+		{
+			m_irqThreshold = threshold;
+			Update(internal::Direction::WRITE);
+		}
+
+		void SetIrqDelay(const uint8_t& delay)
+		{
+			m_irqDelay = delay;
+			Update(internal::Direction::WRITE);
+		}
+
+	private:
+		void setRunStop(bool run)
+		{
+			// Update the register
+			Update();
+			// Set/Unset the Run-Stop bit
+			m_rs = run;
+			// Write changes to the register
+			Update(internal::Direction::WRITE);
+		}
+
+		void setInterrupts(bool enable, const DMAInterrupts& intr)
+		{
+			if (intr & INTR_ON_COMPLETE)
+				m_ioCIrqEn = enable;
+			if (intr & INTR_ON_DELAY)
+				m_dlyIrqEn = enable;
+			if (intr & INTR_ON_ERROR)
+				m_errIrqEn = enable;
+
+			Update(internal::Direction::WRITE);
+		}
+
+	private:
+		bool m_rs              = false;
+		bool m_reset           = false;
+		bool m_keyhole         = false;
+		bool m_cyclicBDEnable  = false;
+		bool m_ioCIrqEn        = false;
+		bool m_dlyIrqEn        = false;
+		bool m_errIrqEn        = false;
+		uint8_t m_irqThreshold = 0;
+		uint8_t m_irqDelay     = 0;
+	};
+
+	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt, public internal::HasStatus
+	{
+	public:
+		explicit StatusRegister(const std::string& name) :
+			Register(name)
+		{
+			RegisterElement<bool>(&m_halted, "Halted", 0);
+			RegisterElement<bool>(&m_idle, "Idle", 1);
+			RegisterElement<bool>(&m_sgIncld, "SGIncld", 3);
+			RegisterElement<bool>(&m_dmaIntErr, "DMAIntErr", 4);
+			RegisterElement<bool>(&m_dmaSlvErr, "DMASlvErr", 5);
+			RegisterElement<bool>(&m_dmaDecErr, "DMADecErr", 6);
+			RegisterElement<bool>(&m_sgIntErr, "SGIntErr", 8);
+			RegisterElement<bool>(&m_sgSlvErr, "SGSlvErr", 9);
+			RegisterElement<bool>(&m_sgDecErr, "SGDecErr", 10);
+			RegisterElement<bool>(&m_ioCIrq, "IOCIrq", 12);
+			RegisterElement<bool>(&m_dlyIrq, "DlyIrq", 13);
+			RegisterElement<bool>(&m_errIrq, "ErrIrq", 14);
+			RegisterElement<uint8_t>(&m_irqThresholdSts, "IRQThresholdSts", 16, 23);
+			RegisterElement<uint8_t>(&m_irqDelaySts, "IRQDelaySts", 24, 31);
+		}
+
+		void ClearInterrupts() override
+		{
+			clearInterrupts();
+		}
+
+		uint32_t GetInterrupts() override
+		{
+			Update();
+			uint32_t intr = 0;
+			intr |= m_ioCIrq << (INTR_ON_COMPLETE >> 1);
+			intr |= m_dlyIrq << (INTR_ON_DELAY >> 1);
+			intr |= m_errIrq << (INTR_ON_ERROR >> 1);
+
+			return intr;
+		}
+
+		bool HasDoneIntr() const override
+		{
+			return m_ioCIrq;
+		}
+
+		bool HasErrorIntr() const override
+		{
+			return m_errIrq;
+		}
+
+		void ResetInterrupts(const DMAInterrupts& intr)
+		{
+			if (intr & INTR_ON_COMPLETE)
+				m_ioCIrq = 1;
+			if (intr & INTR_ON_DELAY)
+				m_dlyIrq = 1;
+			if (intr & INTR_ON_ERROR)
+				m_errIrq = 1;
+
+			Update(internal::Direction::WRITE);
+		}
+
+		bool IsStarted()
+		{
+			Update();
+			return !m_halted;
+		}
+
+		bool IsSGEnabled()
+		{
+			Update();
+			return m_sgIncld;
+		}
+
+		void Reset() override
+		{
+			reset();
+		}
+
+		void ResetStates() override
+		{
+			resetStates();
+		}
+
+	protected:
+		void getStatus() override
+		{
+			Update();
+			if (!m_done && m_idle)
+				m_done = true;
+		}
+
+	private:
+		void clearInterrupts()
+		{
+			m_lastInterrupt = GetInterrupts();
+			ResetInterrupts(INTR_ALL);
+		}
+
+		void resetStates()
+		{
+			m_lastInterrupt = 0;
+			m_ioCIrq        = false;
+			m_dlyIrq        = false;
+			m_errIrq        = false;
+		}
+
+		void reset()
+		{
+			clearInterrupts();
+			resetStates();
+		}
+
+	private:
+		bool m_halted             = false;
+		bool m_idle               = false;
+		bool m_sgIncld            = false;
+		bool m_dmaIntErr          = false;
+		bool m_dmaSlvErr          = false;
+		bool m_dmaDecErr          = false;
+		bool m_sgIntErr           = false;
+		bool m_sgSlvErr           = false;
+		bool m_sgDecErr           = false;
+		bool m_ioCIrq             = false;
+		bool m_dlyIrq             = false;
+		bool m_errIrq             = false;
+		uint8_t m_irqThresholdSts = 0;
+		uint8_t m_irqDelaySts     = 0;
+	};
+
+	class MM2SControlRegister : public ControlRegister
+	{
+	public:
+		MM2SControlRegister() :
+			ControlRegister("MM2S DMA Control Register")
+		{
+		}
+	};
+
+	class MM2SStatusRegister : public StatusRegister
+	{
+	public:
+		MM2SStatusRegister() :
+			StatusRegister("MM2S DMA Status Register")
+		{
+		}
+	};
+
+	class S2MMControlRegister : public ControlRegister
+	{
+	public:
+		S2MMControlRegister() :
+			ControlRegister("S2MM DMA Control Register")
+		{
+		}
+	};
+
+	class S2MMStatusRegister : public StatusRegister
+	{
+	public:
+		S2MMStatusRegister() :
+			StatusRegister("S2MM DMA Status Register")
+		{
+		}
+	};
 
 private:
 	class BdRing
@@ -2112,266 +2382,6 @@ private:
 	}
 
 	////////////////////////////////////////
-
-	class ControlRegister : public internal::Register<uint32_t>
-	{
-	public:
-		explicit ControlRegister(const std::string& name) :
-			Register(name)
-		{
-			RegisterElement<bool>(&m_rs, "RS", 0);
-			RegisterElement<bool>(&m_reset, "Reset", 2);
-			RegisterElement<bool>(&m_keyhole, "Keyhole", 3);
-			RegisterElement<bool>(&m_cyclicBDEnable, "CyclicBDEnable", 4);
-			RegisterElement<bool>(&m_ioCIrqEn, "IOCIrqEn", 12);
-			RegisterElement<bool>(&m_dlyIrqEn, "DlyIrqEn", 13);
-			RegisterElement<bool>(&m_errIrqEn, "ErrIrqEn", 14);
-			RegisterElement<uint8_t>(&m_irqThreshold, "IRQThreshold", 16, 23);
-			RegisterElement<uint8_t>(&m_irqDelay, "IRQDelay", 24, 31);
-		}
-
-		void EnableInterrupts(const DMAInterrupts& intr = INTR_ALL)
-		{
-			setInterrupts(true, intr);
-		}
-
-		void DisableInterrupts(const DMAInterrupts& intr = INTR_ALL)
-		{
-			setInterrupts(false, intr);
-		}
-
-		void Start()
-		{
-			setRunStop(true);
-		}
-
-		void Stop()
-		{
-			setRunStop(false);
-		}
-
-		void DoReset()
-		{
-			Update();
-			m_reset = 1;
-			Update(internal::Direction::WRITE);
-
-			// The Reset bit will be set to 0 once the reset has been completed
-			while (m_reset)
-				Update();
-		}
-
-		void SetIrqThreshold(const uint8_t& threshold)
-		{
-			m_irqThreshold = threshold;
-			Update(internal::Direction::WRITE);
-		}
-
-		void SetIrqDelay(const uint8_t& delay)
-		{
-			m_irqDelay = delay;
-			Update(internal::Direction::WRITE);
-		}
-
-	private:
-		void setRunStop(bool run)
-		{
-			// Update the register
-			Update();
-			// Set/Unset the Run-Stop bit
-			m_rs = run;
-			// Write changes to the register
-			Update(internal::Direction::WRITE);
-		}
-
-		void setInterrupts(bool enable, const DMAInterrupts& intr)
-		{
-			if (intr & INTR_ON_COMPLETE)
-				m_ioCIrqEn = enable;
-			if (intr & INTR_ON_DELAY)
-				m_dlyIrqEn = enable;
-			if (intr & INTR_ON_ERROR)
-				m_errIrqEn = enable;
-
-			Update(internal::Direction::WRITE);
-		}
-
-	private:
-		bool m_rs              = false;
-		bool m_reset           = false;
-		bool m_keyhole         = false;
-		bool m_cyclicBDEnable  = false;
-		bool m_ioCIrqEn        = false;
-		bool m_dlyIrqEn        = false;
-		bool m_errIrqEn        = false;
-		uint8_t m_irqThreshold = 0;
-		uint8_t m_irqDelay     = 0;
-	};
-
-	class StatusRegister : public internal::Register<uint32_t>, public internal::HasInterrupt, public internal::HasStatus
-	{
-	public:
-		explicit StatusRegister(const std::string& name) :
-			Register(name)
-		{
-			RegisterElement<bool>(&m_halted, "Halted", 0);
-			RegisterElement<bool>(&m_idle, "Idle", 1);
-			RegisterElement<bool>(&m_sgIncld, "SGIncld", 3);
-			RegisterElement<bool>(&m_dmaIntErr, "DMAIntErr", 4);
-			RegisterElement<bool>(&m_dmaSlvErr, "DMASlvErr", 5);
-			RegisterElement<bool>(&m_dmaDecErr, "DMADecErr", 6);
-			RegisterElement<bool>(&m_sgIntErr, "SGIntErr", 8);
-			RegisterElement<bool>(&m_sgSlvErr, "SGSlvErr", 9);
-			RegisterElement<bool>(&m_sgDecErr, "SGDecErr", 10);
-			RegisterElement<bool>(&m_ioCIrq, "IOCIrq", 12);
-			RegisterElement<bool>(&m_dlyIrq, "DlyIrq", 13);
-			RegisterElement<bool>(&m_errIrq, "ErrIrq", 14);
-			RegisterElement<uint8_t>(&m_irqThresholdSts, "IRQThresholdSts", 16, 23);
-			RegisterElement<uint8_t>(&m_irqDelaySts, "IRQDelaySts", 24, 31);
-		}
-
-		void ClearInterrupts() override
-		{
-			clearInterrupts();
-		}
-
-		uint32_t GetInterrupts() override
-		{
-			Update();
-			uint32_t intr = 0;
-			intr |= m_ioCIrq << (INTR_ON_COMPLETE >> 1);
-			intr |= m_dlyIrq << (INTR_ON_DELAY >> 1);
-			intr |= m_errIrq << (INTR_ON_ERROR >> 1);
-
-			return intr;
-		}
-
-		bool HasDoneIntr() const override
-		{
-			return m_ioCIrq;
-		}
-
-		bool HasErrorIntr() const override
-		{
-			return m_errIrq;
-		}
-
-		void ResetInterrupts(const DMAInterrupts& intr)
-		{
-			if (intr & INTR_ON_COMPLETE)
-				m_ioCIrq = 1;
-			if (intr & INTR_ON_DELAY)
-				m_dlyIrq = 1;
-			if (intr & INTR_ON_ERROR)
-				m_errIrq = 1;
-
-			Update(internal::Direction::WRITE);
-		}
-
-		bool IsStarted()
-		{
-			Update();
-			return !m_halted;
-		}
-
-		bool IsSGEnabled()
-		{
-			Update();
-			return m_sgIncld;
-		}
-
-		void Reset() override
-		{
-			reset();
-		}
-
-		void ResetStates() override
-		{
-			resetStates();
-		}
-
-	protected:
-		void getStatus() override
-		{
-			Update();
-			if (!m_done && m_idle)
-				m_done = true;
-		}
-
-	private:
-		void clearInterrupts()
-		{
-			m_lastInterrupt = GetInterrupts();
-			ResetInterrupts(INTR_ALL);
-		}
-
-		void resetStates()
-		{
-			m_lastInterrupt = 0;
-			m_ioCIrq        = false;
-			m_dlyIrq        = false;
-			m_errIrq        = false;
-		}
-
-		void reset()
-		{
-			clearInterrupts();
-			resetStates();
-		}
-
-	private:
-		bool m_halted             = false;
-		bool m_idle               = false;
-		bool m_sgIncld            = false;
-		bool m_dmaIntErr          = false;
-		bool m_dmaSlvErr          = false;
-		bool m_dmaDecErr          = false;
-		bool m_sgIntErr           = false;
-		bool m_sgSlvErr           = false;
-		bool m_sgDecErr           = false;
-		bool m_ioCIrq             = false;
-		bool m_dlyIrq             = false;
-		bool m_errIrq             = false;
-		uint8_t m_irqThresholdSts = 0;
-		uint8_t m_irqDelaySts     = 0;
-	};
-
-	class MM2SControlRegister : public ControlRegister
-	{
-	public:
-		MM2SControlRegister() :
-			ControlRegister("MM2S DMA Control Register")
-		{
-		}
-	};
-
-	class MM2SStatusRegister : public StatusRegister
-	{
-	public:
-		MM2SStatusRegister() :
-			StatusRegister("MM2S DMA Status Register")
-		{
-		}
-	};
-
-	class S2MMControlRegister : public ControlRegister
-	{
-	public:
-		S2MMControlRegister() :
-			ControlRegister("S2MM DMA Control Register")
-		{
-		}
-	};
-
-	class S2MMStatusRegister : public StatusRegister
-	{
-	public:
-		S2MMStatusRegister() :
-			StatusRegister("S2MM DMA Status Register")
-		{
-		}
-	};
-
 private:
 	CLAPPtr m_pClap = nullptr;
 
