@@ -22,12 +22,39 @@ find_package(Threads REQUIRED)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD_REQUIRED ON) 
 
-find_path(CLAP_INCLUDE_DIRS CLAP.hpp
-	HINTS "${CMAKE_CURRENT_LIST_DIR}/../../"
-	PATH_SUFFIXES include)
+
+find_path(CLAP_INCLUDE_DIR 
+	NAMES CLAP.hpp # look for this file 
+	PATH_SUFFIXES clap # tries /usr/include/clap
+	HINTS 
+		"${CMAKE_CURRENT_LIST_DIR}/../../" # API
+		"${CMAKE_CURRENT_LIST_DIR}/../../include" # API/include
+		"/usr/include" 
+		"/usr/local/include" 
+	)
+
+# message(STATUS "clap-config.cmake: CMAKE_CURRENT_LIST_DIR=${CMAKE_CURRENT_LIST_DIR}")
+# message(STATUS "clap-config.cmake: CLAP_INCLUDE_DIR=${CLAP_INCLUDE_DIR}")
+
+# add plural form of CLAP_INCLUDE_DIR (--> DIRS) for backwards compatibility
+if (CLAP_INCLUDE_DIR) 
+	set(CLAP_INCLUDE_DIRS "${CLAP_INCLUDE_DIR}") 
+endif()
 
 set(CLAP_LIBS Threads::Threads)
 
-find_package_handle_standard_args(CLAP DEFAULT_MSG CLAP_INCLUDE_DIRS CLAP_LIBS)
+
+# provide an imported target, e.g., target_link_libraries(${PROJECT_NAME} PRIVATE CLAP::CLAP)
+if(NOT TARGET CLAP::CLAP) 
+	add_library(CLAP::CLAP INTERFACE IMPORTED) 
+	set_target_properties(
+		CLAP::CLAP PROPERTIES 
+		INTERFACE_INCLUDE_DIRECTORIES "${CLAP_INCLUDE_DIR}" 
+		INTERFACE_LINK_LIBRARIES "${CLAP_LIBS}"
+	) 
+endif()
+
+# validate the CLAP find results and set CLAP_FOUND.
+find_package_handle_standard_args(CLAP DEFAULT_MSG CLAP_INCLUDE_DIR CLAP_LIBS)
