@@ -25,32 +25,31 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-find_path(CLAP_INCLUDE_DIR 
-	NAMES CLAP.hpp # Look for this file 
+find_path(CLAP_INCLUDE_DIR
+	NAMES CLAP.hpp # Look for this file
 	PATH_SUFFIXES clap # Tries /usr/include/clap
-	HINTS 
+	HINTS
 		"${CMAKE_CURRENT_LIST_DIR}/../../" # API
 		"${CMAKE_CURRENT_LIST_DIR}/../../include" # API/include
-		"/usr/include" 
-		"/usr/local/include" 
+		"/usr/include"
+		"/usr/local/include"
 	)
 
 # Add plural form of CLAP_INCLUDE_DIR (--> DIRS) for backwards compatibility
-if (CLAP_INCLUDE_DIR) 
-	set(CLAP_INCLUDE_DIRS "${CLAP_INCLUDE_DIR}") 
+if (CLAP_INCLUDE_DIR)
+	set(CLAP_INCLUDE_DIRS "${CLAP_INCLUDE_DIR}")
 endif()
 
 set(CLAP_LIBS Threads::Threads)
 
-
 # Provide an imported target, e.g., target_link_libraries(${PROJECT_NAME} PRIVATE CLAP::CLAP)
-if(NOT TARGET CLAP::CLAP) 
-	add_library(CLAP::CLAP INTERFACE IMPORTED) 
+if(NOT TARGET CLAP::CLAP)
+	add_library(CLAP::CLAP INTERFACE IMPORTED)
 	set_target_properties(
-		CLAP::CLAP PROPERTIES 
-		INTERFACE_INCLUDE_DIRECTORIES "${CLAP_INCLUDE_DIR}" 
+		CLAP::CLAP PROPERTIES
+		INTERFACE_INCLUDE_DIRECTORIES "${CLAP_INCLUDE_DIR}"
 		INTERFACE_LINK_LIBRARIES "${CLAP_LIBS}"
-	) 
+	)
 endif()
 
 # Validate the CLAP find results and set CLAP_FOUND.
