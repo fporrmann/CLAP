@@ -26,8 +26,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 find_path(CLAP_INCLUDE_DIR 
-	NAMES CLAP.hpp # look for this file 
-	PATH_SUFFIXES clap # tries /usr/include/clap
+	NAMES CLAP.hpp # Look for this file 
+	PATH_SUFFIXES clap # Tries /usr/include/clap
 	HINTS 
 		"${CMAKE_CURRENT_LIST_DIR}/../../" # API
 		"${CMAKE_CURRENT_LIST_DIR}/../../include" # API/include
