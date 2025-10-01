@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <cstdint>
 #include <cstring>
