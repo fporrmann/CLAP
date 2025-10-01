@@ -28,6 +28,7 @@
 
 #include <arpa/inet.h>
 #include <cstdint>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -36,6 +37,7 @@
 #include <sys/mman.h>
 #include <vector>
 
+#include "Constants.hpp"
 #include "Exceptions.hpp"
 #include "Expected.hpp"
 #include "FileOps.hpp"
@@ -549,8 +551,8 @@ private:
 				break;
 			default:
 			{
-				T bytesLeft = bytes;
-				T cAddr = addr;
+				T bytesLeft    = bytes;
+				T cAddr        = addr;
 				uint8_t* cData = reinterpret_cast<uint8_t*>(pData);
 
 				while (bytesLeft > 0)
@@ -624,8 +626,8 @@ private:
 				break;
 			default:
 			{
-				T bytesLeft = bytes;
-				T cAddr = addr;
+				T bytesLeft          = bytes;
+				T cAddr              = addr;
 				const uint8_t* cData = reinterpret_cast<const uint8_t*>(pData);
 
 				while (bytesLeft > 0)
