@@ -267,8 +267,10 @@ public:
 			m_gpio1Tri.SetBitAt(port, state);
 		else if (channel == CHANNEL_2 && m_isDualChannel)
 			m_gpio2Tri.SetBitAt(port, state);
-
-		AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		else
+		{
+			AXI_GPIO_INVALID_CHANNEL_EXCEPTION
+		}
 	}
 
 	uint8_t GetGPIOBit(const Channel& channel, const uint32_t& port)
