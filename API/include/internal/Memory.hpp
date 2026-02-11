@@ -341,7 +341,7 @@ private:
 };
 } // namespace internal
 
-void Memory::free()
+inline void Memory::free()
 {
 	if (m_manager && m_valid)
 	{
