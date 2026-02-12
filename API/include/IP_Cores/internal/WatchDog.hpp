@@ -63,7 +63,6 @@ inline int64_t g_pollSleepTimeMS    = 10;
 static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus, Timer* pTimer, [[maybe_unused]] std::condition_variable* pCv, [[maybe_unused]] const std::string& name,
 								std::atomic<bool>* pThreadDone, [[maybe_unused]] const bool& dontTerminate)
 {
-	pThreadDone->store(false, std::memory_order_release);
 	pTimer->Start();
 
 	bool end = !dontTerminate;

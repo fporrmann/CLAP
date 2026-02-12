@@ -117,6 +117,8 @@ private:
 		m_valid(true)
 	{}
 
+	DISABLE_COPY_ASSIGN_MOVE(Memory)
+
 	// This should never be called directly, instead it should be called by the MemoryManager to ensure proper cleanup
 	void invalidate()
 	{
