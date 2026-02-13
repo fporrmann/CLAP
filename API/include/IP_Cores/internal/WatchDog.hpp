@@ -51,9 +51,9 @@ namespace internal
 {
 inline std::exception_ptr g_pExcept = nullptr;
 #ifdef EMBEDDED_XILINX
-inline int64_t g_sleepTimeUS        = 10;
+inline int64_t g_sleepTimeUS = 10;
 #else
-inline int64_t g_pollSleepTimeMS    = 10;
+inline int64_t g_pollSleepTimeMS = 10;
 #endif
 
 // TODO: Calling WaitForInterrupt with a non-infinit timeout and checking the threadDone flag is not the best solution.
@@ -95,7 +95,7 @@ static void waitForFinishThread(UserInterruptBase* pUserIntr, HasStatus* pStatus
 				}
 
 				// Once an interrupt was detected, the internal state is reset to prevent carrying over the interrupt to the next call
-				if(pUserIntr->HasStatusReg())
+				if (pUserIntr->HasStatusReg())
 					pUserIntr->ResetStates();
 			}
 			else if (pStatus)
@@ -264,8 +264,11 @@ public:
 
 			if (timeout == WAIT_INFINITE)
 				m_cv.wait(lck, [this] { return m_threadDone.load(std::memory_order_acquire); });
-			else if (m_cv.wait_for(lck, std::chrono::milliseconds(timeout)) == std::cv_status::timeout)
-				return false;
+			else
+			{
+				const bool done = m_cv.wait_for(lck, std::chrono::milliseconds(timeout), [this] { return m_threadDone.load(std::memory_order_acquire); });
+				if (!done) return false;
+			}
 		}
 
 		joinThread();
