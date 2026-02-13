@@ -145,12 +145,12 @@ protected:
 		if (reading)
 		{
 			CLAP_CLASS_LOG_VERBOSE << "Reading " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") from the device took " << timer.GetElapsedTimeInMilliSec()
-								   << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
+								   << " ms (" << utils::SpeedWithSuffix(sizeInByte / tSec) << ")" << std::endl;
 		}
 		else
 		{
 			CLAP_CLASS_LOG_VERBOSE << "Writing " << sizeInByte << " byte (" << utils::SizeWithSuffix(sizeInByte) << ") to the device took " << timer.GetElapsedTimeInMilliSec()
-								   << " ms (" << utils::SpeedWidthSuffix(sizeInByte / tSec) << ")" << std::endl;
+								   << " ms (" << utils::SpeedWithSuffix(sizeInByte / tSec) << ")" << std::endl;
 		}
 	}
 

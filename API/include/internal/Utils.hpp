@@ -202,7 +202,7 @@ inline std::string GetPrefix(const uint32_t &order)
 	return "UNKNOWN ORDER: " + std::to_string(order);
 }
 
-inline std::string SpeedWidthSuffix(double val)
+inline std::string SpeedWithSuffix(double val)
 {
 	std::string str = "";
 	uint32_t order  = CalcOrder(val);
