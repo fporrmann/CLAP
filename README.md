@@ -298,3 +298,28 @@ Or by adding the following to the source code before the first CLAP include:
 - `CLAP_IP_CORE_LOG_ALT_STYLE`: When defined, the logging style of the IP core is changed to a more compact style, integrating the IP core name into the log message. This can be useful when the application requires a more compact log output.
 - `CLAP_SKIP_SLEEP_H_INC`: When defined, in BareMetal setups the `sleep.h` header is not included, and the sleep implementations from `unistd.h` are used instead. This might be required to mitigate collisions when the application code uses the `sleep` or `usleep` functions, as the declarations in `sleep.h` conflicts with that in `unistd.h`. Alternatively, the CLAP sleep wrapper functions `clap::utils::Sleep[MS|US]` can be used to avoid the conflict.
 - `CLAP_ENABLE_RW_LOG`: When defined, for each read and write operation a log message is generated, containing the target address, address of the data to be written and the size of the data. This can be useful for debugging purposes, but should be disabled in production code, as it can generate a large amount of log messages.
+
+## Tests
+
+The tests are implemented using the [Catch2](https://github.com/catchorg/Catch2) testing framework.
+To run the tests, build them from the root directory of the project using CMake:
+
+```bash
+cmake -S tests -B tests/build
+cmake --build tests/build -- -j$(nproc)
+```
+
+After building, the tests can be run using CTest:
+
+```bash
+ctest --test-dir tests/build --output-on-failure
+```
+
+To generate code coverage reports, CMake has to be configured with the `CLAP_ENABLE_COVERAGE` option enabled and then the coverage target can be built and run:
+
+```bash
+cmake -S tests -B tests/build -DCLAP_ENABLE_COVERAGE=ON
+cmake --build tests/build --target coverage
+```
+
+It should be noted, that for the code coverage reports to be generated, the `lcov` and `genhtml` tools have to be installed on the system. The generated report can be found in `tests/build/coverage/index.html`.
